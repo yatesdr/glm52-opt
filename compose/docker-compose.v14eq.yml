@@ -1,0 +1,164 @@
+# Window-test variant of the prod v1.3 profile — env-tunable comm knobs.
+# Usage (prod glm52-v13 stack must be STOPPED first; same port 5001):
+#   cd ~/glm52-wintest
+#   FP8_MODE=ring docker compose up          # test 1: fp8 ring mode
+#   FP8_MODE=a2a  docker compose up          # test 2: fp8 a2a mode
+#   FP8_MODE=ring DMA_PIECES=4 docker compose up
+#   FP8_MODE=ring MNBT=6144 docker compose up
+# Rollback = docker compose down here, then up the prod stack in ~/glm52-v13.
+# Reuses the prod JIT cache volume -> warm boots ~2 min.
+services:
+
+  glm52:
+    image: davidyoung/vllm-glm52-nvfp4-nf3-hybrid-lowbit-kv:v1.3
+    container_name: glm52-wintest
+    restart: "no"
+    pull_policy: never
+    network_mode: host
+    ipc: host
+    shm_size: 32gb
+    init: true
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ${MODEL_DIR:?set MODEL_DIR to the GLM-5.2 hybrid checkpoint dir}:/model:ro
+      - vllm-cache:/cache
+      - ./patches/b12x_mla_sparse.py:/opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py:ro
+      - ./patches/common.py:/opt/venv/lib/python3.12/site-packages/vllm/v1/attention/ops/common.py:ro
+      - ./patches/pcie_dma.py:/opt/venv/lib/python3.12/site-packages/b12x/distributed/pcie_dma.py:ro
+      - ../../vllm-glm52/overlays/hybrid_loader.py:/opt/venv/lib/python3.12/site-packages/hybrid_loader.py:ro
+      - ../../vllm-glm52/overlays/b12x/gemm/block_fp8_linear.py:/opt/venv/lib/python3.12/site-packages/b12x/gemm/block_fp8_linear.py:ro
+      - ../../vllm-glm52/overlays/b12x/moe/fused/w4a16/kernel.py:/opt/venv/lib/python3.12/site-packages/b12x/moe/fused/w4a16/kernel.py:ro
+      - ../../vllm-glm52/overlays/b12x/moe/fused/w4a16/route_pack.py:/opt/venv/lib/python3.12/site-packages/b12x/moe/fused/w4a16/route_pack.py:ro
+      - ../../vllm-glm52/overlays/vllm/model_executor/layers/attention/mla_attention.py:/opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/attention/mla_attention.py:ro
+      - ../../vllm-glm52/overlays/vllm/v1/attention/backends/utils.py:/opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/utils.py:ro
+      - ../../vllm-glm52/overlays/vllm/v1/sample/ops/topk_topp_sampler.py:/opt/venv/lib/python3.12/site-packages/vllm/v1/sample/ops/topk_topp_sampler.py:ro
+      - ../../vllm-glm52/overlays/vllm/v1/worker/gpu_worker.py:/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py:ro
+      - ../../vllm-glm52/overlays/vllm/v1/worker/gpu/spec_decode/autoregressive/speculator.py:/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/spec_decode/autoregressive/speculator.py:ro
+    environment:
+      CUDA_VISIBLE_DEVICES: "0,1,2,3"
+      HYBRID_TC_DECODE: "1"
+      HYBRID_NF3_TC_DECODE: "1"
+      HYBRID_HETERO_DECODE: "1"
+      B12X_EMPTY_CACHE_AFTER_WARMUP: "1"
+      VLLM_USE_AOT_COMPILE: "1"
+      VLLM_DISABLE_COMPILE_CACHE: "1"
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+      CUDA_DEVICE_MAX_CONNECTIONS: "32"
+      CUTE_DSL_ARCH: sm_120a
+      OMP_NUM_THREADS: ${OMP_THREADS:-16}
+      PYTORCH_CUDA_ALLOC_CONF: ${ALLOC_CONF:-expandable_segments:True}
+      SAFETENSORS_FAST_GPU: "1"
+      PYTHONFAULTHANDLER: "1"
+      NCCL_IB_DISABLE: "1"
+      NCCL_P2P_LEVEL: ${P2P_LEVEL:-SYS}
+      NCCL_PROTO: LL,LL128,Simple
+      NCCL_DEBUG: ${NCCL_DEBUG:-}
+      NCCL_ALGO: ${NCCL_ALGO:-}
+      VLLM_LOGGING_LEVEL: ${VLLM_LOG:-INFO}
+      XDG_CACHE_HOME: /cache/jit
+      TRITON_CACHE_DIR: /cache/jit/triton
+      VLLM_USE_B12X_FP8_GEMM: "1"
+      VLLM_USE_B12X_MOE: "1"
+      VLLM_USE_B12X_SPARSE_INDEXER: "1"
+      VLLM_USE_V2_MODEL_RUNNER: "1"
+      B12X_MOE_FORCE_A16: "1"
+      VLLM_DCP_GLOBAL_TOPK: "1"
+      VLLM_DCP_SHARD_DRAFT: "1"
+      VLLM_ENABLE_PCIE_ALLREDUCE: "1"
+      VLLM_PCIE_ALLREDUCE_BACKEND: b12x
+      VLLM_PCIE_ONESHOT_ALLREDUCE_MAX_SIZE: 64KB
+      VLLM_PCIE_ONESHOT_SINGLE_CHANNEL: ${ONESHOT_SINGLE_CHANNEL:-1}
+      B12X_DENSE_SPLITK_TURBO: "1"
+      B12X_MLA_SM120_PREFILL_F16_ROPE: "1"
+      VLLM_PCIE_DMA_FP8: ${FP8_MODE:-ag}
+      B12X_PCIE_DMA_FP8: ${FP8_MODE:-ag}
+      B12X_PCIE_DMA_PIECES: ${DMA_PIECES:-0}
+      B12X_PCIE_ONESHOT_THREADS: ${ONESHOT_THREADS:-0}
+      B12X_DCP_GATHER_ASYNC: ${GATHER_ASYNC:-0}
+      B12X_DCP_GATHER_FP8: ${GATHER_FP8:-0}
+      B12X_DCP_RS_RING: ${RS_RING:-0}
+      B12X_DCP_RS_WIRE: ${RS_WIRE:-}
+      B12X_DCP_PROF: ${PROF:-0}
+      B12X_DCP_PREFILL_TRANSPORT: ${CKV_TRANSPORT:-query}
+      B12X_DCP_PROF_CALLS: ${PROF_CALLS:-1200}
+      B12X_PCIE_ONESHOT_BLOCK_LIMIT: ${ONESHOT_BLOCKS:-0}
+      VLLM_USE_B12X_DCP_A2A: "1"
+      VLLM_DCP_A2A_MAX_TOKENS: "16"
+      VLLM_DCP_A2A_LARGE_BACKEND: ${DCP_LARGE:-ag_rs}
+      VLLM_DCP_PROJECT_BEFORE_MERGE: "1"
+      VLLM_DCP_PROJECT_BEFORE_MERGE_MIN_PREFILL_TOKENS: "1024"
+      HYBRID_TIER: both
+      HYBRID_KEPT: b12x_nf3
+      HYBRID_NF3: b12x_nf3
+      HYBRID_B12X_MAX_TOKENS: "2048"
+      HYBRID_MXFP8_NATIVE: "1"
+      SWEEP_PROFILE_NAME: wintest_${FP8_MODE:-ag}_p${DMA_PIECES:-0}_mnbt${MNBT:-3072}
+    command:
+      - vllm
+      - serve
+      - /model
+      - --served-model-name
+      - GLM-5.2
+      - --host
+      - 0.0.0.0
+      - --port
+      - "5001"
+      - --trust-remote-code
+      - --tensor-parallel-size
+      - "4"
+      - --decode-context-parallel-size
+      - "${DCP:-4}"
+      - --dcp-comm-backend
+      - a2a
+      - --dcp-kv-cache-interleave-size
+      - "1"
+      - --kv-cache-dtype
+      - nvfp4_ds_mla
+      - --attention-backend
+      - B12X_MLA_SPARSE
+      - --moe-backend
+      - b12x
+      - --load-format
+      - safetensors
+      - -cc.pass_config.fuse_allreduce_rms=True
+      - -cc.pass_config.fuse_gemm_comms=${FUSE_GEMM:-False}
+      - --gpu-memory-utilization
+      - "${GPU_UTIL:-0.980}"
+      - --max-model-len
+      - "${MAXLEN:-480000}"
+      - --max-num-seqs
+      - "8"
+      - --max-num-batched-tokens
+      - ${MNBT:-3072}
+      - --num-gpu-blocks-override
+      - "${BLOCKS:-2380}"
+      - --max-cudagraph-capture-size
+      - "32"
+      - --async-scheduling
+      - --enable-chunked-prefill
+      - --enable-prefix-caching
+      - --enable-auto-tool-choice
+      - --tool-call-parser
+      - glm47
+      - --reasoning-parser
+      - glm45
+      - --default-chat-template-kwargs
+      - '{"reasoning_effort":"high"}'
+      - --hf-overrides
+      - '{"use_index_cache":true,"index_topk_pattern":"FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS"}'
+      - --speculative-config
+      - '{"method":"mtp","num_speculative_tokens":3,"moe_backend":"b12x","draft_sample_method":"probabilistic"}'
+
+volumes:
+  vllm-cache:
+    external: true
+    name: glm52-v13_vllm-cache

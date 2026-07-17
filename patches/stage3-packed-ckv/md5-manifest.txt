@@ -1,0 +1,14 @@
+# Pinned input bytes
+f4462905759d332b4536059e5f2341c1  base/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+255bde14c794b6653b102df741634ac9  base/vllm/v1/attention/ops/common.py
+0cb86590849643ac15e17aa3ebb8ec5e  base/b12x/distributed/pcie_dma.py
+998654b58cd7ef60c77d979da235406c  base/vllm/model_executor/layers/attention/mla_attention.py
+
+# Stage 3 overlay bytes
+20a2cf60ce2e99d8c90249d458f330f8  overlays/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+c0adc0b61a86da1383b0abe016fc1c8b  overlays/vllm/v1/attention/ops/common.py
+fc796fa9af58d5b63bce85f8d5c195e8  overlays/b12x/distributed/pcie_dma.py
+61f0b3a70d1618c87b2c90ff7384ae19  overlays/vllm/model_executor/layers/attention/mla_attention.py
+
+# Unified diff against the pinned input bytes
+086f62ee8873e2eaffefaf341326e210  packed-ckv.patch
