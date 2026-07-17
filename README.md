@@ -1,5 +1,43 @@
 # glm52-opt — GLM-5.2 prefill/decode optimization on 4x RTX PRO 6000 (PCIe, no NVLink)
 
+> [!CAUTION]
+> The prebuilt image is a **single full-spec 480k profile** for exactly four
+> approximately 96 GB SM120 GPUs (RTX PRO 6000 Blackwell class), TP4/DCP4,
+> `nvfp4_ds_mla`, 16 local heads, and MNBT 3072. It is not an A100/H100 or
+> smaller-card image; its fail-closed geometry and ≥150 MiB first-prefill
+> headroom gates reject incompatible systems.
+>
+> The approximately 341 GB
+> [`madeby561/GLM-5.2-MXFP8-NVFP4-NF3-Hybrid`](https://huggingface.co/madeby561/GLM-5.2-MXFP8-NVFP4-NF3-Hybrid)
+> checkpoint must be downloaded separately and mounted read-only. It is not
+> included in the image.
+
+## Quickstart (prebuilt 480k image)
+
+Install Docker and the NVIDIA Container Toolkit, download the checkpoint, then
+run the root compose with its one required input:
+
+```bash
+git clone https://github.com/yatesdr/glm52-opt.git
+cd glm52-opt
+MODEL_DIR=/absolute/path/to/GLM-5.2-MXFP8-NVFP4-NF3-Hybrid \
+  docker compose up -d
+docker compose logs -f glm52
+```
+
+The image serves `GLM-5.2` on port 5001 with a 480k maximum context,
+599,040-token GPU KV pool (`BLOCKS=2340`), MTP-3, and a 56 GB DRAM warm
+offload tier. There is deliberately no 64k profile and no NVMe offload tier.
+Allow roughly 5–8 minutes for compilation on each boot; compile-cache disabling
+is part of the validated production contract for now. The compose supplies an
+isolated 64 GB `/dev/shm`; this portable IPC posture is GPU-acceptance-pending
+before the image is tagged as verified. **Verification status (2026-07-17):
+full-spec boot verification is in progress.** The artifact may be visible on
+GHCR before that gate closes; treat it as unverified until this note and the
+design gate status are updated.
+The production contract and acceptance signature are recorded in
+`REPRODUCTION.md` §7.
+
 Patches, designs, proofs, and reproduction steps that took **GLM-5.2
 (753B hybrid-quant) cold prefill from 640 → 1,696 tok/s (2.65x)** and
 decode from 51.7 → 67 tok/s on a 4x RTX PRO 6000 Blackwell box with
@@ -60,11 +98,12 @@ communication → **1.4 ms**. Full analysis: `design/breakthrough-analysis.md`.
 - **CONFIRMED + shipped:** the full stack at **480k context** with a
   599,040-token KV pool — 1,509 tok/s @ 55k and 1,126 tok/s on a cold
   463k-token request, quality gates green to 200k depth, +30% decode,
-  tiered KV cache (DRAM warm tier + NVMe cold tier). See `RESULTS.md` §8
+  tiered KV cache (56 GB DRAM warm tier, no NVMe tier). See `RESULTS.md` §8
   and `patches/phase2-fullcontext/`.
 - **In progress:** prebuilt image on GHCR + a one-line compose, so the
-  shipped 480k configuration boots without assembling overlays by hand
-  (today `compose/` covers the 64k acceptance profiles only).
+  shipped 480k configuration boots without assembling overlays by hand. The
+  source bundle and root compose are complete; image build and isolated-shm
+  GPU acceptance remain.
 - **Planned:** a measurement patch decomposing the residual ~21 ms/layer
   compute, to pick the next kernel target; DCP2 posture cells; evaluation
   of trellis-quant checkpoints (1M-token pools).

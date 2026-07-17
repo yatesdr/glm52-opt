@@ -102,10 +102,8 @@ prefix-cache metric deltas with any number you publish
   **confirmed, gated, and shipped**: 1,509 tok/s @ 55k and 1,126 tok/s on
   a cold 463k request, with a 599,040-token pool. Its overlays and gate
   checks are in `patches/phase2-fullcontext/` and the measurements are in
-  `RESULTS.md` §8. What this guide does **not** yet give you is a
-  turnkey 480k boot: the escrow/probe memory contract, `BLOCKS=2340`, and
-  the tiered-KV connector have no compose profile here. A prebuilt image
-  and one-line compose for the shipped configuration are in progress.
+  `RESULTS.md` §8. For the turnkey full-spec image and root compose, use
+  §7; their isolated-64-GB-shm GPU acceptance is still in progress.
 - Geometry is strict v1: TP4/DCP4, interleave 1, `nvfp4_ds_mla`,
   MNBT 3072, topk 2048, 16 local heads. The CKV startup asserts name any
   mismatch and tell you to fall back to `query`.
@@ -122,3 +120,49 @@ prefix-cache metric deltas with any number you publish
   (`design/field-fix1-triton-constexpr.md`).
 - OOM at first prefill at large max-len: read `RESULTS.md` §5 before
   reaching for block cuts — they will not buy you transient float.
+
+## 7. Full-spec 480k image contract
+
+The root `Dockerfile` and `docker-compose.yml` package the confirmed phase-2
+stack as one 480k profile. This is not a general vLLM image. It requires exactly
+four approximately 96 GB SM120 RTX PRO 6000 Blackwell GPUs, TP4/DCP4,
+`nvfp4_ds_mla`, 16 local heads, and MNBT 3072. Startup and first-prefill gates
+fail closed on incompatible geometry or inadequate memory.
+
+The checkpoint is approximately 341 GB and is mounted, not baked:
+
+```bash
+MODEL_DIR=/absolute/path/to/GLM-5.2-MXFP8-NVFP4-NF3-Hybrid \
+  docker compose up -d
+docker compose logs -f glm52
+```
+
+`MODEL_DIR` is the only required compose input. The image command fixes:
+
+- `--max-model-len 480000`, `--max-num-seqs 8`, MNBT 3072, and
+  `--num-gpu-blocks-override 2340` (599,040 GPU-cache tokens);
+- TP4/DCP4, DCP A2A decode posture, `B12X_MLA_SPARSE`, b12x MoE, and MTP-3;
+- packed-CKV phase-2 NCCL transport, 192 MiB escrow, probes off, and both fp8
+  query gather and output RS ring hard-disabled;
+- `OffloadingConnector` with `TieringOffloadingSpec`, exactly
+  `cpu_bytes_to_use=56000000000`, and `secondary_tiers=[]` (DRAM only);
+- `PYTHONHASHSEED=0`, no expandable-segments allocator setting, and the exact
+  production AOT/compile-cache environment.
+
+The entrypoint removes `/dev/shm/vllm_offload_*.mmap` before every start. This
+is required: a stale 56 GB warm-tier region can exhaust shared memory and hang
+the following boot. The portable compose gives the container an isolated 64 GB
+`/dev/shm`, publishes port 5001, and persists `/cache/jit` in the `vllm-cache`
+named volume. Production used host IPC; therefore the isolated shared-memory
+posture must pass the server gate in `design/ghcr-480k-image.md` before release.
+
+Expect roughly 5–8 minutes of compilation on every boot while
+`VLLM_DISABLE_COMPILE_CACHE=1` remains part of the validated contract. Do not
+toggle it for a faster-looking first boot; cache-compatible AOT is a separate
+workstream.
+
+At startup, require every rank to log packed-CKV phase-2 activation and CKV
+escrow arming. After a first cold prefill, require escrow release, CKV route
+counts with `missing_blocks=0`, and no query all-gather/output reduce-scatter.
+Published throughput still requires prefix-cache metric deltas and the standard
+plus deep quality gates described above.

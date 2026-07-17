@@ -1,0 +1,25 @@
+# Full-spec production profile only: 480k max context, TP4/DCP4.
+# MODEL_DIR is intentionally the sole required input.
+services:
+  glm52:
+    image: ghcr.io/yatesdr/glm52-opt:latest
+    pull_policy: always
+    restart: unless-stopped
+    shm_size: 64gb
+    ports:
+      - "5001:5001"
+    ulimits:
+      memlock: -1
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    volumes:
+      - ${MODEL_DIR:?Set MODEL_DIR to the absolute checkpoint directory}:/model:ro
+      - vllm-cache:/cache
+
+volumes:
+  vllm-cache:

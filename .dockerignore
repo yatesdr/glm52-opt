@@ -1,0 +1,12 @@
+*
+!Dockerfile
+!LICENSE
+!docker/
+!docker/**
+!patches/
+!patches/stage3-packed-ckv/
+!patches/stage3-packed-ckv/overlays/
+!patches/stage3-packed-ckv/overlays/**
+!patches/phase2-fullcontext/
+!patches/phase2-fullcontext/overlays/
+!patches/phase2-fullcontext/overlays/**
