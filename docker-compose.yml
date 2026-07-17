@@ -2,7 +2,7 @@
 # MODEL_DIR is intentionally the sole required input.
 services:
   glm52:
-    image: ghcr.io/yatesdr/glm52-opt:latest
+    image: ghcr.io/yatesdr/glm52-opt:0.1.0
     pull_policy: always
     restart: unless-stopped
     # Production posture: share the host IPC namespace so the 56 GB DRAM KV
