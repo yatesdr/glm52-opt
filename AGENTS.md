@@ -15,8 +15,10 @@ CE-DMA ring (fp8 wire). A per-phase CUDA-event profiler then showed DCP
 communication was ~45% of wall, which motivated stage 3: ownership
 inversion — gather the head-independent 368-byte compressed KV records
 instead of the head-multiplied query tensor. That collapsed per-layer DCP
-transport from 18.6 ms to 1.4 ms. Full-context (480k) support is phase 2,
-designed and CPU-proven in `design/`, server validation pending.
+transport from 18.6 ms to 1.4 ms. Full-context (480k) support is phase 2:
+designed in `design/`, CPU-proven, server-gated, and shipped to
+production on 2026-07-17 — 1,509 tok/s @ 55k, 1,126 tok/s cold @ 463k,
+599,040-token pool (`RESULTS.md` §8, `patches/phase2-fullcontext/`).
 
 ## Reading order for full understanding
 
@@ -95,14 +97,20 @@ less) — community reports suggest ~1.15–1.4x there.
 
 ## Open items (as of this commit)
 
-- Phase-2 full-context (480k) server gates: NCCL-swap parity, the
-  escrow/probe memory boot, 480k acceptance. Designs and CPU proofs are
-  complete; results will land in RESULTS.md when run.
+Phase-2 full-context (480k) is **closed** — all three server gates passed
+and the stack is in production (`RESULTS.md` §8). Still open:
+
 - Compute-remainder profiler (7-file measurement patch): designed, gated,
   not yet integrated. It decomposes the residual ~21 ms/layer and picks
   the next kernel target.
+- No turnkey boot for the shipped 480k configuration: `compose/` carries
+  the 64k acceptance profiles only. Prebuilt image + one-line compose is
+  the next packaging task.
 - DCP2 posture cells: unmeasured.
 - Trellis-quant checkpoint evaluation (larger KV pools): planned.
+
+The prioritized version of this list, with rationale, is in "Next steps"
+below — that section is authoritative if the two ever disagree.
 
 
 ## Project history, goals, and next steps (2026-07-17)

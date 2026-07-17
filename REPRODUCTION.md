@@ -97,9 +97,15 @@ prefix-cache metric deltas with any number you publish
 
 ## 5. Known limits of this drop
 
-- Validated at the 64k test profile. Full 480k context is phase 2
-  (design + CPU proofs in this repo; server validation in progress —
-  watch the repo).
+- The boot recipes above are the **64k test profile** — that is the
+  configuration these steps reproduce. Full 480k context (phase 2) is
+  **confirmed, gated, and shipped**: 1,509 tok/s @ 55k and 1,126 tok/s on
+  a cold 463k request, with a 599,040-token pool. Its overlays and gate
+  checks are in `patches/phase2-fullcontext/` and the measurements are in
+  `RESULTS.md` §8. What this guide does **not** yet give you is a
+  turnkey 480k boot: the escrow/probe memory contract, `BLOCKS=2340`, and
+  the tiered-KV connector have no compose profile here. A prebuilt image
+  and one-line compose for the shipped configuration are in progress.
 - Geometry is strict v1: TP4/DCP4, interleave 1, `nvfp4_ds_mla`,
   MNBT 3072, topk 2048, 16 local heads. The CKV startup asserts name any
   mismatch and tell you to fall back to `query`.

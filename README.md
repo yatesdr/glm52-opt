@@ -43,6 +43,9 @@ communication → **1.4 ms**. Full analysis: `design/breakthrough-analysis.md`.
   fp8-ring reduce-scatter + the phase profiler (3 overlay files).
 - `patches/stage3-packed-ckv/` — the packed-CKV transport (4 overlay
   files + unified-diff manifest). Includes the Triton constexpr fix.
+- `patches/phase2-fullcontext/` — **the shipped configuration**: packed-CKV
+  at full 480k context, with the escrow/probe memory contract that makes it
+  fit. Overlays + gate checks + manifest.
 - `design/` — the full design/review chain: mechanism analysis, v1 and
   phase-2 design notes, gate verdicts, field fixes. The process is part of
   the point: every stage was design-gated, CPU-proven, then boot-verified.
@@ -59,8 +62,12 @@ communication → **1.4 ms**. Full analysis: `design/breakthrough-analysis.md`.
   463k-token request, quality gates green to 200k depth, +30% decode,
   tiered KV cache (DRAM warm tier + NVMe cold tier). See `RESULTS.md` §8
   and `patches/phase2-fullcontext/`.
-- **Planned:** prebuilt image on GHCR + a one-line compose once the 480k
-  gates pass; evaluation of trellis-quant checkpoints (1M-token pools).
+- **In progress:** prebuilt image on GHCR + a one-line compose, so the
+  shipped 480k configuration boots without assembling overlays by hand
+  (today `compose/` covers the 64k acceptance profiles only).
+- **Planned:** a measurement patch decomposing the residual ~21 ms/layer
+  compute, to pick the next kernel target; DCP2 posture cells; evaluation
+  of trellis-quant checkpoints (1M-token pools).
 
 ## Provenance & attribution
 
