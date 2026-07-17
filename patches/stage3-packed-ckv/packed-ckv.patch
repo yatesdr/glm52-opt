@@ -1,0 +1,1933 @@
+--- a/b12x/distributed/pcie_dma.py
++++ b/b12x/distributed/pcie_dma.py
+@@ -1,4 +1,4 @@
+-"""CE-driven PCIe ring allreduce for prefill-size tensors.
++"""CE-driven PCIe ring collectives for prefill-size tensors.
+
+ NCCL's SM-copy transport sustains ~34 GB/s bus bandwidth on this fabric
+ while CE peer copies run at ~56 GB/s on every ring hop concurrently
+@@ -14,6 +14,7 @@
+ import logging
+ import os
+ import time
++from collections.abc import Sequence
+ from contextlib import suppress
+ from functools import lru_cache
+ from pathlib import Path
+@@ -86,6 +87,288 @@
+     return (value + alignment - 1) // alignment * alignment
+
+
++class PCIeDmaAllGather:
++    """Fixed-capacity byte-preserving four-rank ring all-gather.
++
++    The three IPC slots hold received/forwarded payloads. Records and their
++    one-byte-per-page validity metadata travel together, then land in separate
++    caller-owned rank-major outputs. Calls are eager and ordered on one current
++    CUDA stream; concurrent use requires a separate channel.
++    """
++
++    def __init__(
++        self,
++        *,
++        exchange_group: ProcessGroup,
++        device: torch.device | int | str,
++        max_local_record_bytes: int,
++        max_local_metadata_bytes: int,
++        ext_module=None,
++    ) -> None:
++        self.group = exchange_group
++        self.rank = dist.get_rank(group=exchange_group)
++        self.world_size = dist.get_world_size(group=exchange_group)
++        self.device = (
++            device
++            if isinstance(device, torch.device)
++            else torch.device(
++                f"cuda:{device}" if isinstance(device, int) else device
++            )
++        )
++        if self.device.type != "cuda":
++            raise ValueError("PCIe byte all-gather requires a CUDA device")
++        if self.world_size != 4:
++            raise ValueError(
++                "PCIe byte all-gather is validated only for world size 4, "
++                f"got {self.world_size}"
++            )
++        if self.device.index != torch.cuda.current_device():
++            raise ValueError(
++                "PCIe byte all-gather device must be current: "
++                f"configured={self.device.index}, current="
++                f"{torch.cuda.current_device()}"
++            )
++
++        self.max_local_record_bytes = int(max_local_record_bytes)
++        self.max_local_metadata_bytes = int(max_local_metadata_bytes)
++        if self.max_local_record_bytes <= 0:
++            raise ValueError("max_local_record_bytes must be positive")
++        if self.max_local_metadata_bytes <= 0:
++            raise ValueError("max_local_metadata_bytes must be positive")
++
++        self._ext = ext_module or _load_extension()
++        self._ipc = CudaRTLibrary()
++        self._ipc.cudaSetDevice(self.device.index or 0)
++        self._closed = False
++        self.slot_capacity = _align_up(
++            self.max_local_record_bytes + self.max_local_metadata_bytes,
++            SCRATCH_ALIGN,
++        )
++        flags_bytes = FLAG_SLOTS * FLAG_STRIDE
++        slab_bytes = flags_bytes + (self.world_size - 1) * self.slot_capacity
++        self._slab = PCIeOneshotAllReduce._allocate_shared_buffer(
++            exchange_group, slab_bytes, zero_fill=True, ipc=self._ipc
++        )
++        self._flags_base = list(self._slab.peer_ptrs)
++        self._slots_base = [ptr + flags_bytes for ptr in self._slab.peer_ptrs]
++        self._send_counters = torch.zeros(
++            FLAG_SLOTS, dtype=torch.int32, device=self.device
++        )
++        self._wait_counters = torch.zeros(
++            FLAG_SLOTS, dtype=torch.int32, device=self.device
++        )
++        self._copy_stream = torch.cuda.Stream(device=self.device)
++        self._flag_stream = torch.cuda.Stream(device=self.device)
++        self._copied_events = [
++            torch.cuda.Event() for _ in range(self.world_size - 1)
++        ]
++        self._received_events = [
++            torch.cuda.Event() for _ in range(self.world_size - 1)
++        ]
++        self._input_ready = torch.cuda.Event()
++
++    def _flag_ptr(self, rank: int, slot: int) -> int:
++        return self._flags_base[rank] + slot * FLAG_STRIDE
++
++    def _counter_ptr(self, counters: torch.Tensor, slot: int) -> int:
++        return counters.data_ptr() + slot * 4
++
++    def _slot_ptr(self, rank: int, step: int) -> int:
++        return self._slots_base[rank] + step * self.slot_capacity
++
++    @staticmethod
++    def _byte_range(tensor: torch.Tensor) -> tuple[int, int]:
++        begin = tensor.data_ptr()
++        return begin, begin + tensor.numel()
++
++    @staticmethod
++    def _overlaps(left: tuple[int, int], right: tuple[int, int]) -> bool:
++        return left[0] < right[1] and right[0] < left[1]
++
++    def all_gather(
++        self,
++        local_payload: torch.Tensor,
++        gathered_records: torch.Tensor,
++        gathered_metadata: torch.Tensor,
++        *,
++        record_lengths: Sequence[int],
++        metadata_lengths: Sequence[int],
++    ) -> None:
++        """Gather raw record pages and validity bytes into rank-major outputs."""
++        if self._closed:
++            raise RuntimeError("PCIe byte all-gather is closed")
++        if torch.cuda.is_current_stream_capturing():
++            raise RuntimeError("PCIe byte all-gather is eager-only")
++        if torch.cuda.current_device() != self.device.index:
++            raise RuntimeError("PCIe byte all-gather device is not current")
++
++        tensors = (local_payload, gathered_records, gathered_metadata)
++        for name, tensor in zip(
++            ("local_payload", "gathered_records", "gathered_metadata"),
++            tensors,
++        ):
++            if (
++                tensor.device != self.device
++                or tensor.dtype != torch.uint8
++                or tensor.ndim != 1
++                or not tensor.is_contiguous()
++            ):
++                raise ValueError(
++                    f"{name} must be contiguous rank-1 uint8 on {self.device}, "
++                    f"got shape={tuple(tensor.shape)}, dtype={tensor.dtype}, "
++                    f"device={tensor.device}, stride={tuple(tensor.stride())}"
++                )
++
++        records = tuple(int(length) for length in record_lengths)
++        metadata = tuple(int(length) for length in metadata_lengths)
++        if len(records) != self.world_size or len(metadata) != self.world_size:
++            raise ValueError("rank-length tuples must match the four-rank group")
++        page_bytes = 64 * 368
++        for rank, (record_bytes, metadata_bytes) in enumerate(
++            zip(records, metadata)
++        ):
++            if (
++                record_bytes <= 0
++                or record_bytes > self.max_local_record_bytes
++                or record_bytes % page_bytes != 0
++            ):
++                raise ValueError(
++                    f"rank {rank} record length violates page/capacity contract: "
++                    f"{record_bytes}"
++                )
++            expected_metadata = record_bytes // page_bytes
++            if (
++                metadata_bytes != expected_metadata
++                or metadata_bytes > self.max_local_metadata_bytes
++            ):
++                raise ValueError(
++                    f"rank {rank} metadata length {metadata_bytes} does not "
++                    f"match page count {expected_metadata}"
++                )
++
++        local_record_bytes = records[self.rank]
++        local_metadata_bytes = metadata[self.rank]
++        if local_payload.numel() != local_record_bytes + local_metadata_bytes:
++            raise ValueError(
++                "local payload size does not match this rank's lengths: "
++                f"{local_payload.numel()} != "
++                f"{local_record_bytes + local_metadata_bytes}"
++            )
++        if gathered_records.numel() != sum(records):
++            raise ValueError("gathered record output has the wrong exact size")
++        if gathered_metadata.numel() != sum(metadata):
++            raise ValueError("gathered metadata output has the wrong exact size")
++        if local_payload.data_ptr() % SCRATCH_ALIGN:
++            raise ValueError("local payload must be 256-byte aligned")
++        if gathered_records.data_ptr() % SCRATCH_ALIGN:
++            raise ValueError("gathered records must be 256-byte aligned")
++
++        ranges = tuple(self._byte_range(tensor) for tensor in tensors)
++        if any(
++            self._overlaps(ranges[left], ranges[right])
++            for left, right in ((0, 1), (0, 2), (1, 2))
++        ):
++            raise ValueError("all-gather input and outputs must be disjoint")
++
++        record_offsets = [0]
++        metadata_offsets = [0]
++        for record_bytes, metadata_bytes in zip(records, metadata):
++            record_offsets.append(record_offsets[-1] + record_bytes)
++            metadata_offsets.append(metadata_offsets[-1] + metadata_bytes)
++
++        ext = self._ext
++        rank = self.rank
++        nxt = (rank + 1) % self.world_size
++        prv = (rank - 1) % self.world_size
++        main = torch.cuda.current_stream(self.device)
++        copy_stream = self._copy_stream
++        flag_stream = self._flag_stream
++        self._input_ready.record(main)
++
++        gathered_records.narrow(
++            0, record_offsets[rank], local_record_bytes
++        ).copy_(local_payload.narrow(0, 0, local_record_bytes))
++        gathered_metadata.narrow(
++            0, metadata_offsets[rank], local_metadata_bytes
++        ).copy_(
++            local_payload.narrow(
++                0, local_record_bytes, local_metadata_bytes
++            )
++        )
++
++        for step in range(self.world_size - 1):
++            owner = (rank - step) % self.world_size
++            send_bytes = records[owner] + metadata[owner]
++            with torch.cuda.stream(copy_stream):
++                if step == 0:
++                    copy_stream.wait_event(self._input_ready)
++                    source = local_payload.data_ptr()
++                else:
++                    copy_stream.wait_event(self._received_events[step - 1])
++                    source = self._slot_ptr(rank, step - 1)
++                ext.dma_copy(self._slot_ptr(nxt, step), source, send_bytes)
++                self._copied_events[step].record(copy_stream)
++            with torch.cuda.stream(flag_stream):
++                flag_stream.wait_event(self._copied_events[step])
++                ext.dma_set_flag(
++                    self._flag_ptr(nxt, step),
++                    self._counter_ptr(self._send_counters, step),
++                )
++
++            ext.dma_wait_flag(
++                self._flag_ptr(rank, step),
++                self._counter_ptr(self._wait_counters, step),
++            )
++            received_owner = (rank - step - 1) % self.world_size
++            slot = self._slot_ptr(rank, step)
++            ext.dma_copy(
++                gathered_records.data_ptr() + record_offsets[received_owner],
++                slot,
++                records[received_owner],
++            )
++            ext.dma_copy(
++                gathered_metadata.data_ptr() + metadata_offsets[received_owner],
++                slot + records[received_owner],
++                metadata[received_owner],
++            )
++            self._received_events[step].record(main)
++
++        main.wait_stream(copy_stream)
++        main.wait_stream(flag_stream)
++        done = self.world_size - 1
++        ext.dma_set_flag(
++            self._flag_ptr(prv, done),
++            self._counter_ptr(self._send_counters, done),
++        )
++        ext.dma_wait_flag(
++            self._flag_ptr(rank, done),
++            self._counter_ptr(self._wait_counters, done),
++        )
++
++    def close(self) -> None:
++        if self._closed:
++            return
++        self._closed = True
++        with suppress(Exception):
++            self._copy_stream.synchronize()
++        with suppress(Exception):
++            self._flag_stream.synchronize()
++        for ptr in self._slab.remote_ptrs:
++            with suppress(Exception):
++                self._ipc.cudaIpcCloseMemHandle(ptr)
++        with suppress(Exception):
++            self._ipc.cudaFree(self._slab.local_ptr)
++        self._copied_events = []
++        self._received_events = []
++        self._copy_stream = None
++        self._flag_stream = None
++        self._input_ready = None
++
++    def __del__(self) -> None:
++        with suppress(Exception):
++            self.close()
++
++
+ class PCIeDmaAllReduce:
+     """Single-channel ring allreduce over IPC scratch buffers.
+
+@@ -1018,4 +1301,4 @@
+     return oneshot_max, dma_min
+
+
+-__all__ = ["PCIeDmaAllReduce", "autotune_crossovers"]
++__all__ = ["PCIeDmaAllGather", "PCIeDmaAllReduce", "autotune_crossovers"]
+--- a/vllm/model_executor/layers/attention/mla_attention.py
++++ b/vllm/model_executor/layers/attention/mla_attention.py
+@@ -971,6 +971,8 @@
+             else:
+                 mqa_q = (mqa_ql_nope, mqa_q_pe)
+             workspace_gather_used = False
++            packed_ckv_used = False
++            dcp_dispatch_recorded = False
+             if self.impl.dcp_world_size > 1:
+                 if not self.impl.can_return_lse_for_decode:
+                     raise NotImplementedError(
+@@ -1037,7 +1039,39 @@
+                     and use_persistent_w_uv
+                     and not dcp_use_a2a
+                     and not torch.cuda.is_current_stream_capturing()
++                )
++                prefill_transport = getattr(
++                    self.impl, "dcp_prefill_transport", "query"
++                )
++                if prefill_transport not in ("query", "ckv"):
++                    raise RuntimeError(
++                        f"{type(self.impl).__name__} returned invalid DCP "
++                        f"prefill transport {prefill_transport!r}"
++                    )
++                pure_prefill = (
++                    getattr(attn_metadata, "num_decode_tokens", None) == 0
++                    and num_prefill_tokens == num_mqa_tokens
++                    and num_mqa_tokens > 0
+                 )
++                packed_ckv_eligible = (
++                    workspace_gather_eligible
++                    and prefill_transport == "ckv"
++                    and pure_prefill
++                )
++                if workspace_gather_eligible:
++                    record_dispatch = getattr(
++                        self.impl, "dcp_record_prefill_dispatch", None
++                    )
++                    if not callable(record_dispatch):
++                        raise RuntimeError(
++                            f"{type(self.impl).__name__} lacks the route-neutral "
++                            "DCP profiler dispatch seam"
++                        )
++                    record_dispatch(
++                        "ckv" if packed_ckv_eligible else "query",
++                        attn_metadata,
++                    )
++                    dcp_dispatch_recorded = True
+                 if isinstance(mqa_q, tuple) and not workspace_gather_eligible:
+                     # concatenate mqa_ql_nope and mqa_q_pe -> (B, N, L + P)
+                     mqa_q = torch.cat(mqa_q, dim=-1)
+@@ -1052,6 +1086,8 @@
+                             else self.kv_lora_rank
+                         ),
+                     )
++                elif packed_ckv_eligible:
++                    packed_ckv_used = True
+                 elif workspace_gather_eligible:
+                     workspace_gather = getattr(
+                         self.impl, "dcp_all_gather_query_in_workspace", None
+@@ -1073,12 +1109,63 @@
+             # call decode attn
+             if not is_sparse_impl:
+                 assert attn_metadata.decode is not None
+-            attn_out, lse = self.impl.forward_mqa(mqa_q, kv_cache, attn_metadata, self)  # type: ignore[attr-defined]
++            if packed_ckv_used:
++                packed_ckv_forward = getattr(
++                    self.impl, "dcp_packed_ckv_forward", None
++                )
++                if not getattr(
++                    self.impl, "supports_dcp_packed_ckv", False
++                ) or not callable(packed_ckv_forward):
++                    raise RuntimeError(
++                        f"{type(self.impl).__name__} does not support the "
++                        "selected packed-CKV route"
++                    )
++                if not isinstance(mqa_q, tuple):
++                    raise RuntimeError(
++                        "packed-CKV must retain the rank-local query tuple"
++                    )
++                attn_out = packed_ckv_forward(
++                    mqa_q,
++                    kv_cache,
++                    attn_metadata,
++                    self.W_UV,
++                )
++                lse = None
++            else:
++                attn_out, lse = self.impl.forward_mqa(  # type: ignore[attr-defined]
++                    mqa_q, kv_cache, attn_metadata, self
++                )
+
+             # Correct DCP partials with natural-log LSE. Qualifying sparse MLA
+             # calls project every gathered head with persistent ordinary BF16
+             # W_UV before merging the projected partials.
+-            if self.impl.dcp_world_size > 1:
++            if packed_ckv_used:
++                expected_ckv_shape = (
++                    num_mqa_tokens,
++                    self.num_heads,
++                    self.v_head_dim,
++                )
++                expected_ckv_stride = (
++                    self.v_head_dim,
++                    num_mqa_tokens * self.v_head_dim,
++                    1,
++                )
++                if (
++                    tuple(attn_out.shape) != expected_ckv_shape
++                    or tuple(attn_out.stride()) != expected_ckv_stride
++                    or attn_out.dtype != mqa_output_slice.dtype
++                    or attn_out.device != mqa_output_slice.device
++                    or not attn_out.movedim(0, 1).is_contiguous()
++                ):
++                    raise RuntimeError(
++                        "packed-CKV returned an invalid local projected view: "
++                        f"shape={tuple(attn_out.shape)}, "
++                        f"stride={tuple(attn_out.stride())}, "
++                        f"dtype={attn_out.dtype}, device={attn_out.device}"
++                    )
++                durable_ckv_output = mqa_output_slice.view(expected_ckv_shape)
++                durable_ckv_output.copy_(attn_out)
++            if self.impl.dcp_world_size > 1 and not packed_ckv_used:
+                 if lse is None:
+                     raise RuntimeError(
+                         f"{type(self.impl).__name__} did not return decode "
+@@ -1290,9 +1377,20 @@
+                         )
+                 else:
+                     self._v_up_proj(attn_out, out=mqa_output_slice)
+-            else:
++            elif not packed_ckv_used:
+                 self._v_up_proj(attn_out, out=mqa_output_slice)
+
++            if dcp_dispatch_recorded:
++                finish_dispatch = getattr(
++                    self.impl, "dcp_finish_prefill_dispatch", None
++                )
++                if not callable(finish_dispatch):
++                    raise RuntimeError(
++                        f"{type(self.impl).__name__} lacks the route-neutral "
++                        "DCP profiler completion seam"
++                    )
++                finish_dispatch()
++
+         if quant_key is not None:
+             quant_idx = num_mqa_tokens if mha_use_quant_output else num_actual_toks
+             if quant_idx == 0:
+--- a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
++++ b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+@@ -74,6 +74,16 @@
+ _HEAD_ALIGNMENT = 8
+ _BF16_BYTES = 2
+ _EXTEND_PREWARM_DONE: set[tuple[int | None, int, int, int, int, int, bool]] = set()
++_CKV_PREWARM_DONE: set[tuple[int | None, int, int, int, int, int]] = set()
++_CKV_RECORD_BYTES = 368
++_CKV_BLOCK_SIZE = 64
++_CKV_VIRTUAL_BLOCK = 256
++_CKV_WORLD_SIZE = 4
++_CKV_LOCAL_HEADS = 16
++_CKV_FLAG_BYTES = 256 * 128
++_CKV_SINGLETON: list = []
++_CKV_FAILED = object()
++_CKV_LOGGED = [False]
+
+ # --- Fable patch (2026-07-15): DCP gather async overlap (Package C, bf16-exact)
+ # Gated by B12X_DCP_GATHER_ASYNC=1; unset => byte-identical stock behavior.
+@@ -104,6 +114,21 @@
+     return parsed
+
+
++def _normalize_dcp_prefill_transport() -> str:
++    raw = os.getenv("B12X_DCP_PREFILL_TRANSPORT", "query").strip().lower()
++    if raw in ("", "query"):
++        return "query"
++    if raw == "ckv":
++        return "ckv"
++    logger.warning(
++        "Ignoring unknown B12X_DCP_PREFILL_TRANSPORT=%r; using query.", raw
++    )
++    return "query"
++
++
++_DCP_PREFILL_TRANSPORT = _normalize_dcp_prefill_transport()
++
++
+ @triton.jit
+ def _mask_page_table_after_nsa_len_kernel(
+     page_table_ptr,
+@@ -144,8 +169,140 @@
+         BLOCK_N=block_n,
+     )
+
++
++@triton.jit
++def _pack_ckv_pages_kernel(
++    cache_ptr,
++    block_table_ptr,
++    req_for_block_ptr,
++    vblock_for_block_ptr,
++    packed_ptr,
++    validity_ptr,
++    cache_stride0,
++    cache_stride1,
++    cache_stride2,
++    block_table_stride0,
++    block_table_stride1,
++    PAGE_BYTES: tl.constexpr,
++    RECORD_BYTES: tl.constexpr,
++    BLOCK_BYTES: tl.constexpr,
++):
++    packed_block = tl.program_id(0)
++    byte_tile = tl.program_id(1)
++    byte_offsets = byte_tile * BLOCK_BYTES + tl.arange(0, BLOCK_BYTES)
++    byte_mask = byte_offsets < PAGE_BYTES
++    request = tl.load(req_for_block_ptr + packed_block)
++    virtual_block = tl.load(vblock_for_block_ptr + packed_block)
++    physical_block = tl.load(
++        block_table_ptr
++        + request * block_table_stride0
++        + virtual_block * block_table_stride1
++    )
++    valid_block = physical_block >= 0
++    local_offset = byte_offsets // RECORD_BYTES
++    record_byte = byte_offsets % RECORD_BYTES
++    source = (
++        cache_ptr
++        + physical_block * cache_stride0
++        + local_offset * cache_stride1
++        + record_byte * cache_stride2
++    )
++    values = tl.load(
++        source,
++        mask=byte_mask & valid_block,
++        other=0,
++    )
++    tl.store(
++        packed_ptr + packed_block * PAGE_BYTES + byte_offsets,
++        values,
++        mask=byte_mask,
++    )
++    tl.store(
++        validity_ptr + packed_block,
++        valid_block.to(tl.uint8),
++        mask=byte_tile == 0,
++    )
++
++
++@triton.jit
++def _remap_ckv_topk_kernel(
++    req_ids_ptr,
++    topk_ptr,
++    req_base_ptr,
++    blocks_per_req_ptr,
++    global_causal_ptr,
++    validity_ptr,
++    out_ptr,
++    valid_counts_ptr,
++    selected_total_ptr,
++    missing_total_ptr,
++    topk_stride0,
++    topk_stride1,
++    out_stride0,
++    out_stride1,
++    PACKED_BLOCKS,
++    TOPK: tl.constexpr,
++    PROFILE: tl.constexpr,
++    # Module globals are invisible to @triton.jit unless tl.constexpr —
++    # pass the CKV geometry constants explicitly (Fable fix, 2026-07-17;
++    # first GPU compile of this kernel raised CompilationError/NameError).
++    VIRTUAL_BLOCK: tl.constexpr,
++    WORLD_SIZE: tl.constexpr,
++    PAGE_RECORDS: tl.constexpr,
++):
++    row = tl.program_id(0)
++    offsets = tl.arange(0, TOPK)
++    request = tl.load(req_ids_ptr + row)
++    logical_ids = tl.load(
++        topk_ptr + row * topk_stride0 + offsets * topk_stride1
++    )
++    causal_length = tl.load(global_causal_ptr + row)
++    blocks = tl.load(blocks_per_req_ptr + request)
++    request_base = tl.load(req_base_ptr + request)
++
++    virtual_block = logical_ids // VIRTUAL_BLOCK
++    within_virtual = logical_ids % VIRTUAL_BLOCK
++    owner = within_virtual % WORLD_SIZE
++    local_offset = within_virtual // WORLD_SIZE
++    logical_valid = (logical_ids >= 0) & (logical_ids < causal_length)
++    block_valid = logical_valid & (virtual_block >= 0) & (
++        virtual_block < blocks
++    )
++    packed_block = request_base + virtual_block
++    owner_valid = tl.load(
++        validity_ptr + owner * PACKED_BLOCKS + packed_block,
++        mask=block_valid,
++        other=0,
++    )
++    is_valid = block_valid & (owner_valid != 0)
++    mapped = (
++        (owner * PACKED_BLOCKS + packed_block) * PAGE_RECORDS
++        + local_offset
++    )
++
++    output_row = out_ptr + row * out_stride0
++    tl.store(output_row + offsets * out_stride1, -1)
++    integer_valid = is_valid.to(tl.int32)
++    compact_offset = tl.cumsum(integer_valid, axis=0) - integer_valid
++    tl.store(
++        output_row + compact_offset * out_stride1,
++        mapped,
++        mask=is_valid,
++    )
++    valid_count = tl.sum(integer_valid, axis=0)
++    tl.store(valid_counts_ptr + row, valid_count)
++    if PROFILE:
++        missing_count = tl.sum(
++            (block_valid & (owner_valid == 0)).to(tl.int32), axis=0
++        )
++        tl.atomic_add(selected_total_ptr, valid_count.to(tl.int64))
++        tl.atomic_add(missing_total_ptr, missing_count.to(tl.int64))
++
+ # --- fp8 DCP gather (Package A-final, additive) ---
+-_FP8_GATHER_ENABLED = os.getenv("B12X_DCP_GATHER_FP8", "0") == "1"
++_FP8_GATHER_ENABLED = (
++    os.getenv("B12X_DCP_GATHER_FP8", "0") == "1"
++    and _DCP_PREFILL_TRANSPORT == "query"
++)
+ _FP8_BLOCK = 128
+ _FP8_ROPE_PAD = 128
+
+@@ -211,13 +368,22 @@
+     Start/stop record timing events on the CURRENT stream, so a phase that
+     internally waits on a comm stream is charged its full wall time. The
+     event-pair pool is pre-allocated — the hot path only records. After
+-    ``B12X_DCP_PROF_CALLS`` gather calls (default 1200 ≈ 15 chunks × 78
+-    layers at mnbt 3072) it synchronizes ONCE, emits one summary line per
+-    phase, and disarms for the process lifetime. Any internal exception
+-    disarms permanently: profiling must never take down serving.
++    ``B12X_DCP_PROF_CALLS`` otherwise-workspace-eligible layer calls (default
++    1200 ≈ 15 chunks × 78 layers at mnbt 3072) it synchronizes ONCE, emits one
++    route-neutral summary line, and disarms for the process lifetime. Any
++    internal exception disarms permanently: profiling must never take down
++    serving.
+     """
+
+-    _PHASES = ("gather", "proj", "rs")
++    _PHASES = (
++        "gather",
++        "proj",
++        "rs",
++        "ckv_pack",
++        "ckv_ag",
++        "ckv_remap",
++        "ckv_stage",
++    )
+
+     def __init__(self) -> None:
+         self.calls_target = _env_int("B12X_DCP_PROF_CALLS", 1200)
+@@ -234,7 +400,17 @@
+         }
+         self._used = {p: 0 for p in self._PHASES}
+         self._open: dict = {p: None for p in self._PHASES}
+-        self._gather_calls = 0
++        self._eligible_calls = 0
++        self._route_calls = {"query": 0, "ckv": 0}
++        self._packed_bytes = 0
++        self._record_count = 0
++        self._wire_bytes = 0
++        self._local_heads = 0
++        self._device_counts = torch.zeros(
++            2,
++            dtype=torch.int64,
++            device=torch.cuda.current_device(),
++        )
+         self.dead = False
+
+     def start(self, phase: str) -> None:
+@@ -263,13 +439,46 @@
+             pair[1].record()
+             self._open[phase] = None
+             self._used[phase] += 1
+-            if phase == "gather":
+-                self._gather_calls += 1
+-                if self._gather_calls >= self.calls_target:
+-                    self._summarize()
+         except Exception:
+             self.dead = True
+
++    def record_dispatch(self, route: str, packed_blocks: int = 0) -> None:
++        if self.dead:
++            return
++        try:
++            if route not in self._route_calls:
++                raise ValueError(f"unknown DCP profiler route {route!r}")
++            self._eligible_calls += 1
++            self._route_calls[route] += 1
++            if route == "ckv":
++                local_records = (
++                    int(packed_blocks) * _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES
++                )
++                global_records = _CKV_WORLD_SIZE * local_records
++                self._packed_bytes += global_records
++                self._record_count += (
++                    _CKV_WORLD_SIZE * int(packed_blocks) * _CKV_BLOCK_SIZE
++                )
++                self._wire_bytes += (_CKV_WORLD_SIZE - 1) * (
++                    local_records + int(packed_blocks)
++                )
++                self._local_heads = _CKV_LOCAL_HEADS
++        except Exception:
++            self.dead = True
++
++    def finish_dispatch(self) -> None:
++        if self.dead:
++            return
++        try:
++            if self._eligible_calls >= self.calls_target:
++                self._summarize()
++        except Exception:
++            self.dead = True
++
++    @property
++    def device_counts(self) -> torch.Tensor:
++        return self._device_counts
++
+     def _summarize(self) -> None:
+         # One-shot: disarm BEFORE the sync so a failure here can't recur.
+         self.dead = True
+@@ -283,6 +492,25 @@
+                 total += s.elapsed_time(e)
+             mean = total / n if n else 0.0
+             parts.append(f"{p}: n={n} total={total:.0f}ms mean={mean:.3f}ms")
++        selected, missing = self._device_counts.tolist()
++        ckv_calls = self._route_calls["ckv"]
++        denominator = max(ckv_calls, 1)
++        parts.extend(
++            (
++                f"routes: query={self._route_calls['query']} ckv={ckv_calls}",
++                "ckv_data: "
++                f"packed_bytes={self._packed_bytes} "
++                f"mean_packed_bytes={self._packed_bytes / denominator:.0f} "
++                f"records={self._record_count} "
++                f"mean_records={self._record_count / denominator:.0f} "
++                f"wire_bytes={self._wire_bytes} "
++                f"mean_wire_bytes={self._wire_bytes / denominator:.0f} "
++                f"local_heads={self._local_heads} "
++                f"selected={selected} "
++                f"mean_selected={selected / denominator:.0f} "
++                f"missing_blocks={missing}",
++            )
++        )
+         logger.info("B12X_DCP_PROF summary | %s", " | ".join(parts))
+         self._pool = {}
+
+@@ -306,6 +534,91 @@
+     return wrapped
+
+
++def _get_ckv_all_gather(
++    dcp_group,
++    device: torch.device,
++    max_local_record_bytes: int,
++    max_local_metadata_bytes: int,
++):
++    device_group = getattr(dcp_group, "device_group", None)
++    key = (
++        id(device_group),
++        device.index,
++        int(max_local_record_bytes),
++        int(max_local_metadata_bytes),
++    )
++    if _CKV_SINGLETON:
++        stored_key, channel = _CKV_SINGLETON[0]
++        if stored_key != key:
++            raise RuntimeError(
++                "Packed-CKV attempted to change its process-wide communicator "
++                f"contract: existing={stored_key}, requested={key}"
++            )
++        if channel is _CKV_FAILED:
++            raise RuntimeError(
++                "Packed-CKV communicator initialization previously failed on "
++                "at least one DCP rank; restart with "
++                "B12X_DCP_PREFILL_TRANSPORT=query"
++            )
++        return channel
++
++    channel = None
++    try:
++        if device_group is None:
++            raise RuntimeError("DCP group has no device process group")
++        from b12x.distributed.pcie_dma import PCIeDmaAllGather
++
++        channel = PCIeDmaAllGather(
++            exchange_group=device_group,
++            device=device,
++            max_local_record_bytes=int(max_local_record_bytes),
++            max_local_metadata_bytes=int(max_local_metadata_bytes),
++        )
++    except Exception as exc:
++        logger.error("Packed-CKV local communicator init failed: %s", exc)
++        channel = None
++
++    agreed = False
++    try:
++        if device_group is None:
++            raise RuntimeError("DCP group has no device process group for vote")
++        vote = torch.ones(1, device=device) if channel is not None else torch.zeros(
++            1, device=device
++        )
++        dist.all_reduce(vote, op=dist.ReduceOp.MIN, group=device_group)
++        agreed = bool(vote.item() >= 1.0)
++    except Exception as exc:
++        logger.error("Packed-CKV communicator group vote failed: %s", exc)
++
++    if not agreed:
++        if channel is not None:
++            close = getattr(channel, "close", None)
++            if callable(close):
++                try:
++                    close()
++                except Exception:
++                    pass
++        _CKV_SINGLETON.append((key, _CKV_FAILED))
++        torch.cuda.empty_cache()
++        raise RuntimeError(
++            "Packed-CKV communicator failed its all-rank initialization vote; "
++            "no rank may fall back at runtime. Restart with "
++            "B12X_DCP_PREFILL_TRANSPORT=query"
++        )
++
++    _CKV_SINGLETON.append((key, channel))
++    torch.cuda.empty_cache()
++    if not _CKV_LOGGED[0]:
++        _CKV_LOGGED[0] = True
++        logger.info(
++            "Packed-CKV byte all-gather initialized: "
++            "record_capacity=%d metadata_capacity=%d",
++            int(max_local_record_bytes),
++            int(max_local_metadata_bytes),
++        )
++    return channel
++
++
+ class B12xMLASparseBackend(AttentionBackend):
+     """b12x unified sparse-MLA backend (SM120 / SM121).
+
+@@ -435,6 +748,14 @@
+     req_id_per_token: torch.Tensor | None
+     page_table_1: torch.Tensor | None
+     nsa_cache_seqlens: torch.Tensor | None
++    global_seq_lens: torch.Tensor
++    global_cache_seq_lens_per_token: torch.Tensor | None
++    ckv_req_base: torch.Tensor | None
++    ckv_blocks_per_req: torch.Tensor | None
++    ckv_req_for_block: torch.Tensor | None
++    ckv_vblock_for_block: torch.Tensor | None
++    ckv_packed_blocks: int
++    ckv_max_blocks_per_req: int
+     # Per-request computed KV length (decode cache_seqlens_int32).
+     seq_lens: torch.Tensor
+     cache_seq_lens_per_req: torch.Tensor
+@@ -478,6 +799,13 @@
+
+         max_tokens = vllm_config.scheduler_config.max_num_batched_tokens
+         max_seqs = vllm_config.scheduler_config.max_num_seqs
++        max_model_len = int(vllm_config.model_config.max_model_len)
++        self.ckv_enabled = _DCP_PREFILL_TRANSPORT == "ckv"
++        self.max_ckv_packed_blocks = (
++            max_seqs * _cdiv(max_model_len, _CKV_VIRTUAL_BLOCK)
++            if self.ckv_enabled
++            else 0
++        )
+         # Max-batched-token scratch buffers so cudagraph capture sees stable
+         # allocations (sliced per build()).
+         self.cache_seq_lens_per_token_buffer = torch.empty(
+@@ -499,11 +827,71 @@
+             self.req_ids_arange = torch.arange(
+                 max_tokens, dtype=torch.int32, device=device
+             )
++            if self.ckv_enabled:
++                self.global_cache_seq_lens_per_token_buffer = torch.empty(
++                    (max_tokens,), dtype=torch.int32, device=device
++                )
++                self.ckv_req_base_buffer = torch.empty(
++                    (max_seqs + 1,), dtype=torch.int32, device=device
++                )
++                self.ckv_blocks_per_req_buffer = torch.empty(
++                    (max_seqs,), dtype=torch.int32, device=device
++                )
++                self.ckv_req_for_block_buffer = torch.empty(
++                    (self.max_ckv_packed_blocks,),
++                    dtype=torch.int32,
++                    device=device,
++                )
++                self.ckv_vblock_for_block_buffer = torch.empty(
++                    (self.max_ckv_packed_blocks,),
++                    dtype=torch.int32,
++                    device=device,
++                )
++                self._ckv_req_base_cpu = torch.empty(
++                    (max_seqs + 1,), dtype=torch.int32, pin_memory=True
++                )
++                self._global_per_token_lens_cpu = torch.empty(
++                    (max_tokens,), dtype=torch.int32, pin_memory=True
++                )
++                self._ckv_blocks_per_req_cpu = torch.empty(
++                    (max_seqs,), dtype=torch.int32, pin_memory=True
++                )
++                self._ckv_req_for_block_cpu = torch.empty(
++                    (self.max_ckv_packed_blocks,),
++                    dtype=torch.int32,
++                    pin_memory=True,
++                )
++                self._ckv_vblock_for_block_cpu = torch.empty(
++                    (self.max_ckv_packed_blocks,),
++                    dtype=torch.int32,
++                    pin_memory=True,
++                )
++            else:
++                self.global_cache_seq_lens_per_token_buffer = None
++                self.ckv_req_base_buffer = None
++                self.ckv_blocks_per_req_buffer = None
++                self.ckv_req_for_block_buffer = None
++                self.ckv_vblock_for_block_buffer = None
++                self._ckv_req_base_cpu = None
++                self._global_per_token_lens_cpu = None
++                self._ckv_blocks_per_req_cpu = None
++                self._ckv_req_for_block_cpu = None
++                self._ckv_vblock_for_block_cpu = None
+         else:
+             self.req_id_per_token_buffer = None
+             self.page_table_1_buffer = None
+             self.nsa_cache_seqlens_buffer = None
+             self.req_ids_arange = None
++            self.global_cache_seq_lens_per_token_buffer = None
++            self.ckv_req_base_buffer = None
++            self.ckv_blocks_per_req_buffer = None
++            self.ckv_req_for_block_buffer = None
++            self.ckv_vblock_for_block_buffer = None
++            self._ckv_req_base_cpu = None
++            self._global_per_token_lens_cpu = None
++            self._ckv_blocks_per_req_cpu = None
++            self._ckv_req_for_block_cpu = None
++            self._ckv_vblock_for_block_cpu = None
+
+     def build(
+         self,
+@@ -538,6 +926,13 @@
+             else cm.seq_lens
+         )
+         req_id_per_token_tensor = None
++        global_cache_seq_lens_per_token = None
++        ckv_req_base = None
++        ckv_blocks_per_req = None
++        ckv_req_for_block = None
++        ckv_vblock_for_block = None
++        ckv_packed_blocks = 0
++        ckv_max_blocks_per_req = 0
+
+         # Per-token causal KV length. In pure decode the common metadata already
+         # has exactly the graph-stable tensor both b12x consumers need, so bind it
+@@ -601,20 +996,31 @@
+             )
+             seq_lens_cpu = seq_lens_cpu_src.numpy().astype(np.int32, copy=False)
+             per_token_lens = np.zeros((num_tokens,), dtype=np.int32)
++            global_per_token_lens = (
++                np.zeros((num_tokens,), dtype=np.int32)
++                if use_dcp and self.ckv_enabled
++                else None
++            )
+             for req_id, q_len in enumerate(query_lens):
+                 if q_len <= 0:
+                     continue
+                 start = int(starts[req_id])
+                 end = int(starts[req_id + 1])
+                 context_len = int(seq_lens_cpu[req_id]) - int(q_len)
++                if global_per_token_lens is not None:
++                    global_per_token_lens[start:end] = np.arange(
++                        context_len + 1,
++                        context_len + int(q_len) + 1,
++                        dtype=np.int32,
++                    )
+                 if use_dcp:
+-                    global_per_token_lens = torch.arange(
++                    global_token_lens_for_req = torch.arange(
+                         context_len + 1,
+                         context_len + int(q_len) + 1,
+                         dtype=torch.int32,
+                     )
+                     per_token_lens[start:end] = get_dcp_local_seq_lens(
+-                        global_per_token_lens,
++                        global_token_lens_for_req,
+                         self.dcp_world_size,
+                         self.dcp_rank,
+                         self.cp_kv_cache_interleave_size,
+@@ -641,6 +1047,87 @@
+             self.cache_seq_lens_per_token_buffer[:num_tokens].copy_(
+                 per_token_lens_t, non_blocking=True
+             )
++            if use_dcp and self.ckv_enabled:
++                assert self.global_cache_seq_lens_per_token_buffer is not None
++                assert self._global_per_token_lens_cpu is not None
++                assert global_per_token_lens is not None
++                global_per_token_lens_t = self._global_per_token_lens_cpu[
++                    :num_tokens
++                ]
++                global_per_token_lens_t.numpy()[:] = global_per_token_lens
++                self.global_cache_seq_lens_per_token_buffer[:num_tokens].copy_(
++                    global_per_token_lens_t, non_blocking=True
++                )
++                global_cache_seq_lens_per_token = (
++                    self.global_cache_seq_lens_per_token_buffer[:num_tokens]
++                )
++
++                blocks_np = (
++                    seq_lens_cpu[: cm.num_reqs] + _CKV_VIRTUAL_BLOCK - 1
++                ) // _CKV_VIRTUAL_BLOCK
++                req_base_np = np.empty((cm.num_reqs + 1,), dtype=np.int32)
++                req_base_np[0] = 0
++                np.cumsum(blocks_np, dtype=np.int32, out=req_base_np[1:])
++                ckv_packed_blocks = int(req_base_np[-1])
++                ckv_max_blocks_per_req = int(blocks_np.max(initial=0))
++                if ckv_packed_blocks > self.max_ckv_packed_blocks:
++                    raise RuntimeError(
++                        "B12X packed-CKV metadata exceeds startup capacity: "
++                        f"{ckv_packed_blocks} > {self.max_ckv_packed_blocks} "
++                        "packed blocks"
++                    )
++                assert self._ckv_req_base_cpu is not None
++                assert self._ckv_blocks_per_req_cpu is not None
++                assert self._ckv_req_for_block_cpu is not None
++                assert self._ckv_vblock_for_block_cpu is not None
++                req_base_cpu = self._ckv_req_base_cpu[: cm.num_reqs + 1]
++                blocks_cpu = self._ckv_blocks_per_req_cpu[: cm.num_reqs]
++                req_for_block_cpu = self._ckv_req_for_block_cpu[
++                    :ckv_packed_blocks
++                ]
++                vblock_for_block_cpu = self._ckv_vblock_for_block_cpu[
++                    :ckv_packed_blocks
++                ]
++                req_base_cpu.numpy()[:] = req_base_np
++                blocks_cpu.numpy()[:] = blocks_np
++                cursor = 0
++                req_for_block_np = req_for_block_cpu.numpy()
++                vblock_for_block_np = vblock_for_block_cpu.numpy()
++                for req_id, block_count in enumerate(blocks_np):
++                    block_count_int = int(block_count)
++                    end = cursor + block_count_int
++                    req_for_block_np[cursor:end] = req_id
++                    vblock_for_block_np[cursor:end] = np.arange(
++                        block_count_int, dtype=np.int32
++                    )
++                    cursor = end
++                assert cursor == ckv_packed_blocks
++                assert self.ckv_req_base_buffer is not None
++                assert self.ckv_blocks_per_req_buffer is not None
++                assert self.ckv_req_for_block_buffer is not None
++                assert self.ckv_vblock_for_block_buffer is not None
++                self.ckv_req_base_buffer[: cm.num_reqs + 1].copy_(
++                    req_base_cpu, non_blocking=True
++                )
++                self.ckv_blocks_per_req_buffer[: cm.num_reqs].copy_(
++                    blocks_cpu, non_blocking=True
++                )
++                self.ckv_req_for_block_buffer[:ckv_packed_blocks].copy_(
++                    req_for_block_cpu, non_blocking=True
++                )
++                self.ckv_vblock_for_block_buffer[:ckv_packed_blocks].copy_(
++                    vblock_for_block_cpu, non_blocking=True
++                )
++                ckv_req_base = self.ckv_req_base_buffer[: cm.num_reqs + 1]
++                ckv_blocks_per_req = self.ckv_blocks_per_req_buffer[
++                    : cm.num_reqs
++                ]
++                ckv_req_for_block = self.ckv_req_for_block_buffer[
++                    :ckv_packed_blocks
++                ]
++                ckv_vblock_for_block = self.ckv_vblock_for_block_buffer[
++                    :ckv_packed_blocks
++                ]
+             self.cache_seq_lens_per_req_buffer[: cm.num_reqs].copy_(
+                 seq_lens_for_req[: cm.num_reqs], non_blocking=True
+             )
+@@ -668,6 +1155,14 @@
+                 if self.nsa_cache_seqlens_buffer is not None
+                 else None
+             ),
++            global_seq_lens=cm.seq_lens[: cm.num_reqs],
++            global_cache_seq_lens_per_token=global_cache_seq_lens_per_token,
++            ckv_req_base=ckv_req_base,
++            ckv_blocks_per_req=ckv_blocks_per_req,
++            ckv_req_for_block=ckv_req_for_block,
++            ckv_vblock_for_block=ckv_vblock_for_block,
++            ckv_packed_blocks=ckv_packed_blocks,
++            ckv_max_blocks_per_req=ckv_max_blocks_per_req,
+             seq_lens=cache_seq_lens_per_req,
+             cache_seq_lens_per_req=cache_seq_lens_per_req,
+             cache_seq_lens_per_token=cache_seq_lens_per_token,
+@@ -684,6 +1179,7 @@
+     supports_dcp_gather_query_in_workspace: bool = True
+     supports_dcp_project_before_merge_in_workspace: bool = True
+     supports_dcp_reduce_scatter_output_in_workspace: bool = True
++    supports_dcp_packed_ckv: bool = True
+
+     def __init__(
+         self,
+@@ -772,6 +1268,8 @@
+         self.device = torch.device(f"cuda:{torch.accelerator.current_device_index()}")
+         max_batched = int(scheduler_config.max_num_batched_tokens)
+         max_num_seqs = int(scheduler_config.max_num_seqs)
++        max_model_len = int(vllm_config.model_config.max_model_len)
++        self.dcp_prefill_transport = _DCP_PREFILL_TRANSPORT
+         self.block_size = 64
+         # MLAAttention all-gathers the local query-head shard before entering a
+         # DCP backend. The kernel must therefore plan for, and return, the full
+@@ -893,12 +1391,164 @@
+         self._extend_plan = _make_plan(
+             "extend", max_batched, self._kernel_num_heads, max_num_seqs
+         )
++        self._ckv_extend_plan = None
++        if self.dcp_prefill_transport == "ckv":
++            geometry = {
++                "kv_cache_dtype": self.kv_cache_dtype == "nvfp4_ds_mla",
++                "max_batched_tokens": max_batched == 3072,
++                "tp_world_size": self.tp_world_size == 4,
++                "dcp_world_size": self.dcp_world_size == 4,
++                "pcp_world_size": self.pcp_world_size == 1,
++                "interleave": self.cp_kv_cache_interleave_size == 1,
++                "local_heads": self.num_heads == _CKV_LOCAL_HEADS,
++                "global_heads": self._input_num_heads == 64,
++                "kernel_heads": self._kernel_num_heads == 64,
++                "q_head_dim": self.q_head_dim == 576,
++                "kv_lora_rank": self.kv_lora_rank == 512,
++                "v_head_dim": self.v_head_dim == 256,
++                "block_size": self.block_size == _CKV_BLOCK_SIZE,
++                "topk": self.topk_tokens == 2048,
++                "non_dbo": self.dcp_workspace_non_dbo,
++                "unpadded_heads": not self._pad_heads,
++                "scale_format": self._b12x_scale_format == 2,
++            }
++            failed = [name for name, valid in geometry.items() if not valid]
++            if failed:
++                raise RuntimeError(
++                    "Packed-CKV startup geometry mismatch for "
++                    f"{', '.join(failed)}. This v1 requires nvfp4_ds_mla, "
++                    "MNBT=3072, TP4/DCP4/PCP1, interleave=1, "
++                    "heads=16/64, q/latent/value=576/512/256, "
++                    "block=64, topk=2048, and non-DBO. Restart with "
++                    "B12X_DCP_PREFILL_TRANSPORT=query"
++                )
++            self._ckv_extend_plan = _make_plan(
++                "extend", max_batched, _CKV_LOCAL_HEADS, max_num_seqs
++            )
+         # One caller-owned uint8 scratch tensor covers either path (the larger
+         # layout); the per-mode materializer carves its views from the prefix.
+         self._scratch_nbytes = max(
+             int(self._decode_plan.layout.nbytes),
+             int(self._extend_plan.layout.nbytes),
+         )
++        self._ckv_scratch_nbytes = 0
++        self._ckv_scratch_offset = 0
++        self._ckv_max_packed_blocks = 0
++        self._ckv_max_local_record_bytes = 0
++        self._ckv_max_local_metadata_bytes = 0
++        self._ckv_local_metadata_offset = 0
++        self._ckv_gathered_metadata_offset = 0
++        self._ckv_attention_done = None
++        if self._ckv_extend_plan is not None:
++            ckv_caps = self._ckv_extend_plan.caps
++            if (
++                ckv_caps.mode != "extend"
++                or int(ckv_caps.num_q_heads) != _CKV_LOCAL_HEADS
++                or int(ckv_caps.max_q_rows) != max_batched
++                or int(ckv_caps.max_width) != self.topk_tokens
++                or int(ckv_caps.head_dim) != self.q_head_dim
++                or int(ckv_caps.v_head_dim) != self.kv_lora_rank
++                or int(ckv_caps.page_size) != self.block_size
++                or int(ckv_caps.scale_format) != 2
++            ):
++                raise RuntimeError(
++                    "Packed-CKV 16-head extend plan violates the startup "
++                    "kernel geometry contract"
++                )
++            self._ckv_scratch_nbytes = int(
++                self._ckv_extend_plan.layout.nbytes
++            )
++            self._ckv_max_packed_blocks = max_num_seqs * _cdiv(
++                max_model_len, _CKV_VIRTUAL_BLOCK
++            )
++            self._ckv_max_local_record_bytes = (
++                self._ckv_max_packed_blocks
++                * _CKV_BLOCK_SIZE
++                * _CKV_RECORD_BYTES
++            )
++            self._ckv_max_local_metadata_bytes = self._ckv_max_packed_blocks
++            self._ckv_local_metadata_offset = (
++                self._ckv_max_local_record_bytes
++            )
++            self._ckv_gathered_metadata_offset = (
++                self._ckv_local_metadata_offset
++                + self._ckv_max_local_metadata_bytes
++            )
++            local_q_bytes = (
++                max_batched
++                * _CKV_LOCAL_HEADS
++                * self.q_head_dim
++                * _BF16_BYTES
++            )
++            self._ckv_scratch_offset = _cdiv(local_q_bytes, 256) * 256
++            query_workspace_bytes = (
++                max_batched
++                * self._kernel_num_heads
++                * self.q_head_dim
++                * _BF16_BYTES
++            )
++            gathered_record_bytes = (
++                _CKV_WORLD_SIZE * self._ckv_max_local_record_bytes
++            )
++            pack_scratch_bytes = (
++                self._ckv_max_local_record_bytes
++                + self._ckv_max_local_metadata_bytes
++                + _CKV_WORLD_SIZE * self._ckv_max_local_metadata_bytes
++            )
++            attention_scratch_bytes = (
++                self._ckv_scratch_offset + self._ckv_scratch_nbytes
++            )
++            gathered_metadata_end = (
++                self._ckv_gathered_metadata_offset
++                + _CKV_WORLD_SIZE * self._ckv_max_local_metadata_bytes
++            )
++            max_gathered_slots = (
++                _CKV_WORLD_SIZE
++                * self._ckv_max_packed_blocks
++                * _CKV_BLOCK_SIZE
++            )
++            if (
++                gathered_record_bytes > query_workspace_bytes
++                or pack_scratch_bytes > self._scratch_nbytes
++                or gathered_metadata_end > self._ckv_scratch_offset
++                or attention_scratch_bytes > self._scratch_nbytes
++                or max_gathered_slots >= np.iinfo(np.int32).max
++            ):
++                raise RuntimeError(
++                    "Packed-CKV startup layout does not fit: "
++                    f"max_model_len={max_model_len}, "
++                    f"max_num_seqs={max_num_seqs}, "
++                    f"packed_blocks/rank={self._ckv_max_packed_blocks}, "
++                    f"gathered_records={gathered_record_bytes}/"
++                    f"{query_workspace_bytes} bytes, "
++                    f"pack_scratch={pack_scratch_bytes}/"
++                    f"{self._scratch_nbytes} bytes, "
++                    f"metadata_end/local_q={gathered_metadata_end}/"
++                    f"{self._ckv_scratch_offset} bytes, "
++                    f"attention_scratch={attention_scratch_bytes}/"
++                    f"{self._scratch_nbytes} bytes. Restart with "
++                    "B12X_DCP_PREFILL_TRANSPORT=query"
++                )
++            self._ckv_attention_done = torch.cuda.Event()
++            logger.info(
++                "Packed-CKV transport armed: max_model_len=%d max_seqs=%d "
++                "packed_blocks/rank=%d gathered_records=%d "
++                "local_payload=%d communicator_slab=%d",
++                max_model_len,
++                max_num_seqs,
++                self._ckv_max_packed_blocks,
++                gathered_record_bytes,
++                self._ckv_max_local_record_bytes
++                + self._ckv_max_local_metadata_bytes,
++                _CKV_FLAG_BYTES
++                + (_CKV_WORLD_SIZE - 1)
++                * _cdiv(
++                    self._ckv_max_local_record_bytes
++                    + self._ckv_max_local_metadata_bytes,
++                    256,
++                )
++                * 256,
++            )
+
+         # Pre-touch q-concat + the attention scratch TOGETHER so the workspace
+         # manager grows during warmup (before lock_workspace() runs
+@@ -921,8 +1571,13 @@
+             )
+         workspace_specs.append(((self._scratch_nbytes,), torch.uint8))
+         self._workspace_specs = tuple(workspace_specs)
+-        self._borrow_workspaces()
++        startup_workspaces = self._borrow_workspaces()
++        if self._ckv_extend_plan is not None:
++            self._validate_ckv_startup_workspace(startup_workspaces)
+         self._prewarm_extend_kernels_once(max_batched)
++        if self._ckv_extend_plan is not None:
++            self._prewarm_ckv_extend_kernels_once(max_batched)
++            torch.cuda.empty_cache()
+         # --- fp8 staging (Package A-final, additive) ---
+         self._fp8_staging_pool: torch.Tensor | None = None
+         self._fp8_dequant_noPE: torch.Tensor | None = None
+@@ -965,6 +1620,72 @@
+
+     def _borrow_workspaces(self) -> list[torch.Tensor]:
+         return current_workspace_manager().get_simultaneous(*self._workspace_specs)
++
++    def _validate_ckv_startup_workspace(
++        self, workspace_tensors: list[torch.Tensor]
++    ) -> None:
++        if self._ckv_extend_plan is None:
++            return
++        if len(workspace_tensors) != 2:
++            raise RuntimeError(
++                "Packed-CKV startup requires one query and one scratch workspace"
++            )
++        q_workspace, scratch_storage = workspace_tensors
++        if (
++            tuple(q_workspace.shape) != (3072, 64, 576)
++            or tuple(q_workspace.stride()) != (64 * 576, 576, 1)
++            or q_workspace.dtype != torch.bfloat16
++            or not q_workspace.is_contiguous()
++            or tuple(scratch_storage.shape) != (self._scratch_nbytes,)
++            or scratch_storage.dtype != torch.uint8
++            or not scratch_storage.is_contiguous()
++        ):
++            raise RuntimeError(
++                "Packed-CKV startup workspace geometry does not match the "
++                "pinned 216 MiB query plus raw-scratch contract"
++            )
++        gathered_bytes = (
++            _CKV_WORLD_SIZE * self._ckv_max_local_record_bytes
++        )
++        gathered_cache = (
++            q_workspace.view(torch.uint8)
++            .view(-1)
++            .narrow(0, 0, gathered_bytes)
++            .view(
++                _CKV_WORLD_SIZE * self._ckv_max_packed_blocks,
++                _CKV_BLOCK_SIZE,
++                _CKV_RECORD_BYTES,
++            )
++        )
++        max_slot = gathered_cache.shape[0] * _CKV_BLOCK_SIZE - 1
++        gathered_metadata_end = (
++            scratch_storage.data_ptr()
++            + self._ckv_gathered_metadata_offset
++            + _CKV_WORLD_SIZE * self._ckv_max_local_metadata_bytes
++        )
++        ckv_scratch_begin = (
++            scratch_storage.data_ptr() + self._ckv_scratch_offset
++        )
++        if (
++            tuple(gathered_cache.stride())
++            != (_CKV_BLOCK_SIZE * _CKV_RECORD_BYTES, _CKV_RECORD_BYTES, 1)
++            or gathered_cache.data_ptr() != q_workspace.data_ptr()
++            or gathered_cache.data_ptr() % 256
++            or max_slot
++            != _CKV_WORLD_SIZE
++            * self._ckv_max_packed_blocks
++            * _CKV_BLOCK_SIZE
++            - 1
++            or max_slot >= np.iinfo(np.int32).max
++            or ckv_scratch_begin % 256
++            or gathered_metadata_end > ckv_scratch_begin
++            or self._ckv_scratch_offset + self._ckv_scratch_nbytes
++            > scratch_storage.numel()
++        ):
++            raise RuntimeError(
++                "Packed-CKV gathered-cache page stride, alignment, index "
++                "bounds, or 16-head plan scratch contract failed at startup"
++            )
+
+     def dcp_all_gather_query_in_workspace(
+         self,
+@@ -2064,7 +2785,397 @@
+                 "from the raw scratch and corrected input."
+             )
+         return output
++
++    def dcp_record_prefill_dispatch(
++        self,
++        route: str,
++        attn_metadata: B12xMLASparseMetadata,
++    ) -> None:
++        prof = _get_dcp_prof()
++        if prof is not None:
++            packed_blocks = (
++                attn_metadata.ckv_packed_blocks if route == "ckv" else 0
++            )
++            prof.record_dispatch(route, packed_blocks)
++
++    def dcp_finish_prefill_dispatch(self) -> None:
++        prof = _get_dcp_prof()
++        if prof is not None:
++            prof.finish_dispatch()
++
++    def dcp_packed_ckv_forward(
++        self,
++        q: tuple[torch.Tensor, torch.Tensor],
++        kv_c_and_k_pe_cache: torch.Tensor,
++        attn_metadata: B12xMLASparseMetadata,
++        w_uv: torch.Tensor,
++    ) -> torch.Tensor:
++        """Run the eager pure-prefill packed-CKV ownership-inversion path."""
++        if self.dcp_prefill_transport != "ckv":
++            raise RuntimeError("packed-CKV called in a query transport process")
++        if self._ckv_extend_plan is None or self._ckv_attention_done is None:
++            raise RuntimeError("packed-CKV startup state is incomplete")
++        num_tokens = int(q[0].shape[0])
++        if (
++            num_tokens < 1025
++            or num_tokens > 3072
++            or attn_metadata.num_decode_tokens != 0
++            or attn_metadata.num_prefill_tokens != num_tokens
++            or torch.cuda.is_current_stream_capturing()
++        ):
++            raise RuntimeError(
++                "packed-CKV requires an eager pure-prefill 1025..3072-row call"
++            )
++
++        ql_nope, q_pe = q
++        if (
++            tuple(ql_nope.shape)
++            != (num_tokens, _CKV_LOCAL_HEADS, self.kv_lora_rank)
++            or tuple(q_pe.shape)
++            != (num_tokens, _CKV_LOCAL_HEADS, self.qk_rope_head_dim)
++            or ql_nope.dtype != torch.bfloat16
++            or q_pe.dtype != torch.bfloat16
++            or ql_nope.device != self.device
++            or q_pe.device != self.device
++        ):
++            raise ValueError(
++                "packed-CKV requires local BF16 query tuple "
++                f"[{num_tokens},16,512]+[{num_tokens},16,64] on "
++                f"{self.device}; got {tuple(ql_nope.shape)}/"
++                f"{tuple(q_pe.shape)}, {ql_nope.dtype}/{q_pe.dtype}, "
++                f"{ql_nope.device}/{q_pe.device}"
++            )
++        if (
++            tuple(w_uv.shape)
++            != (_CKV_LOCAL_HEADS, self.kv_lora_rank, self.v_head_dim)
++            or w_uv.dtype != torch.bfloat16
++            or w_uv.device != self.device
++            or not w_uv.is_contiguous()
++        ):
++            raise ValueError(
++                "packed-CKV requires contiguous rank-local W_UV "
++                f"[16,512,256] BF16 on {self.device}, got "
++                f"shape={tuple(w_uv.shape)}, dtype={w_uv.dtype}, "
++                f"device={w_uv.device}, stride={tuple(w_uv.stride())}"
++            )
++
++        required_metadata = (
++            attn_metadata.req_id_per_token,
++            attn_metadata.page_table_1,
++            attn_metadata.nsa_cache_seqlens,
++            attn_metadata.global_cache_seq_lens_per_token,
++            attn_metadata.ckv_req_base,
++            attn_metadata.ckv_blocks_per_req,
++            attn_metadata.ckv_req_for_block,
++            attn_metadata.ckv_vblock_for_block,
++        )
++        if not all(isinstance(tensor, torch.Tensor) for tensor in required_metadata):
++            raise RuntimeError("packed-CKV metadata buffers are unavailable")
++        req_ids = cast(torch.Tensor, attn_metadata.req_id_per_token)
++        selected_indices = cast(torch.Tensor, attn_metadata.page_table_1)[
++            :num_tokens, : self.topk_tokens
++        ]
++        nsa_cache_seqlens = cast(
++            torch.Tensor, attn_metadata.nsa_cache_seqlens
++        )[:num_tokens]
++        global_causal = cast(
++            torch.Tensor, attn_metadata.global_cache_seq_lens_per_token
++        )[:num_tokens]
++        req_base = cast(torch.Tensor, attn_metadata.ckv_req_base)
++        blocks_per_req = cast(
++            torch.Tensor, attn_metadata.ckv_blocks_per_req
++        )
++        req_for_block = cast(
++            torch.Tensor, attn_metadata.ckv_req_for_block
++        )
++        vblock_for_block = cast(
++            torch.Tensor, attn_metadata.ckv_vblock_for_block
++        )
++        packed_blocks = int(attn_metadata.ckv_packed_blocks)
++        if (
++            packed_blocks <= 0
++            or packed_blocks > self._ckv_max_packed_blocks
++            or attn_metadata.ckv_max_blocks_per_req
++            > int(attn_metadata.block_table.shape[1])
++        ):
++            raise RuntimeError(
++                "packed-CKV request layout exceeds its fixed capacity or block "
++                "table width: "
++                f"packed={packed_blocks}/{self._ckv_max_packed_blocks}, "
++                f"request_blocks={attn_metadata.ckv_max_blocks_per_req}/"
++                f"{attn_metadata.block_table.shape[1]}"
++            )
++
++        kv_u8 = kv_c_and_k_pe_cache.view(torch.uint8)
++        if (
++            kv_u8.ndim != 3
++            or int(kv_u8.shape[1]) != _CKV_BLOCK_SIZE
++            or int(kv_u8.shape[2]) != _CKV_RECORD_BYTES
++            or tuple(kv_u8.stride())
++            != (_CKV_BLOCK_SIZE * _CKV_RECORD_BYTES, _CKV_RECORD_BYTES, 1)
++            or not kv_u8.is_contiguous()
++        ):
++            raise ValueError(
++                "packed-CKV requires native contiguous [blocks,64,368] uint8 "
++                f"cache geometry, got shape={tuple(kv_u8.shape)}, "
++                f"stride={tuple(kv_u8.stride())}"
++            )
++
++        workspace_tensors = self._borrow_workspaces()
++        if len(workspace_tensors) != 2:
++            raise RuntimeError(
++                "packed-CKV requires the exact unpadded query/scratch workspace pair"
++            )
++        q_workspace, scratch_storage = workspace_tensors
++        expected_q_shape = (3072, 64, 576)
++        if (
++            tuple(q_workspace.shape) != expected_q_shape
++            or q_workspace.dtype != torch.bfloat16
++            or q_workspace.device != self.device
++            or not q_workspace.is_contiguous()
++            or tuple(scratch_storage.shape) != (self._scratch_nbytes,)
++            or scratch_storage.dtype != torch.uint8
++            or scratch_storage.device != self.device
++            or not scratch_storage.is_contiguous()
++        ):
++            raise RuntimeError("packed-CKV borrowed invalid fixed workspaces")
++        q_begin = q_workspace.data_ptr()
++        q_end = q_begin + q_workspace.numel() * q_workspace.element_size()
++        scratch_begin = scratch_storage.data_ptr()
++        scratch_end = scratch_begin + scratch_storage.numel()
++        if q_begin < scratch_end and scratch_begin < q_end:
++            raise RuntimeError("packed-CKV query and scratch workspaces overlap")
++
++        local_record_bytes = (
++            packed_blocks * _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES
++        )
++        local_metadata_bytes = packed_blocks
++        global_record_bytes = _CKV_WORLD_SIZE * local_record_bytes
++        global_metadata_bytes = _CKV_WORLD_SIZE * local_metadata_bytes
++        q_workspace_u8 = q_workspace.view(torch.uint8).view(-1)
++        gathered_records = q_workspace_u8.narrow(0, 0, global_record_bytes)
++        local_payload = scratch_storage.narrow(
++            0, 0, local_record_bytes + local_metadata_bytes
++        )
++        local_records = local_payload.narrow(0, 0, local_record_bytes)
++        local_validity = local_payload.narrow(
++            0, local_record_bytes, local_metadata_bytes
++        )
++        gathered_validity = scratch_storage.narrow(
++            0, self._ckv_gathered_metadata_offset, global_metadata_bytes
++        )
++        if (
++            gathered_records.data_ptr() % 256
++            or local_payload.data_ptr() % 256
++            or gathered_records.data_ptr() != q_begin
++            or local_payload.data_ptr() != scratch_begin
++            or gathered_validity.data_ptr() < local_payload.data_ptr()
++            + local_payload.numel()
++            or gathered_validity.data_ptr() + gathered_validity.numel()
++            > scratch_begin + self._ckv_scratch_offset
++        ):
++            raise RuntimeError(
++                "packed-CKV workspace views violate alignment or disjointness"
++            )
++
++        prof = _get_dcp_prof()
++        if prof is not None:
++            prof.start("ckv_pack")
++        try:
++            _pack_ckv_pages_kernel[
++                (
++                    packed_blocks,
++                    triton.cdiv(
++                        _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES, 256
++                    ),
++                )
++            ](
++                kv_u8,
++                attn_metadata.block_table,
++                req_for_block,
++                vblock_for_block,
++                local_records,
++                local_validity,
++                kv_u8.stride(0),
++                kv_u8.stride(1),
++                kv_u8.stride(2),
++                attn_metadata.block_table.stride(0),
++                attn_metadata.block_table.stride(1),
++                PAGE_BYTES=_CKV_BLOCK_SIZE * _CKV_RECORD_BYTES,
++                RECORD_BYTES=_CKV_RECORD_BYTES,
++                BLOCK_BYTES=256,
++                num_warps=4,
++            )
++        finally:
++            if prof is not None:
++                prof.stop("ckv_pack")
+
++        from vllm.distributed.parallel_state import get_dcp_group
++
++        dcp_group = get_dcp_group()
++        if (
++            dcp_group.world_size != _CKV_WORLD_SIZE
++            or dcp_group.rank_in_group != self.dcp_rank
++        ):
++            raise RuntimeError("packed-CKV DCP group changed after startup")
++        channel = _get_ckv_all_gather(
++            dcp_group,
++            self.device,
++            self._ckv_max_local_record_bytes,
++            self._ckv_max_local_metadata_bytes,
++        )
++        if prof is not None:
++            prof.start("ckv_ag")
++        try:
++            channel.all_gather(
++                local_payload,
++                gathered_records,
++                gathered_validity,
++                record_lengths=(local_record_bytes,) * _CKV_WORLD_SIZE,
++                metadata_lengths=(local_metadata_bytes,) * _CKV_WORLD_SIZE,
++            )
++        finally:
++            if prof is not None:
++                prof.stop("ckv_ag")
++
++        assert self.topk_indices_buffer is not None
++        topk_indices = self.topk_indices_buffer[:num_tokens]
++        profile_counts = prof.device_counts if prof is not None else None
++        selected_total = (
++            profile_counts.narrow(0, 0, 1) if profile_counts is not None else None
++        )
++        missing_total = (
++            profile_counts.narrow(0, 1, 1) if profile_counts is not None else None
++        )
++        if prof is not None:
++            prof.start("ckv_remap")
++        try:
++            _remap_ckv_topk_kernel[(num_tokens,)](
++                req_ids,
++                topk_indices,
++                req_base,
++                blocks_per_req,
++                global_causal,
++                gathered_validity,
++                selected_indices,
++                nsa_cache_seqlens,
++                selected_total,
++                missing_total,
++                topk_indices.stride(0),
++                topk_indices.stride(1),
++                selected_indices.stride(0),
++                selected_indices.stride(1),
++                packed_blocks,
++                TOPK=self.topk_tokens,
++                PROFILE=prof is not None,
++                VIRTUAL_BLOCK=_CKV_VIRTUAL_BLOCK,
++                WORLD_SIZE=_CKV_WORLD_SIZE,
++                PAGE_RECORDS=_CKV_BLOCK_SIZE,
++                num_warps=8,
++            )
++        finally:
++            if prof is not None:
++                prof.stop("ckv_remap")
++
++        local_q_bytes = (
++            num_tokens * _CKV_LOCAL_HEADS * self.q_head_dim * _BF16_BYTES
++        )
++        local_q = (
++            scratch_storage.narrow(0, 0, local_q_bytes)
++            .view(torch.bfloat16)
++            .view(num_tokens, _CKV_LOCAL_HEADS, self.q_head_dim)
++        )
++        ops.concat_mla_q(ql_nope, q_pe, local_q)
++        ckv_scratch = scratch_storage.narrow(
++            0, self._ckv_scratch_offset, self._ckv_scratch_nbytes
++        )
++        gathered_cache = gathered_records.view(
++            _CKV_WORLD_SIZE * packed_blocks,
++            _CKV_BLOCK_SIZE,
++            _CKV_RECORD_BYTES,
++        )
++        if (
++            tuple(gathered_cache.stride())
++            != (_CKV_BLOCK_SIZE * _CKV_RECORD_BYTES, _CKV_RECORD_BYTES, 1)
++            or gathered_cache.data_ptr() != q_begin
++            or gathered_cache.data_ptr() % 256
++            or (_CKV_WORLD_SIZE * packed_blocks * _CKV_BLOCK_SIZE)
++            > (_CKV_WORLD_SIZE * self._ckv_max_packed_blocks * _CKV_BLOCK_SIZE)
++        ):
++            raise RuntimeError(
++                "packed-CKV gathered cache violates the 16-head kernel contract"
++            )
++        binding = self._ckv_extend_plan.bind(
++            scratch=ckv_scratch,
++            q=local_q,
++            selected_indices=selected_indices,
++            cache_seqlens_int32=attn_metadata.global_seq_lens,
++            nsa_cache_seqlens_int32=nsa_cache_seqlens,
++        )
++        attention_stream = torch.cuda.current_stream(self.device)
++        attn_out = cast(
++            torch.Tensor,
++            self._sparse_mla_extend_forward(
++                binding=binding,
++                kv_cache=gathered_cache,
++                sm_scale=self.scale,
++                v_head_dim=self.kv_lora_rank,
++                **self._b12x_nvfp4_kwargs,
++            ),
++        )
++        projection_stream = torch.cuda.current_stream(self.device)
++        if attention_stream.cuda_stream != projection_stream.cuda_stream:
++            raise RuntimeError(
++                "packed-CKV attention and projection staging must share the "
++                "current CUDA stream"
++            )
++        self._ckv_attention_done.record(attention_stream)
++        projection_stream.wait_event(self._ckv_attention_done)
++        if (
++            tuple(attn_out.shape)
++            != (num_tokens, _CKV_LOCAL_HEADS, self.kv_lora_rank)
++            or attn_out.dtype != torch.bfloat16
++            or attn_out.device != self.device
++            or attn_out.data_ptr() != ckv_scratch.data_ptr()
++            or attn_out.untyped_storage().data_ptr()
++            != ckv_scratch.untyped_storage().data_ptr()
++            or attn_out.data_ptr() + attn_out.numel() * attn_out.element_size()
++            > ckv_scratch.data_ptr() + ckv_scratch.numel()
++        ):
++            raise RuntimeError("packed-CKV 16-head attention returned invalid output")
++
++        projection_input_numel = (
++            _CKV_LOCAL_HEADS * num_tokens * self.kv_lora_rank
++        )
++        projection_input = (
++            q_workspace.view(-1)
++            .narrow(0, 0, projection_input_numel)
++            .view(_CKV_LOCAL_HEADS, num_tokens, self.kv_lora_rank)
++        )
++        projected_numel = _CKV_LOCAL_HEADS * num_tokens * self.v_head_dim
++        projected_head_major = (
++            scratch_storage.narrow(0, 0, projected_numel * _BF16_BYTES)
++            .view(torch.bfloat16)
++            .view(_CKV_LOCAL_HEADS, num_tokens, self.v_head_dim)
++        )
++        if prof is not None:
++            prof.start("ckv_stage")
++        try:
++            projection_input.copy_(attn_out.transpose(0, 1))
++        finally:
++            if prof is not None:
++                prof.stop("ckv_stage")
++        torch.bmm(projection_input, w_uv, out=projected_head_major)
++        projected = projected_head_major.transpose(0, 1)
++        if (
++            tuple(projected.shape)
++            != (num_tokens, _CKV_LOCAL_HEADS, self.v_head_dim)
++            or tuple(projected.stride())
++            != (self.v_head_dim, num_tokens * self.v_head_dim, 1)
++        ):
++            raise RuntimeError("packed-CKV local projection returned invalid view")
++        return projected
++
+     def _sync_warmup(self) -> None:
+         if self.device.type == "cuda":
+             torch.accelerator.synchronize(self.device)
+@@ -2170,6 +3281,135 @@
+                 )
+             self._sync_warmup()
+
++    def _prewarm_ckv_extend_kernels_once(self, max_batched: int) -> None:
++        if self.device.type != "cuda" or self._ckv_extend_plan is None:
++            return
++        key = (
++            self.device.index,
++            self.q_head_dim,
++            self.kv_lora_rank,
++            _CKV_LOCAL_HEADS,
++            int(self.topk_tokens),
++            int(self.block_size),
++        )
++        if key in _CKV_PREWARM_DONE:
++            return
++        _CKV_PREWARM_DONE.add(key)
++
++        native_cache = torch.zeros(
++            (1, _CKV_BLOCK_SIZE, _CKV_RECORD_BYTES),
++            dtype=torch.uint8,
++            device=self.device,
++        )
++        block_table = torch.zeros((1, 1), dtype=torch.int32, device=self.device)
++        req_for_block = torch.zeros(1, dtype=torch.int32, device=self.device)
++        vblock_for_block = torch.zeros(1, dtype=torch.int32, device=self.device)
++        packed_page = torch.empty(
++            _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES,
++            dtype=torch.uint8,
++            device=self.device,
++        )
++        local_validity = torch.empty(1, dtype=torch.uint8, device=self.device)
++        _pack_ckv_pages_kernel[
++            (1, triton.cdiv(_CKV_BLOCK_SIZE * _CKV_RECORD_BYTES, 256))
++        ](
++            native_cache,
++            block_table,
++            req_for_block,
++            vblock_for_block,
++            packed_page,
++            local_validity,
++            native_cache.stride(0),
++            native_cache.stride(1),
++            native_cache.stride(2),
++            block_table.stride(0),
++            block_table.stride(1),
++            PAGE_BYTES=_CKV_BLOCK_SIZE * _CKV_RECORD_BYTES,
++            RECORD_BYTES=_CKV_RECORD_BYTES,
++            BLOCK_BYTES=256,
++            num_warps=4,
++        )
++
++        gathered_cache = torch.zeros(
++            (_CKV_WORLD_SIZE, _CKV_BLOCK_SIZE, _CKV_RECORD_BYTES),
++            dtype=torch.uint8,
++            device=self.device,
++        )
++        gathered_validity = torch.ones(
++            _CKV_WORLD_SIZE, dtype=torch.uint8, device=self.device
++        )
++        req_base = torch.tensor((0, 1), dtype=torch.int32, device=self.device)
++        blocks_per_req = torch.ones(1, dtype=torch.int32, device=self.device)
++        cache_seqlens = torch.full(
++            (1,), _CKV_BLOCK_SIZE, dtype=torch.int32, device=self.device
++        )
++        rows_to_warm = (1, 2, 4, max(1, int(max_batched)))
++        seen_rows: set[int] = set()
++        for rows in rows_to_warm:
++            rows = int(rows)
++            if rows in seen_rows:
++                continue
++            seen_rows.add(rows)
++            q = torch.zeros(
++                (rows, _CKV_LOCAL_HEADS, self.q_head_dim),
++                dtype=torch.bfloat16,
++                device=self.device,
++            )
++            req_ids = torch.zeros(rows, dtype=torch.int32, device=self.device)
++            topk = torch.zeros(
++                (rows, self.topk_tokens), dtype=torch.int32, device=self.device
++            )
++            selected_indices = torch.empty_like(topk)
++            global_causal = torch.full(
++                (rows,), _CKV_BLOCK_SIZE, dtype=torch.int32, device=self.device
++            )
++            nsa_cache_seqlens = torch.empty(
++                rows, dtype=torch.int32, device=self.device
++            )
++            _remap_ckv_topk_kernel[(rows,)](
++                req_ids,
++                topk,
++                req_base,
++                blocks_per_req,
++                global_causal,
++                gathered_validity,
++                selected_indices,
++                nsa_cache_seqlens,
++                None,
++                None,
++                topk.stride(0),
++                topk.stride(1),
++                selected_indices.stride(0),
++                selected_indices.stride(1),
++                1,
++                TOPK=self.topk_tokens,
++                PROFILE=False,
++                VIRTUAL_BLOCK=_CKV_VIRTUAL_BLOCK,
++                WORLD_SIZE=_CKV_WORLD_SIZE,
++                PAGE_RECORDS=_CKV_BLOCK_SIZE,
++                num_warps=8,
++            )
++            scratch_storage = torch.empty(
++                self._ckv_scratch_nbytes,
++                dtype=torch.uint8,
++                device=self.device,
++            )
++            binding = self._ckv_extend_plan.bind(
++                scratch=scratch_storage,
++                q=q,
++                selected_indices=selected_indices,
++                cache_seqlens_int32=cache_seqlens,
++                nsa_cache_seqlens_int32=nsa_cache_seqlens,
++            )
++            self._sparse_mla_extend_forward(
++                binding=binding,
++                kv_cache=gathered_cache,
++                sm_scale=self.scale,
++                v_head_dim=self.kv_lora_rank,
++                **self._b12x_nvfp4_kwargs,
++            )
++            self._sync_warmup()
++
+     def forward_mqa(
+         self,
+         q: torch.Tensor | tuple[torch.Tensor, torch.Tensor],
+--- a/vllm/v1/attention/ops/common.py
++++ b/vllm/v1/attention/ops/common.py
+@@ -124,7 +124,15 @@
+ from vllm.logger import init_logger as _rs_init_logger
+
+ logger = _rs_init_logger(__name__)
+-_RS_RING_ENABLED = _os.getenv("B12X_DCP_RS_RING", "0") == "1"
++_DCP_PREFILL_CKV = (
++    _os.getenv("B12X_DCP_PREFILL_TRANSPORT", "query").strip().lower()
++    == "ckv"
++)
++# CKV is a process-level transport. Its ineligible/mixed chunks retain the
++# existing NCCL mathematics, but the optional RS slab must never coexist.
++_RS_RING_ENABLED = (
++    _os.getenv("B12X_DCP_RS_RING", "0") == "1" and not _DCP_PREFILL_CKV
++)
+ # Quality middle rung (window-2): B12X_DCP_RS_WIRE=bf16 forces the DEDICATED
+ # DCP-RS ring onto a bf16 wire while the TP allreduce ring keeps whatever
+ # B12X_PCIE_DMA_FP8 mode is set — de-fp8s only the 3-requant-hop RS path.

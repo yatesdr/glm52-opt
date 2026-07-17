@@ -1,0 +1,17 @@
+AST PASS files=5
+active layout: B=6 local_record_bytes=141312 global_record_bytes=565248
+active validity: valid_pages=21 holes=3 tail_records_outside_causal=658 sha256=f90439763b207f17
+PASS NCCL-style rank concatenation equals Stage-3 gathered stream
+escrow success: bytes=201326592 probe_a_min=252706816 probe_b_min=240123904 malloc/free=1/1
+escrow failures: allocation_vote=fatal low_probe=fatal bad_order=fatal disabled_activity=zero arm_log=present
+PASS escrow is one-shot, observable, group-safe, and fail-closed
+pool route: logical_B=2530 active_cap=2403 physical_pages/rank=17 gathered_bytes=1601536
+pool aliases: aliased_table_entries=9962 direct_reads_checked=136 holes_dropped=4
+PASS pool remap reads equal direct owner-specific physical reads
+profiler accounting: layers=2 F/S=1/1 total=200.0ms exclusive=200.0ms
+profiler discipline: preallocated_events=144 hot_allocations=0 syncs=1 reproduction_5pct=valid perturbation=detected tp_classification=valid faulty_tp=detected overflow=disabled nesting_error=disabled default_off=zero
+PASS profiler nesting, exclusives, counters, and self-disable
+route determinism: cases=1008 active=758 pool=250 boundary=2403/2404
+pool observability: once_per_process_warnings=(1, 1, 1, 1)
+PASS all ranks choose identical routes and collective byte lengths
+pyflakes PASS files=5
