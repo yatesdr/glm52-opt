@@ -29,12 +29,14 @@ The image serves `GLM-5.2` on port 5001 with a 480k maximum context,
 599,040-token GPU KV pool (`BLOCKS=2340`), MTP-3, and a 56 GB DRAM warm
 offload tier. There is deliberately no 64k profile and no NVMe offload tier.
 Allow roughly 5–8 minutes for compilation on each boot; compile-cache disabling
-is part of the validated production contract for now. The compose supplies an
-isolated 64 GB `/dev/shm`; this portable IPC posture is GPU-acceptance-pending
-before the image is tagged as verified. **Verification status (2026-07-17):
-full-spec boot verification is in progress.** The artifact may be visible on
-GHCR before that gate closes; treat it as unverified until this note and the
-design gate status are updated.
+is part of the validated production contract for now. **This image packages the
+exact production configuration** — the baked overlays are byte-identical to the
+running production container (a `md5sum -c` gate in the build enforces it), and
+the argv, environment, IPC posture (`ipc: host`), and entrypoint match it. The
+only difference from production is packaging: files are baked into the image
+layer instead of bind-mounted at runtime. Your host must provide a large
+`/dev/shm` (≥ ~64 GB — true on any box with four 96 GB cards) because the 56 GB
+DRAM KV tier lives there, as in production.
 The production contract and acceptance signature are recorded in
 `REPRODUCTION.md` §7.
 
@@ -100,10 +102,10 @@ communication → **1.4 ms**. Full analysis: `design/breakthrough-analysis.md`.
   463k-token request, quality gates green to 200k depth, +30% decode,
   tiered KV cache (56 GB DRAM warm tier, no NVMe tier). See `RESULTS.md` §8
   and `patches/phase2-fullcontext/`.
-- **In progress:** prebuilt image on GHCR + a one-line compose, so the
-  shipped 480k configuration boots without assembling overlays by hand. The
-  source bundle and root compose are complete; image build and isolated-shm
-  GPU acceptance remain.
+- **Published:** prebuilt image on GHCR + a one-line compose, so the shipped
+  480k configuration boots without assembling overlays by hand. Packages the
+  exact production configuration (byte-identical overlays, argv, env, `ipc:
+  host`); the build enforces overlay md5s against the deployed set.
 - **Planned:** a measurement patch decomposing the residual ~21 ms/layer
   compute, to pick the next kernel target; DCP2 posture cells; evaluation
   of trellis-quant checkpoints (1M-token pools).

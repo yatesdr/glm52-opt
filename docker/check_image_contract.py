@@ -163,8 +163,13 @@ def main() -> None:
     assert instruction_json(text, "CMD") == EXPECTED_ARGV, "production argv drift"
 
     compose = (ROOT / "docker-compose.yml").read_text()
-    assert "shm_size: 64gb" in compose
-    assert "ipc:" not in compose and "network_mode:" not in compose
+    # Production-identical IPC posture: the 56 GB DRAM KV tier lives in the
+    # host's /dev/shm via `ipc: host`, exactly as production runs it. The
+    # active service line must be `ipc: host` (a commented `# shm_size` fallback
+    # is allowed for hosts that cannot share their IPC namespace).
+    assert "\n    ipc: host\n" in compose, "compose must use production ipc: host"
+    assert "network_mode:" not in compose
+    assert "\n    shm_size:" not in compose, "shm_size must be commented, not active, under ipc: host"
     assert "64000" not in compose and "secondary_tiers" not in compose
 
     print("image contract: PASS (12 MD5s, base, env, entrypoint, argv, compose)")

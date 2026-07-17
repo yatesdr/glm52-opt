@@ -102,8 +102,7 @@ prefix-cache metric deltas with any number you publish
   **confirmed, gated, and shipped**: 1,509 tok/s @ 55k and 1,126 tok/s on
   a cold 463k request, with a 599,040-token pool. Its overlays and gate
   checks are in `patches/phase2-fullcontext/` and the measurements are in
-  `RESULTS.md` §8. For the turnkey full-spec image and root compose, use
-  §7; their isolated-64-GB-shm GPU acceptance is still in progress.
+  `RESULTS.md` §8. For the turnkey full-spec image and root compose, use §7.
 - Geometry is strict v1: TP4/DCP4, interleave 1, `nvfp4_ds_mla`,
   MNBT 3072, topk 2048, 16 local heads. The CKV startup asserts name any
   mismatch and tell you to fall back to `query`.
@@ -151,10 +150,14 @@ docker compose logs -f glm52
 
 The entrypoint removes `/dev/shm/vllm_offload_*.mmap` before every start. This
 is required: a stale 56 GB warm-tier region can exhaust shared memory and hang
-the following boot. The portable compose gives the container an isolated 64 GB
-`/dev/shm`, publishes port 5001, and persists `/cache/jit` in the `vllm-cache`
-named volume. Production used host IPC; therefore the isolated shared-memory
-posture must pass the server gate in `design/ghcr-480k-image.md` before release.
+the following boot. The compose uses `ipc: host` exactly as production does, so
+the 56 GB DRAM KV tier lives in the host's `/dev/shm`; the host must therefore
+provide `/dev/shm` of at least ~64 GB (true on any box with four 96 GB cards).
+It publishes port 5001 and persists `/cache/jit` in the `vllm-cache` named
+volume. This matches the production IPC posture byte-for-byte; the only
+difference from production is that overlays are baked into the image layer
+instead of bind-mounted. If your host cannot share its IPC namespace, remove
+`ipc: host` and set `shm_size: 64gb` on the service instead.
 
 Expect roughly 5–8 minutes of compilation on every boot while
 `VLLM_DISABLE_COMPILE_CACHE=1` remains part of the validated contract. Do not

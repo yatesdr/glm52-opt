@@ -5,7 +5,13 @@ services:
     image: ghcr.io/yatesdr/glm52-opt:latest
     pull_policy: always
     restart: unless-stopped
-    shm_size: 64gb
+    # Production posture: share the host IPC namespace so the 56 GB DRAM KV
+    # tier lives in the host's /dev/shm, exactly as production runs it. The
+    # host must provide /dev/shm >= ~64 GB (true on any box with four 96 GB
+    # cards). If you cannot use host IPC, delete `ipc: host` and uncomment
+    # `shm_size: 64gb` below to give the container its own shared memory.
+    ipc: host
+    # shm_size: 64gb
     ports:
       - "5001:5001"
     ulimits:
