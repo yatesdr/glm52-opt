@@ -54,11 +54,11 @@ communication → **1.4 ms**. Full analysis: `design/breakthrough-analysis.md`.
 
 ## Status / roadmap
 
-- **Working now (validated):** everything above at a 64k-token test
-  profile (pool 102k tokens), TP4/DCP4.
-- **In flight:** phase 2 — full 480k context with a 599k-token KV pool
-  (no-slab NCCL gather + a machine-checked memory-headroom escrow).
-  Design and CPU proofs are in `design/`; server validation pending.
+- **CONFIRMED + shipped:** the full stack at **480k context** with a
+  599,040-token KV pool — 1,509 tok/s @ 55k and 1,126 tok/s on a cold
+  463k-token request, quality gates green to 200k depth, +30% decode,
+  tiered KV cache (DRAM warm tier + NVMe cold tier). See `RESULTS.md` §8
+  and `patches/phase2-fullcontext/`.
 - **Planned:** prebuilt image on GHCR + a one-line compose once the 480k
   gates pass; evaluation of trellis-quant checkpoints (1M-token pools).
 

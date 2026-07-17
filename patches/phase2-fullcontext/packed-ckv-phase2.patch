@@ -1,0 +1,1254 @@
+--- a/b12x/distributed/pcie_dma.py
++++ b/b12x/distributed/pcie_dma.py
+@@ -41,6 +41,15 @@
+ MAX_PIECES = 8
+ SCRATCH_ALIGN = 256
+ FP8_QUANT_BLOCK = 128
++_CKV_ESCROW_BYTES = 192 * (1 << 20)
++_CKV_HEADROOM_GATE_BYTES = 150 * (1 << 20)
++_CKV_PHASE2_NCCL = (
++    os.getenv("B12X_DCP_PREFILL_TRANSPORT", "query").strip().lower()
++    == "ckv"
++    and os.getenv("B12X_CKV_PHASE2_NCCL", "0") == "1"
++)
++_CKV_HEADROOM_PROBES = os.getenv("B12X_CKV_HEADROOM_PROBES", "1") == "1"
++_CKV_ESCROW_SINGLETON: list = []
+
+
+ def _fp8_mode() -> str:
+@@ -87,6 +96,228 @@
+     return (value + alignment - 1) // alignment * alignment
+
+
++class _CKVHeadroomEscrow:
++    """One-shot direct-CUDA reservation protecting first-prefill headroom."""
++
++    def __init__(
++        self,
++        *,
++        exchange_group: ProcessGroup,
++        device: torch.device,
++    ) -> None:
++        self.group = exchange_group
++        self.device = device
++        self.rank = dist.get_rank(group=exchange_group)
++        self.world_size = dist.get_world_size(group=exchange_group)
++        if self.world_size != 4 or not 0 <= self.rank < 4:
++            raise RuntimeError(
++                "CKV headroom escrow requires one four-rank DCP group, got "
++                f"world={self.world_size}, rank={self.rank}"
++            )
++        if self.device.type != "cuda" or self.device.index is None:
++            raise RuntimeError(
++                f"CKV headroom escrow requires an explicit CUDA device, got {device}"
++            )
++        if torch.cuda.current_device() != self.device.index:
++            raise RuntimeError(
++                "CKV headroom escrow device must be current: "
++                f"configured={self.device}, current={torch.cuda.current_device()}"
++            )
++
++        self.scalar = torch.empty(1, dtype=torch.int64, device=self.device)
++        self.ipc: CudaRTLibrary | None = None
++        self.pointer: int | None = None
++        self.state = "arming"
++        self.first_route = "unreleased"
++        self.first_route_bytes = 0
++        self.first_logical_blocks = 0
++        self.first_pool_pages = 0
++
++        free_before = -1
++        free_after = -1
++        local_error = ""
++        try:
++            free_before, _ = torch.cuda.mem_get_info(self.device)
++        except Exception as exc:
++            local_error = f"mem_get_info(before) {type(exc).__name__}: {exc}"
++        try:
++            self.ipc = CudaRTLibrary()
++            self.ipc.cudaSetDevice(self.device.index)
++            self.pointer = self.ipc.cudaMalloc(_CKV_ESCROW_BYTES)
++        except Exception as exc:
++            local_error = f"cudaMalloc {type(exc).__name__}: {exc}"
++        try:
++            free_after, _ = torch.cuda.mem_get_info(self.device)
++        except Exception as exc:
++            suffix = f"mem_get_info(after) {type(exc).__name__}: {exc}"
++            local_error = f"{local_error}; {suffix}" if local_error else suffix
++        local_ok = self.pointer is not None
++        self.scalar.fill_(1 if local_ok else 0)
++        try:
++            dist.all_reduce(self.scalar, op=dist.ReduceOp.MIN, group=self.group)
++            group_ok = bool(self.scalar.item() == 1)
++        except Exception:
++            self._free_local()
++            self.state = "dead"
++            raise
++
++        logger.info(
++            "CKV headroom escrow arm rank=%d driver_free_before=%d "
++            "driver_free_after=%d bytes=%d local_ok=%d group_ok=%d error=%s",
++            self.rank,
++            free_before,
++            free_after,
++            _CKV_ESCROW_BYTES,
++            int(local_ok),
++            int(group_ok),
++            local_error or "none",
++        )
++        if not group_ok:
++            self._free_local()
++            self.state = "dead"
++            raise RuntimeError(
++                "CKV headroom escrow allocation failed on at least one DCP rank"
++            )
++        self.state = "armed"
++
++    def _free_local(self) -> None:
++        if self.pointer is not None:
++            if self.ipc is None:
++                raise RuntimeError("CKV headroom escrow lost its CUDA runtime")
++            self.ipc.cudaFree(self.pointer)
++            self.pointer = None
++
++    def _probe(self, name: str) -> int:
++        sequence = 1 if name == "A" else 2
++        free_bytes, total_bytes = torch.cuda.mem_get_info(self.device)
++        self.scalar.fill_(int(free_bytes))
++        dist.all_reduce(self.scalar, op=dist.ReduceOp.MIN, group=self.group)
++        group_min = int(self.scalar.item())
++        logger.info(
++            "CKV headroom probe=%s sequence=%d rank=%d driver_free=%d "
++            "driver_total=%d "
++            "group_min_free=%d torch_allocated=%d torch_reserved=%d "
++            "route=%s logical_blocks=%d pool_pages=%d route_bytes=%d",
++            name,
++            sequence,
++            self.rank,
++            free_bytes,
++            total_bytes,
++            group_min,
++            torch.cuda.memory_allocated(self.device),
++            torch.cuda.memory_reserved(self.device),
++            self.first_route,
++            self.first_logical_blocks,
++            self.first_pool_pages,
++            self.first_route_bytes,
++        )
++        if group_min < _CKV_HEADROOM_GATE_BYTES:
++            self.state = "dead"
++            raise RuntimeError(
++                f"CKV headroom Probe {name} below 150 MiB: {group_min} bytes"
++            )
++        return group_min
++
++    def layer_entry(self) -> None:
++        if self.state == "armed":
++            return
++        if self.state == "probe_a":
++            self._probe("B")
++            self.state = "complete"
++            return
++        if self.state == "complete":
++            return
++        raise RuntimeError(
++            f"CKV headroom escrow entered a layer in invalid state {self.state!r}"
++        )
++
++    def release_after_first_attention(
++        self,
++        *,
++        route: str,
++        route_bytes: int,
++        logical_blocks: int,
++        pool_pages: int,
++    ) -> None:
++        if self.state != "armed" or self.pointer is None:
++            raise RuntimeError(
++                "CKV headroom escrow release requires the armed live pointer"
++            )
++        torch.cuda.synchronize(self.device)
++        self._free_local()
++        self.first_route = route
++        self.first_route_bytes = int(route_bytes)
++        self.first_logical_blocks = int(logical_blocks)
++        self.first_pool_pages = int(pool_pages)
++        if _CKV_HEADROOM_PROBES:
++            self._probe("A")
++            self.state = "probe_a"
++        else:
++            free_bytes, _ = torch.cuda.mem_get_info(self.device)
++            logger.info(
++                "CKV headroom escrow released rank=%d driver_free=%d "
++                "probes=disabled route=%s logical_blocks=%d "
++                "pool_pages=%d route_bytes=%d",
++                self.rank,
++                free_bytes,
++                self.first_route,
++                self.first_logical_blocks,
++                self.first_pool_pages,
++                self.first_route_bytes,
++            )
++            self.state = "complete"
++
++
++def arm_ckv_headroom_escrow(
++    *, exchange_group: ProcessGroup, device: torch.device | int | str
++) -> None:
++    """Arm the phase-2 reservation after all ordinary warmup has completed."""
++    if not _CKV_PHASE2_NCCL:
++        raise RuntimeError("CKV headroom escrow armed outside phase-2 NCCL mode")
++    if _CKV_ESCROW_SINGLETON:
++        raise RuntimeError("CKV headroom escrow may be armed only once per process")
++    cuda_device = (
++        device
++        if isinstance(device, torch.device)
++        else torch.device(f"cuda:{device}" if isinstance(device, int) else device)
++    )
++    _CKV_ESCROW_SINGLETON.append(
++        _CKVHeadroomEscrow(
++            exchange_group=exchange_group,
++            device=cuda_device,
++        )
++    )
++
++
++def ckv_headroom_layer_entry() -> None:
++    if not _CKV_PHASE2_NCCL:
++        return
++    if not _CKV_ESCROW_SINGLETON:
++        raise RuntimeError("CKV phase 2 reached attention before escrow arm")
++    _CKV_ESCROW_SINGLETON[0].layer_entry()
++
++
++def release_ckv_headroom_after_first_attention(
++    *,
++    route: str,
++    route_bytes: int,
++    logical_blocks: int,
++    pool_pages: int,
++) -> None:
++    if not _CKV_PHASE2_NCCL:
++        return
++    if not _CKV_ESCROW_SINGLETON:
++        raise RuntimeError("CKV phase 2 reached escrow release before arm")
++    escrow = _CKV_ESCROW_SINGLETON[0]
++    if escrow.state == "armed":
++        escrow.release_after_first_attention(
++            route=route,
++            route_bytes=int(route_bytes),
++            logical_blocks=int(logical_blocks),
++            pool_pages=int(pool_pages),
++        )
++
++
+ class PCIeDmaAllGather:
+     """Fixed-capacity byte-preserving four-rank ring all-gather.
+
+--- a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
++++ b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+@@ -84,6 +84,8 @@
+ _CKV_SINGLETON: list = []
+ _CKV_FAILED = object()
+ _CKV_LOGGED = [False]
++_CKV_ACTIVE_CAPACITY = 2403
++_CKV_POOL_LOGGED = [False]
+
+ # --- Fable patch (2026-07-15): DCP gather async overlap (Package C, bf16-exact)
+ # Gated by B12X_DCP_GATHER_ASYNC=1; unset => byte-identical stock behavior.
+@@ -127,6 +129,10 @@
+
+
+ _DCP_PREFILL_TRANSPORT = _normalize_dcp_prefill_transport()
++_CKV_PHASE2_REQUESTED = os.getenv("B12X_CKV_PHASE2_NCCL", "0") == "1"
++_CKV_PHASE2_NCCL = (
++    _CKV_PHASE2_REQUESTED and _DCP_PREFILL_TRANSPORT == "ckv"
++)
+
+
+ @triton.jit
+@@ -298,6 +304,81 @@
+         tl.atomic_add(selected_total_ptr, valid_count.to(tl.int64))
+         tl.atomic_add(missing_total_ptr, missing_count.to(tl.int64))
+
++
++@triton.jit
++def _remap_ckv_pool_topk_kernel(
++    req_ids_ptr,
++    topk_ptr,
++    owner_tables_ptr,
++    global_causal_ptr,
++    out_ptr,
++    valid_counts_ptr,
++    selected_total_ptr,
++    missing_total_ptr,
++    topk_stride0,
++    topk_stride1,
++    table_stride0,
++    table_stride1,
++    table_stride2,
++    out_stride0,
++    out_stride1,
++    TABLE_WIDTH,
++    POOL_PAGES,
++    TOPK: tl.constexpr,
++    PROFILE: tl.constexpr,
++    VIRTUAL_BLOCK: tl.constexpr,
++    WORLD_SIZE: tl.constexpr,
++    PAGE_RECORDS: tl.constexpr,
++):
++    row = tl.program_id(0)
++    offsets = tl.arange(0, TOPK)
++    request = tl.load(req_ids_ptr + row)
++    logical_ids = tl.load(
++        topk_ptr + row * topk_stride0 + offsets * topk_stride1
++    )
++    causal_length = tl.load(global_causal_ptr + row)
++    virtual_block = logical_ids // VIRTUAL_BLOCK
++    within_virtual = logical_ids % VIRTUAL_BLOCK
++    owner = within_virtual % WORLD_SIZE
++    local_offset = within_virtual // WORLD_SIZE
++    logical_valid = (logical_ids >= 0) & (logical_ids < causal_length)
++    table_valid = logical_valid & (virtual_block >= 0) & (
++        virtual_block < TABLE_WIDTH
++    )
++    physical_block = tl.load(
++        owner_tables_ptr
++        + owner * table_stride0
++        + request * table_stride1
++        + virtual_block * table_stride2,
++        mask=table_valid,
++        other=-1,
++    )
++    is_valid = table_valid & (physical_block >= 0) & (
++        physical_block < POOL_PAGES
++    )
++    mapped = (
++        (owner * POOL_PAGES + physical_block) * PAGE_RECORDS
++        + local_offset
++    )
++
++    output_row = out_ptr + row * out_stride0
++    tl.store(output_row + offsets * out_stride1, -1)
++    integer_valid = is_valid.to(tl.int32)
++    compact_offset = tl.cumsum(integer_valid, axis=0) - integer_valid
++    tl.store(
++        output_row + compact_offset * out_stride1,
++        mapped,
++        mask=is_valid,
++    )
++    valid_count = tl.sum(integer_valid, axis=0)
++    tl.store(valid_counts_ptr + row, valid_count)
++    if PROFILE:
++        missing_count = tl.sum(
++            (table_valid & (is_valid == 0)).to(tl.int32), axis=0
++        )
++        tl.atomic_add(selected_total_ptr, valid_count.to(tl.int64))
++        tl.atomic_add(missing_total_ptr, missing_count.to(tl.int64))
++
+ # --- fp8 DCP gather (Package A-final, additive) ---
+ _FP8_GATHER_ENABLED = (
+     os.getenv("B12X_DCP_GATHER_FP8", "0") == "1"
+@@ -402,6 +483,8 @@
+         self._open: dict = {p: None for p in self._PHASES}
+         self._eligible_calls = 0
+         self._route_calls = {"query": 0, "ckv": 0}
++        self._ckv_layout_calls = {"active": 0, "pool": 0}
++        self._ckv_layout_bytes = {"active": 0, "pool": 0}
+         self._packed_bytes = 0
+         self._record_count = 0
+         self._wire_bytes = 0
+@@ -450,7 +533,7 @@
+                 raise ValueError(f"unknown DCP profiler route {route!r}")
+             self._eligible_calls += 1
+             self._route_calls[route] += 1
+-            if route == "ckv":
++            if route == "ckv" and not _CKV_PHASE2_NCCL:
+                 local_records = (
+                     int(packed_blocks) * _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES
+                 )
+@@ -466,6 +549,37 @@
+         except Exception:
+             self.dead = True
+
++    def record_ckv_layout(
++        self,
++        route: str,
++        *,
++        logical_blocks: int,
++        pool_pages: int,
++        global_record_bytes: int,
++    ) -> None:
++        if self.dead:
++            return
++        try:
++            if route not in self._ckv_layout_calls:
++                raise ValueError(f"unknown packed-CKV layout {route!r}")
++            self._ckv_layout_calls[route] += 1
++            self._ckv_layout_bytes[route] += int(global_record_bytes)
++            self._packed_bytes += int(global_record_bytes)
++            records_per_owner = (
++                int(logical_blocks) if route == "active" else int(pool_pages)
++            )
++            self._record_count += (
++                _CKV_WORLD_SIZE * records_per_owner * _CKV_BLOCK_SIZE
++            )
++            local_record_bytes = int(global_record_bytes) // _CKV_WORLD_SIZE
++            validity_bytes = int(logical_blocks) if route == "active" else 0
++            self._wire_bytes += (_CKV_WORLD_SIZE - 1) * (
++                local_record_bytes + validity_bytes
++            )
++            self._local_heads = _CKV_LOCAL_HEADS
++        except Exception:
++            self.dead = True
++
+     def finish_dispatch(self) -> None:
+         if self.dead:
+             return
+@@ -498,6 +612,11 @@
+         parts.extend(
+             (
+                 f"routes: query={self._route_calls['query']} ckv={ckv_calls}",
++                "ckv_layouts: "
++                f"active={self._ckv_layout_calls['active']} "
++                f"active_bytes={self._ckv_layout_bytes['active']} "
++                f"pool={self._ckv_layout_calls['pool']} "
++                f"pool_bytes={self._ckv_layout_bytes['pool']}",
+                 "ckv_data: "
+                 f"packed_bytes={self._packed_bytes} "
+                 f"mean_packed_bytes={self._packed_bytes / denominator:.0f} "
+@@ -619,6 +738,54 @@
+     return channel
+
+
++def _ckv_direct_all_gather_backend(dcp_group):
++    communicator = getattr(dcp_group, "device_communicator", None)
++    pynccl_comm = getattr(communicator, "pynccl_comm", None)
++    if pynccl_comm is not None and not getattr(
++        pynccl_comm, "disabled", False
++    ):
++        return pynccl_comm, None
++    device_group = getattr(dcp_group, "device_group", None)
++    if device_group is None:
++        device_group = getattr(communicator, "device_group", None)
++    if device_group is not None:
++        return None, device_group
++    raise RuntimeError(
++        "Packed-CKV phase 2 requires direct PyNCCL or a DCP device process "
++        "group; allocating GroupCoordinator.all_gather fallback is forbidden"
++    )
++
++
++def _ckv_direct_all_gather_into(
++    dcp_group,
++    output_tensor: torch.Tensor,
++    input_tensor: torch.Tensor,
++) -> None:
++    if (
++        not input_tensor.is_contiguous()
++        or not output_tensor.is_contiguous()
++        or output_tensor.dtype != input_tensor.dtype
++        or output_tensor.device != input_tensor.device
++        or output_tensor.numel()
++        != input_tensor.numel() * int(dcp_group.world_size)
++    ):
++        raise RuntimeError(
++            "Packed-CKV phase-2 all-gather requires caller-owned contiguous "
++            "same-dtype views with exact rank-concatenated size"
++        )
++    pynccl_comm, device_group = _ckv_direct_all_gather_backend(dcp_group)
++    if pynccl_comm is not None:
++        pynccl_comm.all_gather(output_tensor, input_tensor)
++        return
++    if device_group is None:
++        raise RuntimeError("Packed-CKV phase-2 all-gather backend disappeared")
++    dist.all_gather_into_tensor(
++        output_tensor,
++        input_tensor,
++        group=device_group,
++    )
++
++
+ class B12xMLASparseBackend(AttentionBackend):
+     """b12x unified sparse-MLA backend (SM120 / SM121).
+
+@@ -1270,6 +1437,12 @@
+         max_num_seqs = int(scheduler_config.max_num_seqs)
+         max_model_len = int(vllm_config.model_config.max_model_len)
+         self.dcp_prefill_transport = _DCP_PREFILL_TRANSPORT
++        if _CKV_PHASE2_REQUESTED and self.dcp_prefill_transport != "ckv":
++            raise RuntimeError(
++                "B12X_CKV_PHASE2_NCCL=1 requires "
++                "B12X_DCP_PREFILL_TRANSPORT=ckv"
++            )
++        self._ckv_phase2_nccl = _CKV_PHASE2_NCCL
+         self.block_size = 64
+         # MLAAttention all-gathers the local query-head shard before entering a
+         # DCP backend. The kernel must therefore plan for, and return, the full
+@@ -1434,6 +1607,9 @@
+         self._ckv_scratch_nbytes = 0
+         self._ckv_scratch_offset = 0
+         self._ckv_max_packed_blocks = 0
++        self._ckv_layout_blocks = 0
++        self._ckv_pool_pages = 0
++        self._ckv_query_workspace_bytes = 0
+         self._ckv_max_local_record_bytes = 0
+         self._ckv_max_local_metadata_bytes = 0
+         self._ckv_local_metadata_offset = 0
+@@ -1461,12 +1637,30 @@
+             self._ckv_max_packed_blocks = max_num_seqs * _cdiv(
+                 max_model_len, _CKV_VIRTUAL_BLOCK
+             )
++            if self._ckv_phase2_nccl:
++                pool_override = getattr(
++                    vllm_config.cache_config,
++                    "num_gpu_blocks_override",
++                    None,
++                )
++                if pool_override is None or int(pool_override) <= 0:
++                    raise RuntimeError(
++                        "Packed-CKV phase 2 requires an explicit positive "
++                        "num_gpu_blocks_override"
++                    )
++                self._ckv_pool_pages = int(pool_override)
++                self._ckv_layout_blocks = _CKV_ACTIVE_CAPACITY
++                from vllm.distributed.parallel_state import get_dcp_group
++
++                _ckv_direct_all_gather_backend(get_dcp_group())
++            else:
++                self._ckv_layout_blocks = self._ckv_max_packed_blocks
+             self._ckv_max_local_record_bytes = (
+-                self._ckv_max_packed_blocks
++                self._ckv_layout_blocks
+                 * _CKV_BLOCK_SIZE
+                 * _CKV_RECORD_BYTES
+             )
+-            self._ckv_max_local_metadata_bytes = self._ckv_max_packed_blocks
++            self._ckv_max_local_metadata_bytes = self._ckv_layout_blocks
+             self._ckv_local_metadata_offset = (
+                 self._ckv_max_local_record_bytes
+             )
+@@ -1487,14 +1681,39 @@
+                 * self.q_head_dim
+                 * _BF16_BYTES
+             )
+-            gathered_record_bytes = (
++            self._ckv_query_workspace_bytes = query_workspace_bytes
++            active_gathered_record_bytes = (
+                 _CKV_WORLD_SIZE * self._ckv_max_local_record_bytes
+             )
++            pool_gathered_record_bytes = (
++                _CKV_WORLD_SIZE
++                * self._ckv_pool_pages
++                * _CKV_BLOCK_SIZE
++                * _CKV_RECORD_BYTES
++                if self._ckv_phase2_nccl
++                else 0
++            )
++            gathered_record_bytes = max(
++                active_gathered_record_bytes,
++                pool_gathered_record_bytes,
++            )
+             pack_scratch_bytes = (
+                 self._ckv_max_local_record_bytes
+                 + self._ckv_max_local_metadata_bytes
+                 + _CKV_WORLD_SIZE * self._ckv_max_local_metadata_bytes
+             )
++            max_blocks_per_req = _cdiv(
++                max_model_len, _CKV_VIRTUAL_BLOCK
++            )
++            pool_table_bytes = (
++                _CKV_WORLD_SIZE
++                * max_num_seqs
++                * max_blocks_per_req
++                * 4
++                if self._ckv_phase2_nccl
++                else 0
++            )
++            route_scratch_bytes = max(pack_scratch_bytes, pool_table_bytes)
+             attention_scratch_bytes = (
+                 self._ckv_scratch_offset + self._ckv_scratch_nbytes
+             )
+@@ -1504,13 +1723,14 @@
+             )
+             max_gathered_slots = (
+                 _CKV_WORLD_SIZE
+-                * self._ckv_max_packed_blocks
++                * max(self._ckv_layout_blocks, self._ckv_pool_pages)
+                 * _CKV_BLOCK_SIZE
+             )
+             if (
+                 gathered_record_bytes > query_workspace_bytes
+-                or pack_scratch_bytes > self._scratch_nbytes
++                or route_scratch_bytes > self._scratch_nbytes
+                 or gathered_metadata_end > self._ckv_scratch_offset
++                or pool_table_bytes > self._ckv_scratch_offset
+                 or attention_scratch_bytes > self._scratch_nbytes
+                 or max_gathered_slots >= np.iinfo(np.int32).max
+             ):
+@@ -1518,10 +1738,12 @@
+                     "Packed-CKV startup layout does not fit: "
+                     f"max_model_len={max_model_len}, "
+                     f"max_num_seqs={max_num_seqs}, "
+-                    f"packed_blocks/rank={self._ckv_max_packed_blocks}, "
++                    f"metadata_blocks/rank={self._ckv_max_packed_blocks}, "
++                    f"layout_blocks/rank={self._ckv_layout_blocks}, "
++                    f"pool_pages/rank={self._ckv_pool_pages}, "
+                     f"gathered_records={gathered_record_bytes}/"
+                     f"{query_workspace_bytes} bytes, "
+-                    f"pack_scratch={pack_scratch_bytes}/"
++                    f"route_scratch={route_scratch_bytes}/"
+                     f"{self._scratch_nbytes} bytes, "
+                     f"metadata_end/local_q={gathered_metadata_end}/"
+                     f"{self._ckv_scratch_offset} bytes, "
+@@ -1530,25 +1752,40 @@
+                     "B12X_DCP_PREFILL_TRANSPORT=query"
+                 )
+             self._ckv_attention_done = torch.cuda.Event()
+-            logger.info(
+-                "Packed-CKV transport armed: max_model_len=%d max_seqs=%d "
+-                "packed_blocks/rank=%d gathered_records=%d "
+-                "local_payload=%d communicator_slab=%d",
+-                max_model_len,
+-                max_num_seqs,
+-                self._ckv_max_packed_blocks,
+-                gathered_record_bytes,
+-                self._ckv_max_local_record_bytes
+-                + self._ckv_max_local_metadata_bytes,
+-                _CKV_FLAG_BYTES
+-                + (_CKV_WORLD_SIZE - 1)
+-                * _cdiv(
++            if self._ckv_phase2_nccl:
++                logger.info(
++                    "Packed-CKV phase-2 NCCL transport armed: "
++                    "max_model_len=%d max_seqs=%d "
++                    "metadata_blocks/rank=%d active_cap=%d pool_pages=%d "
++                    "max_gathered_records=%d communicator_slab=0",
++                    max_model_len,
++                    max_num_seqs,
++                    self._ckv_max_packed_blocks,
++                    self._ckv_layout_blocks,
++                    self._ckv_pool_pages,
++                    gathered_record_bytes,
++                )
++            else:
++                logger.info(
++                    "Packed-CKV transport armed: max_model_len=%d "
++                    "max_seqs=%d packed_blocks/rank=%d "
++                    "gathered_records=%d local_payload=%d "
++                    "communicator_slab=%d",
++                    max_model_len,
++                    max_num_seqs,
++                    self._ckv_max_packed_blocks,
++                    gathered_record_bytes,
+                     self._ckv_max_local_record_bytes
+                     + self._ckv_max_local_metadata_bytes,
+-                    256,
++                    _CKV_FLAG_BYTES
++                    + (_CKV_WORLD_SIZE - 1)
++                    * _cdiv(
++                        self._ckv_max_local_record_bytes
++                        + self._ckv_max_local_metadata_bytes,
++                        256,
++                    )
++                    * 256,
+                 )
+-                * 256,
+-            )
+
+         # Pre-touch q-concat + the attention scratch TOGETHER so the workspace
+         # manager grows during warmup (before lock_workspace() runs
+@@ -1652,12 +1889,34 @@
+             .view(-1)
+             .narrow(0, 0, gathered_bytes)
+             .view(
+-                _CKV_WORLD_SIZE * self._ckv_max_packed_blocks,
++                _CKV_WORLD_SIZE * self._ckv_layout_blocks,
+                 _CKV_BLOCK_SIZE,
+                 _CKV_RECORD_BYTES,
+             )
+         )
+         max_slot = gathered_cache.shape[0] * _CKV_BLOCK_SIZE - 1
++        pool_cache = None
++        if self._ckv_phase2_nccl:
++            pool_bytes = (
++                _CKV_WORLD_SIZE
++                * self._ckv_pool_pages
++                * _CKV_BLOCK_SIZE
++                * _CKV_RECORD_BYTES
++            )
++            pool_cache = (
++                q_workspace.view(torch.uint8)
++                .view(-1)
++                .narrow(0, 0, pool_bytes)
++                .view(
++                    _CKV_WORLD_SIZE * self._ckv_pool_pages,
++                    _CKV_BLOCK_SIZE,
++                    _CKV_RECORD_BYTES,
++                )
++            )
++            max_slot = max(
++                max_slot,
++                pool_cache.shape[0] * _CKV_BLOCK_SIZE - 1,
++            )
+         gathered_metadata_end = (
+             scratch_storage.data_ptr()
+             + self._ckv_gathered_metadata_offset
+@@ -1673,10 +1932,20 @@
+             or gathered_cache.data_ptr() % 256
+             or max_slot
+             != _CKV_WORLD_SIZE
+-            * self._ckv_max_packed_blocks
++            * max(self._ckv_layout_blocks, self._ckv_pool_pages)
+             * _CKV_BLOCK_SIZE
+             - 1
+             or max_slot >= np.iinfo(np.int32).max
++            or pool_cache is not None
++            and (
++                tuple(pool_cache.stride())
++                != (
++                    _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES,
++                    _CKV_RECORD_BYTES,
++                    1,
++                )
++                or pool_cache.data_ptr() != q_workspace.data_ptr()
++            )
+             or ckv_scratch_begin % 256
+             or gathered_metadata_end > ckv_scratch_begin
+             or self._ckv_scratch_offset + self._ckv_scratch_nbytes
+@@ -2815,6 +3084,10 @@
+             raise RuntimeError("packed-CKV called in a query transport process")
+         if self._ckv_extend_plan is None or self._ckv_attention_done is None:
+             raise RuntimeError("packed-CKV startup state is incomplete")
++        if self._ckv_phase2_nccl:
++            from b12x.distributed.pcie_dma import ckv_headroom_layer_entry
++
++            ckv_headroom_layer_entry()
+         num_tokens = int(q[0].shape[0])
+         if (
+             num_tokens < 1025
+@@ -2920,6 +3193,15 @@
+                 f"cache geometry, got shape={tuple(kv_u8.shape)}, "
+                 f"stride={tuple(kv_u8.stride())}"
+             )
++        if (
++            self._ckv_phase2_nccl
++            and int(kv_u8.shape[0]) != self._ckv_pool_pages
++        ):
++            raise RuntimeError(
++                "Packed-CKV phase 2 requires runtime cache pages to match "
++                "num_gpu_blocks_override exactly: "
++                f"cache={kv_u8.shape[0]} override={self._ckv_pool_pages}"
++            )
+
+         workspace_tensors = self._borrow_workspaces()
+         if len(workspace_tensors) != 2:
+@@ -2946,70 +3228,8 @@
+         if q_begin < scratch_end and scratch_begin < q_end:
+             raise RuntimeError("packed-CKV query and scratch workspaces overlap")
+
+-        local_record_bytes = (
+-            packed_blocks * _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES
+-        )
+-        local_metadata_bytes = packed_blocks
+-        global_record_bytes = _CKV_WORLD_SIZE * local_record_bytes
+-        global_metadata_bytes = _CKV_WORLD_SIZE * local_metadata_bytes
+         q_workspace_u8 = q_workspace.view(torch.uint8).view(-1)
+-        gathered_records = q_workspace_u8.narrow(0, 0, global_record_bytes)
+-        local_payload = scratch_storage.narrow(
+-            0, 0, local_record_bytes + local_metadata_bytes
+-        )
+-        local_records = local_payload.narrow(0, 0, local_record_bytes)
+-        local_validity = local_payload.narrow(
+-            0, local_record_bytes, local_metadata_bytes
+-        )
+-        gathered_validity = scratch_storage.narrow(
+-            0, self._ckv_gathered_metadata_offset, global_metadata_bytes
+-        )
+-        if (
+-            gathered_records.data_ptr() % 256
+-            or local_payload.data_ptr() % 256
+-            or gathered_records.data_ptr() != q_begin
+-            or local_payload.data_ptr() != scratch_begin
+-            or gathered_validity.data_ptr() < local_payload.data_ptr()
+-            + local_payload.numel()
+-            or gathered_validity.data_ptr() + gathered_validity.numel()
+-            > scratch_begin + self._ckv_scratch_offset
+-        ):
+-            raise RuntimeError(
+-                "packed-CKV workspace views violate alignment or disjointness"
+-            )
+-
+         prof = _get_dcp_prof()
+-        if prof is not None:
+-            prof.start("ckv_pack")
+-        try:
+-            _pack_ckv_pages_kernel[
+-                (
+-                    packed_blocks,
+-                    triton.cdiv(
+-                        _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES, 256
+-                    ),
+-                )
+-            ](
+-                kv_u8,
+-                attn_metadata.block_table,
+-                req_for_block,
+-                vblock_for_block,
+-                local_records,
+-                local_validity,
+-                kv_u8.stride(0),
+-                kv_u8.stride(1),
+-                kv_u8.stride(2),
+-                attn_metadata.block_table.stride(0),
+-                attn_metadata.block_table.stride(1),
+-                PAGE_BYTES=_CKV_BLOCK_SIZE * _CKV_RECORD_BYTES,
+-                RECORD_BYTES=_CKV_RECORD_BYTES,
+-                BLOCK_BYTES=256,
+-                num_warps=4,
+-            )
+-        finally:
+-            if prof is not None:
+-                prof.stop("ckv_pack")
+-
+         from vllm.distributed.parallel_state import get_dcp_group
+
+         dcp_group = get_dcp_group()
+@@ -3018,26 +3238,204 @@
+             or dcp_group.rank_in_group != self.dcp_rank
+         ):
+             raise RuntimeError("packed-CKV DCP group changed after startup")
+-        channel = _get_ckv_all_gather(
+-            dcp_group,
+-            self.device,
+-            self._ckv_max_local_record_bytes,
+-            self._ckv_max_local_metadata_bytes,
++        route = (
++            "pool"
++            if self._ckv_phase2_nccl
++            and packed_blocks > _CKV_ACTIVE_CAPACITY
++            else "active"
+         )
+-        if prof is not None:
+-            prof.start("ckv_ag")
+-        try:
+-            channel.all_gather(
+-                local_payload,
+-                gathered_records,
+-                gathered_validity,
+-                record_lengths=(local_record_bytes,) * _CKV_WORLD_SIZE,
+-                metadata_lengths=(local_metadata_bytes,) * _CKV_WORLD_SIZE,
++        gathered_owner_tables = None
++        gathered_validity = None
++        if route == "active":
++            local_record_bytes = (
++                packed_blocks * _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES
+             )
+-        finally:
++            local_metadata_bytes = packed_blocks
++            global_record_bytes = _CKV_WORLD_SIZE * local_record_bytes
++            global_metadata_bytes = _CKV_WORLD_SIZE * local_metadata_bytes
++            gathered_records = q_workspace_u8.narrow(
++                0, 0, global_record_bytes
++            )
++            local_payload = scratch_storage.narrow(
++                0, 0, local_record_bytes + local_metadata_bytes
++            )
++            local_records = local_payload.narrow(0, 0, local_record_bytes)
++            local_validity = local_payload.narrow(
++                0, local_record_bytes, local_metadata_bytes
++            )
++            gathered_validity = scratch_storage.narrow(
++                0,
++                self._ckv_gathered_metadata_offset,
++                global_metadata_bytes,
++            )
++            if (
++                packed_blocks > self._ckv_layout_blocks
++                or gathered_records.data_ptr() % 256
++                or local_payload.data_ptr() % 256
++                or gathered_records.data_ptr() != q_begin
++                or local_payload.data_ptr() != scratch_begin
++                or gathered_validity.data_ptr()
++                < local_payload.data_ptr() + local_payload.numel()
++                or gathered_validity.data_ptr() + gathered_validity.numel()
++                > scratch_begin + self._ckv_scratch_offset
++            ):
++                raise RuntimeError(
++                    "packed-CKV active workspace views violate capacity, "
++                    "alignment, or disjointness"
++                )
++
+             if prof is not None:
+-                prof.stop("ckv_ag")
++                prof.start("ckv_pack")
++            try:
++                _pack_ckv_pages_kernel[
++                    (
++                        packed_blocks,
++                        triton.cdiv(
++                            _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES, 256
++                        ),
++                    )
++                ](
++                    kv_u8,
++                    attn_metadata.block_table,
++                    req_for_block,
++                    vblock_for_block,
++                    local_records,
++                    local_validity,
++                    kv_u8.stride(0),
++                    kv_u8.stride(1),
++                    kv_u8.stride(2),
++                    attn_metadata.block_table.stride(0),
++                    attn_metadata.block_table.stride(1),
++                    PAGE_BYTES=_CKV_BLOCK_SIZE * _CKV_RECORD_BYTES,
++                    RECORD_BYTES=_CKV_RECORD_BYTES,
++                    BLOCK_BYTES=256,
++                    num_warps=4,
++                )
++            finally:
++                if prof is not None:
++                    prof.stop("ckv_pack")
+
++            if prof is not None:
++                prof.start("ckv_ag")
++            try:
++                if self._ckv_phase2_nccl:
++                    _ckv_direct_all_gather_into(
++                        dcp_group,
++                        gathered_records,
++                        local_records,
++                    )
++                    _ckv_direct_all_gather_into(
++                        dcp_group,
++                        gathered_validity,
++                        local_validity,
++                    )
++                else:
++                    channel = _get_ckv_all_gather(
++                        dcp_group,
++                        self.device,
++                        self._ckv_max_local_record_bytes,
++                        self._ckv_max_local_metadata_bytes,
++                    )
++                    channel.all_gather(
++                        local_payload,
++                        gathered_records,
++                        gathered_validity,
++                        record_lengths=(local_record_bytes,)
++                        * _CKV_WORLD_SIZE,
++                        metadata_lengths=(local_metadata_bytes,)
++                        * _CKV_WORLD_SIZE,
++                    )
++            finally:
++                if prof is not None:
++                    prof.stop("ckv_ag")
++            gathered_pages_per_owner = packed_blocks
++        else:
++            pool_pages = self._ckv_pool_pages
++            if int(kv_u8.shape[0]) != pool_pages:
++                raise RuntimeError(
++                    "Packed-CKV pool route requires the runtime cache to "
++                    "match num_gpu_blocks_override exactly: "
++                    f"cache={kv_u8.shape[0]} override={pool_pages}"
++                )
++            local_record_bytes = (
++                pool_pages * _CKV_BLOCK_SIZE * _CKV_RECORD_BYTES
++            )
++            global_record_bytes = _CKV_WORLD_SIZE * local_record_bytes
++            gathered_records = q_workspace_u8.narrow(
++                0, 0, global_record_bytes
++            )
++            block_table = attn_metadata.block_table
++            num_reqs = int(attn_metadata.num_reqs)
++            if (
++                block_table.ndim != 2
++                or block_table.dtype != torch.int32
++                or block_table.device != self.device
++                or num_reqs <= 0
++                or num_reqs > int(block_table.shape[0])
++            ):
++                raise RuntimeError(
++                    "Packed-CKV pool route requires a device int32 block "
++                    "table covering every active request"
++                )
++            table_width = int(block_table.shape[1])
++            local_owner_table = block_table[:num_reqs, :table_width]
++            table_output_bytes = (
++                _CKV_WORLD_SIZE
++                * local_owner_table.numel()
++                * local_owner_table.element_size()
++            )
++            gathered_owner_tables = (
++                scratch_storage.narrow(0, 0, table_output_bytes)
++                .view(torch.int32)
++                .view(_CKV_WORLD_SIZE, num_reqs, table_width)
++            )
++            if (
++                global_record_bytes > self._ckv_query_workspace_bytes
++                or gathered_records.data_ptr() != q_begin
++                or gathered_records.data_ptr() % 256
++                or not local_owner_table.is_contiguous()
++                or gathered_owner_tables.data_ptr() != scratch_begin
++                or table_output_bytes > self._ckv_scratch_offset
++            ):
++                raise RuntimeError(
++                    "Packed-CKV pool workspace/table views violate capacity, "
++                    "alignment, or contiguity"
++                )
++            if not _CKV_POOL_LOGGED[0]:
++                _CKV_POOL_LOGGED[0] = True
++                logger.warning(
++                    "Packed-CKV physical-pool route activated: "
++                    "logical_B=%d pool_pages=%d gathered_bytes=%d",
++                    packed_blocks,
++                    pool_pages,
++                    global_record_bytes,
++                )
++            if prof is not None:
++                prof.start("ckv_ag")
++            try:
++                _ckv_direct_all_gather_into(
++                    dcp_group,
++                    gathered_records,
++                    kv_u8.view(-1),
++                )
++                _ckv_direct_all_gather_into(
++                    dcp_group,
++                    gathered_owner_tables.view(-1),
++                    local_owner_table.view(-1),
++                )
++            finally:
++                if prof is not None:
++                    prof.stop("ckv_ag")
++            gathered_pages_per_owner = pool_pages
++
++        if prof is not None and self._ckv_phase2_nccl:
++            prof.record_ckv_layout(
++                route,
++                logical_blocks=packed_blocks,
++                pool_pages=self._ckv_pool_pages,
++                global_record_bytes=global_record_bytes,
++            )
++
+         assert self.topk_indices_buffer is not None
+         topk_indices = self.topk_indices_buffer[:num_tokens]
+         profile_counts = prof.device_counts if prof is not None else None
+@@ -3050,29 +3448,58 @@
+         if prof is not None:
+             prof.start("ckv_remap")
+         try:
+-            _remap_ckv_topk_kernel[(num_tokens,)](
+-                req_ids,
+-                topk_indices,
+-                req_base,
+-                blocks_per_req,
+-                global_causal,
+-                gathered_validity,
+-                selected_indices,
+-                nsa_cache_seqlens,
+-                selected_total,
+-                missing_total,
+-                topk_indices.stride(0),
+-                topk_indices.stride(1),
+-                selected_indices.stride(0),
+-                selected_indices.stride(1),
+-                packed_blocks,
+-                TOPK=self.topk_tokens,
+-                PROFILE=prof is not None,
+-                VIRTUAL_BLOCK=_CKV_VIRTUAL_BLOCK,
+-                WORLD_SIZE=_CKV_WORLD_SIZE,
+-                PAGE_RECORDS=_CKV_BLOCK_SIZE,
+-                num_warps=8,
+-            )
++            if route == "active":
++                assert gathered_validity is not None
++                _remap_ckv_topk_kernel[(num_tokens,)](
++                    req_ids,
++                    topk_indices,
++                    req_base,
++                    blocks_per_req,
++                    global_causal,
++                    gathered_validity,
++                    selected_indices,
++                    nsa_cache_seqlens,
++                    selected_total,
++                    missing_total,
++                    topk_indices.stride(0),
++                    topk_indices.stride(1),
++                    selected_indices.stride(0),
++                    selected_indices.stride(1),
++                    packed_blocks,
++                    TOPK=self.topk_tokens,
++                    PROFILE=prof is not None,
++                    VIRTUAL_BLOCK=_CKV_VIRTUAL_BLOCK,
++                    WORLD_SIZE=_CKV_WORLD_SIZE,
++                    PAGE_RECORDS=_CKV_BLOCK_SIZE,
++                    num_warps=8,
++                )
++            else:
++                assert gathered_owner_tables is not None
++                _remap_ckv_pool_topk_kernel[(num_tokens,)](
++                    req_ids,
++                    topk_indices,
++                    gathered_owner_tables,
++                    global_causal,
++                    selected_indices,
++                    nsa_cache_seqlens,
++                    selected_total,
++                    missing_total,
++                    topk_indices.stride(0),
++                    topk_indices.stride(1),
++                    gathered_owner_tables.stride(0),
++                    gathered_owner_tables.stride(1),
++                    gathered_owner_tables.stride(2),
++                    selected_indices.stride(0),
++                    selected_indices.stride(1),
++                    gathered_owner_tables.shape[2],
++                    self._ckv_pool_pages,
++                    TOPK=self.topk_tokens,
++                    PROFILE=prof is not None,
++                    VIRTUAL_BLOCK=_CKV_VIRTUAL_BLOCK,
++                    WORLD_SIZE=_CKV_WORLD_SIZE,
++                    PAGE_RECORDS=_CKV_BLOCK_SIZE,
++                    num_warps=8,
++                )
+         finally:
+             if prof is not None:
+                 prof.stop("ckv_remap")
+@@ -3090,7 +3517,7 @@
+             0, self._ckv_scratch_offset, self._ckv_scratch_nbytes
+         )
+         gathered_cache = gathered_records.view(
+-            _CKV_WORLD_SIZE * packed_blocks,
++            _CKV_WORLD_SIZE * gathered_pages_per_owner,
+             _CKV_BLOCK_SIZE,
+             _CKV_RECORD_BYTES,
+         )
+@@ -3099,8 +3526,16 @@
+             != (_CKV_BLOCK_SIZE * _CKV_RECORD_BYTES, _CKV_RECORD_BYTES, 1)
+             or gathered_cache.data_ptr() != q_begin
+             or gathered_cache.data_ptr() % 256
+-            or (_CKV_WORLD_SIZE * packed_blocks * _CKV_BLOCK_SIZE)
+-            > (_CKV_WORLD_SIZE * self._ckv_max_packed_blocks * _CKV_BLOCK_SIZE)
++            or (
++                _CKV_WORLD_SIZE
++                * gathered_pages_per_owner
++                * _CKV_BLOCK_SIZE
++            )
++            > (
++                _CKV_WORLD_SIZE
++                * max(self._ckv_layout_blocks, self._ckv_pool_pages)
++                * _CKV_BLOCK_SIZE
++            )
+         ):
+             raise RuntimeError(
+                 "packed-CKV gathered cache violates the 16-head kernel contract"
+@@ -3174,6 +3609,19 @@
+             != (self.v_head_dim, num_tokens * self.v_head_dim, 1)
+         ):
+             raise RuntimeError("packed-CKV local projection returned invalid view")
++        if self._ckv_phase2_nccl:
++            from b12x.distributed.pcie_dma import (
++                release_ckv_headroom_after_first_attention,
++            )
++
++            release_ckv_headroom_after_first_attention(
++                route=route,
++                route_bytes=global_record_bytes,
++                logical_blocks=packed_blocks,
++                pool_pages=(
++                    self._ckv_pool_pages if route == "pool" else 0
++                ),
++            )
+         return projected
+
+     def _sync_warmup(self) -> None:
+@@ -3340,6 +3788,11 @@
+         )
+         req_base = torch.tensor((0, 1), dtype=torch.int32, device=self.device)
+         blocks_per_req = torch.ones(1, dtype=torch.int32, device=self.device)
++        owner_tables = torch.zeros(
++            (_CKV_WORLD_SIZE, 1, 1),
++            dtype=torch.int32,
++            device=self.device,
++        )
+         cache_seqlens = torch.full(
+             (1,), _CKV_BLOCK_SIZE, dtype=torch.int32, device=self.device
+         )
+@@ -3389,6 +3842,32 @@
+                 PAGE_RECORDS=_CKV_BLOCK_SIZE,
+                 num_warps=8,
+             )
++            if self._ckv_phase2_nccl:
++                _remap_ckv_pool_topk_kernel[(rows,)](
++                    req_ids,
++                    topk,
++                    owner_tables,
++                    global_causal,
++                    selected_indices,
++                    nsa_cache_seqlens,
++                    None,
++                    None,
++                    topk.stride(0),
++                    topk.stride(1),
++                    owner_tables.stride(0),
++                    owner_tables.stride(1),
++                    owner_tables.stride(2),
++                    selected_indices.stride(0),
++                    selected_indices.stride(1),
++                    owner_tables.shape[2],
++                    1,
++                    TOPK=self.topk_tokens,
++                    PROFILE=False,
++                    VIRTUAL_BLOCK=_CKV_VIRTUAL_BLOCK,
++                    WORLD_SIZE=_CKV_WORLD_SIZE,
++                    PAGE_RECORDS=_CKV_BLOCK_SIZE,
++                    num_warps=8,
++                )
+             scratch_storage = torch.empty(
+                 self._ckv_scratch_nbytes,
+                 dtype=torch.uint8,
+--- a/vllm/v1/worker/gpu_worker.py
++++ b/vllm/v1/worker/gpu_worker.py
+@@ -83,6 +83,11 @@
+ _B12X_EMPTY_CACHE_AFTER_WARMUP = (
+     os.getenv("B12X_EMPTY_CACHE_AFTER_WARMUP", "1").strip().casefold()
+     in {"1", "true", "yes", "on"}
++)
++_B12X_CKV_PHASE2_NCCL = (
++    os.getenv("B12X_DCP_PREFILL_TRANSPORT", "query").strip().lower()
++    == "ckv"
++    and os.getenv("B12X_CKV_PHASE2_NCCL", "0") == "1"
+ )
+
+ if TYPE_CHECKING:
+@@ -793,6 +798,27 @@
+                 (reserved_before - reserved_after) / mib,
+             )
+             self._b12x_post_warmup_cache_released = True
++
++        if _B12X_CKV_PHASE2_NCCL:
++            if not self._b12x_post_warmup_cache_released:
++                raise RuntimeError(
++                    "Packed-CKV phase 2 requires the post-warmup CUDA "
++                    "allocator cache release"
++                )
++            from b12x.distributed.pcie_dma import arm_ckv_headroom_escrow
++            from vllm.distributed.parallel_state import get_dcp_group
++
++            dcp_group = get_dcp_group()
++            device_group = getattr(dcp_group, "device_group", None)
++            if device_group is None:
++                raise RuntimeError(
++                    "Packed-CKV phase 2 cannot arm escrow without the DCP "
++                    "device process group"
++                )
++            arm_ckv_headroom_escrow(
++                exchange_group=device_group,
++                device=self.device,
++            )
+
+         # Reset the seed to ensure that the random state is not affected by
+         # the model initialization and profiling.

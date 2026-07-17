@@ -146,3 +146,34 @@ Memory model distilled (the load-bearing findings):
 - 8k-class community prefill claims we could verify were TP8 (8-GPU) or
   cache-warm numbers — see `design/breakthrough-analysis.md` for the
   evidence audit.
+
+## 8. Phase 2 CONFIRMED — full 480k context (added 2026-07-17, end of window)
+
+All three server gates passed; the stack below is running in production.
+
+| Gate | Config | Result |
+|---|---|---|
+| 1 — collective isolation | 64k profile, CE ring → no-slab NCCL gather | 1,578 @ 8k / **1,699 @ 55k** (parity with CE), `ckv_ag` 0.8 ms/layer, `communicator_slab=0`, gates green |
+| 2 — 480k memory | BLOCKS=2340 (599,040-token pool), 192 MiB escrow + dual ≥150 MiB group-min probes, one cold 463k request | **survived and served: 1,226 tok/s cold**; probes passed by fail-closed construction (any sub-gate reading raises) |
+| 3 — 480k acceptance, prod shape | + tiered-KV offload connector (56 GB DRAM tier + NVMe cold tier), no expandable_segments | 1,411 @ 8k / **1,509 @ 55k** / **1,126 @ 463k cold**; standard gate + deep gate PASS incl. **needle @95% depth of 200k tokens, exact**; decode C1 67.2/65.0/61.3/63.7/59.8 at ctx 0/16k/32k/64k/128k |
+
+Notes:
+- The offload connector costs ~11% prefill vs the bare profile (1,699 →
+  1,509 @ 55k) — the price of session-cache restores measured in seconds
+  instead of full re-prefills. Ship decision kept it.
+- 480k-class cold prefill throughput decays with accumulated context
+  (1,509 @ 55k → 1,126 @ 463k): late chunks gather the full packed
+  context per layer, exactly as the crossover model predicts.
+- Field fix #2 during the gates: the `b12x` package logger has no handler
+  in the serving container, AND vLLM's `init_logger` only wires handlers
+  for `vllm.*` names — escrow/probe evidence was invisible twice. Fix:
+  register the logger under a `vllm.*` name. If your instrumentation
+  logs from a non-vllm package, it is probably logging into the void.
+
+Final shipped configuration: v1.3 image + v1.4 overlay set + stage-3
+packed-CKV + phase-2 transport (`patches/phase2-fullcontext/`),
+TP4/DCP4, 480k max context, 599,040-token pool, tiered KV
+(56 GB DRAM warm tier, NVMe cold tier with LRU prune), MTP-3.
+Net vs the same box on Monday: **+165% prefill at 55k, +76% at full
+context depth vs anything previously bootable, +30% decode, context
+unchanged at 480k, and warm-session restores in seconds.**
