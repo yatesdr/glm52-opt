@@ -155,7 +155,7 @@ All three server gates passed; the stack below is running in production.
 |---|---|---|
 | 1 — collective isolation | 64k profile, CE ring → no-slab NCCL gather | 1,578 @ 8k / **1,699 @ 55k** (parity with CE), `ckv_ag` 0.8 ms/layer, `communicator_slab=0`, gates green |
 | 2 — 480k memory | BLOCKS=2340 (599,040-token pool), 192 MiB escrow + dual ≥150 MiB group-min probes, one cold 463k request | **survived and served: 1,226 tok/s cold**; probes passed by fail-closed construction (any sub-gate reading raises) |
-| 3 — 480k acceptance, prod shape | + tiered-KV offload connector (56 GB DRAM tier + NVMe cold tier), no expandable_segments | 1,411 @ 8k / **1,509 @ 55k** / **1,126 @ 463k cold**; standard gate + deep gate PASS incl. **needle @95% depth of 200k tokens, exact**; decode C1 67.2/65.0/61.3/63.7/59.8 at ctx 0/16k/32k/64k/128k |
+| 3 — 480k acceptance, prod shape | + KV offload connector (56 GB DRAM warm tier, `secondary_tiers:[]`), no expandable_segments | 1,411 @ 8k / **1,509 @ 55k** / **1,126 @ 463k cold**; standard gate + deep gate PASS incl. **needle @95% depth of 200k tokens, exact**; decode C1 67.2/65.0/61.3/63.7/59.8 at ctx 0/16k/32k/64k/128k |
 
 Notes:
 - The offload connector costs ~11% prefill vs the bare profile (1,699 →
@@ -172,8 +172,13 @@ Notes:
 
 Final shipped configuration: v1.3 image + v1.4 overlay set + stage-3
 packed-CKV + phase-2 transport (`patches/phase2-fullcontext/`),
-TP4/DCP4, 480k max context, 599,040-token pool, tiered KV
-(56 GB DRAM warm tier, NVMe cold tier with LRU prune), MTP-3.
-Net vs the same box on Monday: **+165% prefill at 55k, +76% at full
-context depth vs anything previously bootable, +30% decode, context
-unchanged at 480k, and warm-session restores in seconds.**
+TP4/DCP4, 480k max context, 599,040-token pool, **two-tier KV cache**
+(GPU HBM pool + 56 GB DRAM warm-offload tier; `TieringOffloadingSpec`,
+`cpu_bytes_to_use=56e9`, `secondary_tiers:[]`), MTP-3. An NVMe fs "cold"
+tier was evaluated earlier and **deliberately dropped** (sustained KV
+churn is a hostile write pattern for non-durable consumer flash); the
+shipped stack is DRAM-warm only, so warm sessions restore in seconds but
+do not survive a container restart. Net vs the same box on Monday:
+**+165% prefill at 55k, +76% at full context depth vs anything previously
+bootable, +30% decode, context unchanged at 480k, and warm-session
+restores in seconds.**
