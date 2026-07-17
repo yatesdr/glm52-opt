@@ -1,6 +1,24 @@
 --- a/b12x/distributed/pcie_dma.py
 +++ b/b12x/distributed/pcie_dma.py
-@@ -41,6 +41,15 @@
+@@ -29,7 +29,16 @@
+ from ._cuda_ipc import CudaRTLibrary
+ from .pcie_oneshot import PCIeOneshotAllReduce
+
+-logger = logging.getLogger(__name__)
++# Fable fix #2 (2026-07-17): the b12x logger hierarchy has no handler in
++# the serving container, so escrow/probe evidence vanished. Route through
++# vLLM's logger like every other observable module.
++try:
++    from vllm.logger import init_logger as _vllm_init_logger
++    # Non-vllm logger names get no handler from vLLM's config — adopt a
++    # vllm.* name so escrow/probe evidence reaches the container log.
++    logger = _vllm_init_logger("vllm.b12x.pcie_dma")
++except Exception:
++    logger = logging.getLogger(__name__)
+
+ SUPPORTED_DTYPES = {
+     torch.bfloat16: 0,
+@@ -41,6 +50,15 @@
  MAX_PIECES = 8
  SCRATCH_ALIGN = 256
  FP8_QUANT_BLOCK = 128
@@ -16,7 +34,7 @@
 
 
  def _fp8_mode() -> str:
-@@ -87,6 +96,228 @@
+@@ -87,6 +105,228 @@
      return (value + alignment - 1) // alignment * alignment
 
 

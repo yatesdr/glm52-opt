@@ -6,12 +6,18 @@ overlay.
 
 | Deployment path | Exact base | Gate-C result |
 |---|---|---|
-| `b12x/distributed/pcie_dma.py` | `fc796fa9af58d5b63bce85f8d5c195e8` | `6d7028e18d6abed8633a05c317d5a0d2` |
+| `b12x/distributed/pcie_dma.py` | `fc796fa9af58d5b63bce85f8d5c195e8` | `34a011ed647b52fe7fb6645e77205ae5` |
 | `vllm/v1/attention/backends/mla/b12x_mla_sparse.py` | `20a2cf60ce2e99d8c90249d458f330f8` | `d56bd035296c87e4fe293a6020e11a73` |
 | `vllm/v1/worker/gpu_worker.py` | `0829a65484d4dd14c385366291e7a25c` | `6afef2e7c20b0aac870d9a48b59cabaf` |
 
-`transport/packed-ckv-phase2.patch`:
-`b1045c8bc2b0ac188c4460f290706b6d`
+`packed-ckv-phase2.patch`:
+`b3c21fae55eabf0c3f98a0be6f253e65`
+
+The `pcie_dma.py` result includes field fix #2 from the server gates: B12X's
+logger hierarchy has no serving-container handler, so escrow/probe evidence is
+registered explicitly under `vllm.b12x.pcie_dma`. The patch and overlay-copy
+deployment routes now both reproduce the deployed `34a011ed...` bytes; the
+earlier Gate-C pin `6d7028e1...` predated this observability fix.
 
 The first two bases are the Stage-3 overlays after commit `67cd084` folded in
 the field fix from `../glm-5/sol-packed-ckv-fix1.md`. The worker base is the
@@ -27,8 +33,8 @@ selected. Those Stage-3 files remain prerequisites.
 
 | File | MD5 |
 |---|---|
-| `checks/check_phase2_source_contract.py` | `35e6f627fce19774e6cd015e8239d030` |
-| `checks/check_triton_constexpr.py` | `3a0d3e7a99344a93dfa67a73cc8edcbc` |
+| `checks/check_phase2_source_contract.py` | `00df29c8cb721f70c9f02481849805a4` |
+| `checks/check_triton_constexpr.py` | `cd671b5e47907055c26cec8e6cbfac05` |
 | `checks/test_active_layout.py` | `cce6200443c747fffd9756d1d96d266d` |
 | `checks/test_escrow_state.py` | `2ed02ab0498d2743f6ee01eac3667248` |
 | `checks/test_pool_remap.py` | `c3150949f9eb150778ca736279b03be2` |

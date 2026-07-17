@@ -9,7 +9,7 @@ from pathlib import Path
 
 
 PACKAGE_ROOT = Path(__file__).resolve().parents[1]
-OVERLAY_ROOT = PACKAGE_ROOT / "transport" / "overlays"
+OVERLAY_ROOT = PACKAGE_ROOT / "overlays"
 REQUIRED_CONSTEXPR = {
     "_remap_ckv_topk_kernel": {
         "VIRTUAL_BLOCK",

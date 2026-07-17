@@ -7,7 +7,7 @@ import ast
 from pathlib import Path
 
 
-ROOT = Path(__file__).resolve().parents[1] / "transport" / "overlays"
+ROOT = Path(__file__).resolve().parents[1] / "overlays"
 SPARSE = (
     ROOT
     / "vllm"
@@ -72,6 +72,7 @@ def main() -> None:
 
     assert "_CKV_ESCROW_BYTES = 192 * (1 << 20)" in pcie_text
     assert "_CKV_HEADROOM_GATE_BYTES = 150 * (1 << 20)" in pcie_text
+    assert '_vllm_init_logger("vllm.b12x.pcie_dma")' in pcie_text
     escrow = _function(pcie_tree, "release_after_first_attention")
     assert len(_calls(escrow, "cudaFree")) == 0
     assert len(_calls(escrow, "_free_local")) == 1
