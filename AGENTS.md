@@ -104,6 +104,58 @@ less) — community reports suggest ~1.15–1.4x there.
 - DCP2 posture cells: unmeasured.
 - Trellis-quant checkpoint evaluation (larger KV pools): planned.
 
+
+## Project history, goals, and next steps (2026-07-17)
+
+**History.** This work began as serving-performance windows on a private
+4x RTX PRO 6000 (PCIe Gen3) box. Window 1 (2026-07-15) shipped an fp8
+wire mode (+7%) and documented a path to 1,200+ tok/s. Window 2
+(2026-07-16/17, this repo's founding night) delivered: stage-1 fp8
+query-gather + ring reduce-scatter (964 tok/s), the per-phase profiler
+that identified DCP communication as ~45-49% of prefill wall, the
+packed-CKV ownership inversion (1,696-1,699 tok/s at the test profile),
+and phase-2 full-context support (480k max-len, 599k-token pool,
+1,509 @ 55k / 1,126 @ 463k cold, decode +30%) — all gate-verified and
+deployed to the origin production system the same night.
+
+**Goals.** (1) Best-known GLM-5.2 serving performance on commodity PCIe
+multi-GPU boxes, with quality gates as hard constraints. (2) Full
+long-context capacity preserved — speed never trades away context.
+(3) Everything reproducible and portable: designs, proofs, failure
+ledgers, and acceptance criteria published here.
+
+**Next steps / outstanding work, in priority order:**
+
+1. **Compute-profiler acceptance** — the 7-file measurement patch
+   (designed, CPU-proven, integration bundle delivered) needs its GPU
+   acceptance run: DCP1 profile + `B12X_COMPUTE_PROF=1`, valid only when
+   every rank reports `ledger_valid=1` and `ordinal_valid=1`. Its output
+   decomposes the remaining ~21 ms/layer compute and names the gap
+   between 1,509 (shipped) and 1,879 (DCP1 physics ceiling) — this
+   chooses the next kernel project. NOTE: apply the vllm.*-named logger
+   pattern (RESULTS.md §8 field fix) to the profiler module first.
+2. **GHCR prebuilt image + one-line compose** — Dockerfile/CI spec is
+   drafted; build, push, and add the quickstart to README so others can
+   test without assembling overlays.
+3. **DCP2 posture cells** — measure 64k/120k; complete the DCP posture
+   matrix (DCP1 and DCP4 rows are measured, DCP2 is interpolation-free
+   territory).
+4. **Trellis-quant checkpoint evaluation** — the NVFP4+EXL3-trellis
+   3.0bpw hybrid checkpoint class claims ~2x KV pool (weights shrink
+   ~3-4 GiB/GPU). Quality is unpublished; needs full gate suite + decode
+   cost measurement (trellis dequant is compute-heavier). If quality
+   holds, it stacks with everything here.
+5. **Boot-time** — `VLLM_DISABLE_COMPILE_CACHE=1` costs each boot ~5-8
+   min of recompile; a cache-compatible AOT path would ~1.7x every
+   future iteration cycle.
+6. **Upstreaming** — the collective-safety group-vote pattern and the
+   packed-CKV mechanism deserve issues/PRs against the upstream serving
+   stack lineage; the breakthrough-analysis doc has the evidence file.
+
+**For the project's own operators:** internal continuity documentation
+(hosts, deployment state, runbooks, working agreements) lives in
+`workspace/AGENTS.md` — not published; present in working copies only.
+
 ## Process note
 
 Every stage here went: design note → adversarial review gate → CPU proof
