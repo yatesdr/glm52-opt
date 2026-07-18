@@ -1,0 +1,22 @@
+--- a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
++++ b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+@@ -76,7 +76,6 @@
+ _EXTEND_PREWARM_DONE: set[
+     tuple[int | None, int, int, int, int, int, bool, str, bool]
+ ] = set()
+-_FP8_ROPE_WRITER_LOADED = False
+ _CKV_GATHER_WORKSPACES: dict[tuple[str, int | None], torch.Tensor] = {}
+ _KV_FP8_ROPE_REQUESTED = os.getenv("KV_FP8_ROPE", "0") == "1"
+
+@@ -1781,7 +1780,7 @@
+
+         k_scale = getattr(layer, "_k_scale", None)
+         if self._kv_fp8_rope:
+-            torch.ops._C_fp8_rope_ops.concat_and_cache_nvfp4_mla_fp8_rope(
++            self._concat_and_cache_nvfp4_mla_fp8_rope(
+                 kv_c,
+                 k_pe_flat,
+                 gathered_buffer,
+                 slots,
+                 k_scale,
+             )
