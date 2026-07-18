@@ -62,7 +62,26 @@ removal hunk in #129 didn't apply on the image due to surrounding-context drift)
   (`KV_FP8_ROPE=1`, `VLLM_DISABLE_COMPILE_CACHE=1`, `DCP_CKV_GATHER=1`) is under
   test; results table appended below when the battery completes.
 
-<!-- RESULTS-PLACEHOLDER -->
+### Results (480k @ 368B, KV_FP8_ROPE=1, DCP_CKV_GATHER=1, VLLM_DISABLE_COMPILE_CACHE=1)
+
+With `b12x#37` + `vllm#129` + this fix, the full battery **passes** and lands
+byte-for-byte on our independent port (expected — the writer records are identical):
+
+| Metric | David's PR (#37+#129+fix) | Our independent port | Base v18 (432B) |
+|---|---|---|---|
+| 480k fit | ✅ **536,064 tok** (1.12×) | ✅ 536,064 tok | ❌ won't fit |
+| Prefill @8k | 1,178 tok/s | 1,184 | — |
+| Prefill @55k (cold→warm) | 1,208 → **1,379** | 1,220 → 1,372 | 1,358 warm |
+| Decode C1/ctx0 | **67.4** tok/s | 68.0 | 78 |
+| Needle @56k | ✅ PASS (`738216`) | ✅ PASS | — |
+| Coherence | ✅ 189 words, 0 repeat | ✅ 191 words | — |
+| Arithmetic | ✅ 13,444 | ✅ | — |
+
+The **CKV-gather prefill path ran without crashing** (log: *"Using transient
+full-CKV gather for B12X sparse MLA prefill"*), confirming the fix. Decode 67.4 on
+David's writer independently matches our 68.0 — the ~13% decode delta vs base v18's
+432B is **inherent to the 368B FP8-rope compact record** (dequant on read), seen by
+both implementations, not an artifact of either port.
 
 *Shared for incorporation; attribution not a concern. Collaboration with
 David Young + Festr.*
