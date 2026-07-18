@@ -1,42 +1,51 @@
-# Fix for David's fp8-rope PRs on the gilded-gnosis-v18 image — 2nd writer call site
+# Stopgap for running fp8-rope on the *deployed* gilded-gnosis-v18 image — image/branch version skew
 
 **For:** `lukealonso/b12x#37` (compact NVFP4 FP8-RoPE writer) +
 `local-inference-lab/vllm#129` (use the packaged writer).
 
+> **RESOLVED — not a PR defect (David Young, 2026-07-18).** David's merged
+> `dev/gilded-gnosis` branch **already binds both writer call sites** to the
+> packaged writer, so **no patch is needed there** — verified below. This
+> directory is only a **stopgap for the specific already-published image**
+> (`…-20260718`), which was built *before* that merge and therefore still calls
+> the old torch op at the second site. Rebuild the image from `dev/gilded-gnosis`
+> and this patch is unnecessary. **Do not reboot or repatch a working machine on
+> account of this.**
+
 **TL;DR:** Both PRs are correct and their writer is byte-identical to the one we
-independently ported (same layout scale@288/pad@292/RoPE@304, same recipe). But
-`vllm#129` converts **only one** of the two writer call sites present in the
-**deployed gilded-gnosis-v18 image**. After #129 removes the
-`torch.ops._C_fp8_rope_ops` registration path, the second call site — the
-**DCP CKV-gather prefill path** — still calls that now-unregistered op and
-**crashes at first prefill** under `KV_FP8_ROPE=1` + `DCP_CKV_GATHER=1`. This
-patch binds that site to the same packaged writer #129 already imports.
+independently ported (same layout scale@288/pad@292/RoPE@304, same recipe). The
+issue is purely a **version skew**: the *deployed 20260718 image* predates the
+`dev/gilded-gnosis` merge, so on that image one of the two writer call sites —
+the DCP CKV-gather prefill path — still calls `torch.ops._C_fp8_rope_ops`, which
+`#129`'s loader no longer registers, and it crashes at first prefill under
+`KV_FP8_ROPE=1` + `DCP_CKV_GATHER=1`. The one-line binding below is what let us
+run `KV_FP8_ROPE=1` on that pre-merge image for the comparison numbers.
 
-## Why this appears on the image but maybe not in your base
+## Verified against `dev/gilded-gnosis` — no patch needed there
 
-The image's `vllm/v1/attention/backends/mla/b12x_mla_sparse.py`
-(md5 `14c14eabc937cddf481532fb19e1dcb5`,
-`voipmonitor/vllm:gilded-gnosis-v18-vllm264bce1-b12xbc85ef3-fi801d57a-cu132-20260718`)
-is ~400 lines larger than the `local-inference-lab/vllm` base #129 was written
-against — the extra code is the CKV-gather machinery (`gathered_buffer`,
-`dcp_padded_total_tokens`, owner/local-pos slot mapping). That block contains a
-**second** writer invocation:
+Checked `local-inference-lab/vllm@dev/gilded-gnosis`
+`vllm/v1/attention/backends/mla/b12x_mla_sparse.py` directly:
+
+- `do_kv_cache_update` → `self._concat_and_cache_nvfp4_mla_fp8_rope(...)` ✅
+- `_append_current_chunk_to_gathered` (the CKV-gather site) →
+  `self._concat_and_cache_nvfp4_mla_fp8_rope(...)` ✅ **already bound**
+- no `_FP8_ROPE_WRITER_LOADED` / `_load_fp8_rope_writer` ✅
+
+So both sites already use the packaged writer on the merged branch. The mismatch
+is only with the **pre-merge published image**, whose
+`b12x_mla_sparse.py` (md5 `14c14eabc937cddf481532fb19e1dcb5`,
+`voipmonitor/vllm:gilded-gnosis-v18-…-20260718`) still has:
 
 ```python
         k_scale = getattr(layer, "_k_scale", None)
         if self._kv_fp8_rope:
-            torch.ops._C_fp8_rope_ops.concat_and_cache_nvfp4_mla_fp8_rope(   # <-- still the old op
+            torch.ops._C_fp8_rope_ops.concat_and_cache_nvfp4_mla_fp8_rope(   # pre-merge image only
                 kv_c, k_pe_flat, gathered_buffer, slots, k_scale,
             )
 ```
 
-`#129` deletes `_load_fp8_rope_writer()` and the op registration, then rebinds
-`do_kv_cache_update`'s call to `self._concat_and_cache_nvfp4_mla_fp8_rope`.
-This CKV-gather site is left untouched, so under `DCP_CKV_GATHER=1` (which the
-gilded-gnosis NF3 profile runs) the first prefill hits an unregistered
-`torch.ops._C_fp8_rope_ops` and dies. If your `local-inference-lab/vllm` base has
-this same CKV-gather call site, #129 needs this second conversion there too;
-if not, it is specific to the gilded-gnosis build and Festr should carry it.
+**Action item is a rebuild, not a code change:** publish a gilded-gnosis image
+from `dev/gilded-gnosis` and the stopgap retires itself.
 
 ## The fix (`ckv-gather-callsite.patch`)
 
