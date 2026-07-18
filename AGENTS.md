@@ -61,6 +61,18 @@ production on 2026-07-17 — 1,509 tok/s @ 55k, 1,126 tok/s cold @ 463k,
 6. **Cold vs warm**: any throughput number without prefix-cache metric
    deltas is unverifiable. `harness/prefill_bench.py` seeds a random
    first block; keep that property in anything you build.
+7. **`VLLM_DISABLE_COMPILE_CACHE=1` — set it on v18 (gilded-gnosis) boots.**
+   David's guidance; it is a ~10% *decode* lever (order of the 368B 68 vs
+   432B 78 tok/s gap), but the mechanism is not understood — treat as
+   known-good, not explained. Nuance flagged but unconfirmed: possibly
+   matters more on *subsequent* boots than the first (nobody said to omit
+   it on the first boot — just set it; A/B in a later window). Caution: on
+   our 480k@368 boot the flag was `=1` yet `/cache` still received ~426 MiB
+   of `torch_compile_cache`/`torch_aot_compile` and decode was still 68, so
+   the flag alone did not reproduce 78 on that first boot. Two independent
+   368B fp8-rope writers both showed the decode regression, so part of the
+   gap may be the compact record's FP8-rope dequant cost, not only this
+   cache lever. Not yet separated.
 
 ## md5 pin discipline
 
