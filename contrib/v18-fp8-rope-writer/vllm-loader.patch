@@ -1,0 +1,37 @@
+diff --git a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+--- a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
++++ b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+@@ -134,14 +134,27 @@ def _load_fp8_rope_writer() -> None:
+     if _FP8_ROPE_WRITER_LOADED:
+         return
+     library = os.getenv("KV_FP8_ROPE_WRITER_LIB", "/opt/fp8rope/_C_fp8_rope.so")
+-    if not os.path.isfile(library):
+-        raise RuntimeError(
+-            "KV_FP8_ROPE=1 requires the standalone writer library at "
+-            f"{library!r} (override with KV_FP8_ROPE_WRITER_LIB)"
+-        )
+-    torch.ops.load_library(library)
++    try:
++        from importlib import import_module
++
++        import_module("b12x.attention.mla.fp8_rope_writer")
++    except ModuleNotFoundError as exc:
++        if exc.name != "b12x.attention.mla.fp8_rope_writer":
++            raise RuntimeError(
++                "bundled B12X fp8_rope_writer failed to import"
++            ) from exc
++        if not os.path.isfile(library):
++            raise RuntimeError(
++                "KV_FP8_ROPE=1 requires the bundled B12X fp8_rope_writer or "
++                f"a standalone writer at {library!r}"
++            ) from exc
++        torch.ops.load_library(library)
++    except Exception as exc:
++        raise RuntimeError(
++            "bundled B12X fp8_rope_writer failed to import"
++        ) from exc
+     namespace = getattr(torch.ops, "_C_fp8_rope_ops", None)
+     if namespace is None or not hasattr(
+         namespace, "concat_and_cache_nvfp4_mla_fp8_rope"
+     ):
+         raise RuntimeError(
