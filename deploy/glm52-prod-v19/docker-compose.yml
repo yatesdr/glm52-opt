@@ -1,0 +1,61 @@
+# GLM-5.2 MXFP8-NVFP4-NF3 Hybrid — v19 production serving.
+# General-purpose: defaults to our validated build; every knob you'd want to tune is overridable
+# via environment (drop a .env next to this file, or export the vars) with no image rebuild.
+#
+# Per-node deploy (identical 4x RTX PRO 6000 96GB boxes):
+#   1) copy the model dir to the node, set MODEL_DIR to it (or use the default path)
+#   2) docker login ghcr.io   (public image; login only needed if you hit rate limits)
+#   3) docker compose up -d
+services:
+  glm52:
+    image: ghcr.io/yatesdr/glm52-serve:v19-20260719
+    container_name: ${CONTAINER_NAME:-glm52-prod}
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]
+    restart: unless-stopped
+    network_mode: host
+    ipc: host
+    privileged: true
+    init: true
+    shm_size: 32gb
+    gpus: all
+    ulimits: {memlock: -1, stack: 67108864, nofile: {soft: 1048576, hard: 1048576}}
+    environment:
+      # process-group interfaces (single-host)
+      GLOO_SOCKET_IFNAME: lo
+      NCCL_SOCKET_IFNAME: lo
+      # --- our validated v19 build (fixed defaults) ---
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      GPUS: "0,1,2,3"
+      TP: "4"
+      DCP: "4"
+      DCP_BACKEND: a2a
+      DCP_A2A_MAX_TOKENS: "64"
+      DCP_A2A_LARGE_BACKEND: ag_rs
+      DCP_CKV_GATHER: "1"
+      DCP_QUERY_SPLIT: "0"
+      MTP: "3"
+      GRAPH: "64"
+      MAX_BATCHED_TOKENS: "3072"
+      MOE_MODE: a16
+      MOE_BACKEND: b12x
+      QUANTIZATION: nvfp4_nf3_hybrid
+      ONLINE_QUANT: nf3-mxfp8
+      NF3_GRID188: "1"
+      KV_CACHE_DTYPE: nvfp4_ds_mla
+      KV_FP8_ROPE: "1"
+      LOAD_FORMAT: safetensors
+      INSTANTTENSOR_BACKEND: BUFFERED
+      # --- tunables (override via .env / environment) ---
+      SERVED_MODEL_NAME:      ${SERVED_MODEL_NAME:-GLM-5.2}
+      PORT:                   ${PORT:-5001}
+      GPU_MEMORY_UTILIZATION: ${GPU_MEMORY_UTILIZATION:-0.975}
+      MAX_MODEL_LEN:          ${MAX_MODEL_LEN:-480000}
+      MAX_NUM_SEQS:           ${MAX_NUM_SEQS:-16}      # active batch ceiling; raise cautiously (offload load risk)
+      # --- KV offload (GPU hot + DRAM warm tier). OFFLOAD_ENABLE=0 disables it. ---
+      OFFLOAD_ENABLE:         ${OFFLOAD_ENABLE:-1}
+      DRAM_OFFLOAD_BYTES:     ${DRAM_OFFLOAD_BYTES:-64000000000}   # 64 GB DRAM warm tier (~2.0M tokens)
+    volumes:
+      - ${MODEL_DIR:-/home/claude/LLM/GLM-5.2-hybrid}:/model:ro
+      - ${CACHE_DIR:-./cache}:/cache:rw
+      - ${HF_CACHE_DIR:-./cache/huggingface}:/root/.cache/huggingface:rw
