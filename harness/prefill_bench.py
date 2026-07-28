@@ -79,24 +79,28 @@ def main():
 
     before = scrape(args.base)
     t0 = time.time()
-    http(
-        f"{args.base}/v1/chat/completions",
-        {
-            "model": args.model,
-            "messages": [
-                {
-                    "role": "user",
-                    "content": prompt
-                    + "\n\nReply with the single word: acknowledged.",
-                }
-            ],
-            "max_tokens": 4,
-            "temperature": 0,
-            "chat_template_kwargs": {"reasoning_effort": "low"},
-        },
+    response = json.loads(
+        http(
+            f"{args.base}/v1/chat/completions",
+            {
+                "model": args.model,
+                "messages": [
+                    {
+                        "role": "user",
+                        "content": prompt
+                        + "\n\nReply with the single word: acknowledged.",
+                    }
+                ],
+                "max_tokens": 4,
+                "temperature": 0,
+                "chat_template_kwargs": {"reasoning_effort": "low"},
+            },
+        )
     )
     wall = time.time() - t0
     after = scrape(args.base)
+    prompt_details = response.get("usage", {}).get("prompt_tokens_details") or {}
+    cached_tokens = int(prompt_details.get("cached_tokens") or 0)
 
     dtok = after["vllm:prompt_tokens_total"] - before["vllm:prompt_tokens_total"]
     dt = (
@@ -106,6 +110,7 @@ def main():
     server_tps = dtok / dt if dt > 0 else float("nan")
     print(
         f"RESULT label={args.label or 'run'} prompt_tokens={int(dtok)} "
+        f"cached_tokens={cached_tokens} "
         f"prefill_time_s={dt:.2f} server_prefill_tok_s={server_tps:.0f} "
         f"wall_s={wall:.2f} wall_tok_s={n / wall:.0f}"
     )

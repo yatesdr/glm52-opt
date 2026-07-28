@@ -1,3 +1,15 @@
 workspace/
 /fable-sol-comms.md
 .DS_Store
+
+# comms runtime data (local coordination state; bin/hooks/README stay tracked)
+comms/registry.json
+comms/STATUS.md
+comms/INBOX-*.md
+comms/FEED.md
+comms/acks.*.json
+comms/channels/
+comms/.hook.log
+comms/.lock
+comms/.nudged.json
+comms/**/.DS_Store

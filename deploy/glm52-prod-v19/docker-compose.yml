@@ -49,12 +49,18 @@ services:
       # --- tunables (override via .env / environment) ---
       SERVED_MODEL_NAME:      ${SERVED_MODEL_NAME:-GLM-5.2}
       PORT:                   ${PORT:-5001}
-      GPU_MEMORY_UTILIZATION: ${GPU_MEMORY_UTILIZATION:-0.975}
+      # GMU 0.970 is the validated ceiling at 480k WITH offload: KV pool 644,864 tokens (fits 480k @1.34x) and
+      # enough activation headroom that offload GPU->DRAM stores don't OOM. 0.975 OOMs on the first real prefill
+      # (36 MiB short; fragmentation under offload's forced expandable_segments:False); <=0.957 can't fit 480k.
+      # Note the earlier conc-1 "store hang" was a SYMPTOM of 0.975 memory pressure, not a connector deadlock:
+      # it disappears at 0.970. Full ladder (conc 1-16 + 55k prefill + 350k needle) passes clean, 0 errors, 0 restarts.
+      GPU_MEMORY_UTILIZATION: ${GPU_MEMORY_UTILIZATION:-0.970}
       MAX_MODEL_LEN:          ${MAX_MODEL_LEN:-480000}
-      MAX_NUM_SEQS:           ${MAX_NUM_SEQS:-16}      # active batch ceiling; raise cautiously (offload load risk)
-      # --- KV offload (GPU hot + DRAM warm tier). OFFLOAD_ENABLE=0 disables it. ---
+      MAX_NUM_SEQS:           ${MAX_NUM_SEQS:-16}      # active batch ceiling
+      # --- KV offload (GPU hot + 64 GB DRAM warm tier). DEFAULT ON. Stable at GMU<=0.970. If you RAISE GMU past
+      #     0.970 you must disable offload (=0) or it OOMs. NVMe 3rd tier stays off (faults on v19 fs-tier API). ---
       OFFLOAD_ENABLE:         ${OFFLOAD_ENABLE:-1}
-      DRAM_OFFLOAD_BYTES:     ${DRAM_OFFLOAD_BYTES:-64000000000}   # 64 GB DRAM warm tier (~2.0M tokens)
+      DRAM_OFFLOAD_BYTES:     ${DRAM_OFFLOAD_BYTES:-64000000000}   # 64 GB DRAM warm tier (used when OFFLOAD_ENABLE=1)
     volumes:
       - ${MODEL_DIR:-/home/claude/LLM/GLM-5.2-hybrid}:/model:ro
       - ${CACHE_DIR:-./cache}:/cache:rw

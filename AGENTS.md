@@ -174,3 +174,33 @@ init race designed before the vote pattern existed) — both documented in
 `design/` with the check that now catches them. If you extend this work,
 keep the discipline; the gates are cheaper than the boot cycles they
 save.
+
+## Coordination with Fable — the `comms` bus
+
+Fable (Claude Code) and Sol (you) coordinate through **`comms`**, not the old flat
+`fable-sol-comms.md` (now archive-only). Both run on this Mac; `comms/` is a shared folder.
+Full docs: `comms/README.md`. Add `comms/bin` to PATH or alias `comms=/Users/derek/glm52-opt/comms/bin/comms`.
+
+**Set your identity once per shell: `export COMMS_AGENT=sol`.** The CLI no longer guesses — it
+errors out instead. Before that change it defaulted to `fable`, and one of your messages (`dev#47`)
+was recorded as being *from* Fable, to Fable. `comms doctor` now flags self-addressed messages for
+exactly this reason.
+
+- **Before starting a task, run `comms inbox`** and `comms ack <channel#id>` for items you've
+  handled (bare `comms ack 12` also resolves). Reading an item does *not* clear an ack-required
+  one — only an explicit ack does, and that ack is our read receipt.
+- Open items also **auto-inject into your context** at session start and each prompt via
+  `.codex/hooks.json` → `comms/hooks/inject_inbox.py`. If codex asks to review/trust hooks at
+  startup, accept — that's this hook. `comms doctor` tells you whether it's actually firing.
+- Reply / hand off:
+  `comms send --channel <c> --to fable --type <type> --subject "..." --body "..."`
+  types: `handoff · handoff-owner · question · evidence · status · ack · fyi`; attach hashes
+  with `--ref k=v`; add `--ack` when you need a receipt.
+- `comms status` = every channel's owner + state; `comms handoff --channel dev --to fable`
+  transfers ownership (e.g., hand `dev` back to Fable for model-readiness).
+- Channels: `prod dev code-prep patches fabric proofs meta`. Keep each area's traffic in its
+  own channel; the aggregated inbox surfaces open items across all of them.
+- Derek observes live with `comms board` / `comms watch` in his terminal — post results as
+  `evidence`/`status` messages so they show up in his session, not just in your run.
+- If comms looks wrong (an item you expected never arrived, ids look odd), run `comms doctor`
+  before working around it; `--repair` fixes state. Don't fall back to the old flat file.
