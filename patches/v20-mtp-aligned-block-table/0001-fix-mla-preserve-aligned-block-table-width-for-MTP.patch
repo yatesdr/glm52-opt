@@ -1,0 +1,142 @@
+From c9a2e28db9942e7028ea8ec978b07dcbe8cd420f Mon Sep 17 00:00:00 2001
+From: derek <derek.yates@live.com>
+Date: Wed, 22 Jul 2026 19:52:28 -0400
+Subject: [PATCH] fix(mla): preserve aligned block-table width for MTP
+
+---
+ .../layers/test_sparse_attn_indexer_b12x.py   | 33 +++++++++++++----
+ vllm/v1/attention/backends/mla/indexer.py     | 35 +++++++++++++++----
+ 2 files changed, 54 insertions(+), 14 deletions(-)
+
+diff --git a/tests/model_executor/layers/test_sparse_attn_indexer_b12x.py b/tests/model_executor/layers/test_sparse_attn_indexer_b12x.py
+index 43a96a61..2c8e46cb 100644
+--- a/tests/model_executor/layers/test_sparse_attn_indexer_b12x.py
++++ b/tests/model_executor/layers/test_sparse_attn_indexer_b12x.py
+@@ -1092,18 +1092,20 @@ def test_b12x_schedule_metadata_uses_canonical_indexer_import(monkeypatch):
+     ]
+ 
+ 
+-def test_mtp_variable_decode_drops_block_table_alignment_padding():
++def test_mtp_variable_decode_preserves_block_table_alignment_padding():
+     from vllm.v1.attention.backends.mla import indexer as mla_indexer_mod
+ 
++    assert mla_indexer_mod._align_block_table_width(1875, 64) == 1876
++    assert mla_indexer_mod._align_block_table_width(1874, 64) == 1874
++
+     builder = object.__new__(mla_indexer_mod.DeepseekV32IndexerMetadataBuilder)
+     # max_model_len=480000, block_size=64, DCP=4 requires 1875 logical
+     # blocks. The model runner aligns that row to 1876 entries.
+-    logical_width = 1875
+     aligned_width = 1876
+     buffer_rows = 16
+     builder.decode_seq_lens_buffer = torch.zeros(buffer_rows, dtype=torch.int32)
+     builder.expanded_block_table_buffer = torch.zeros(
+-        (buffer_rows, logical_width), dtype=torch.int32
++        (buffer_rows, aligned_width), dtype=torch.int32
+     )
+     builder.decode_lens_buffer = torch.zeros(buffer_rows, dtype=torch.int32)
+     builder.arange_buffer = torch.arange(buffer_rows, dtype=torch.int32)
+@@ -1129,10 +1131,27 @@ def test_mtp_variable_decode_drops_block_table_alignment_padding():
+         max_decode_len=3,
+     )
+ 
+-    expected = torch.repeat_interleave(
+-        block_table[:, :logical_width], decode_lens, dim=0, output_size=7
+-    )
+-    assert expanded.shape == (7, logical_width)
++    expected = torch.repeat_interleave(block_table, decode_lens, dim=0, output_size=7)
++    assert expanded.shape == (7, aligned_width)
+     torch.testing.assert_close(expanded, expected)
+     assert batch_size == 7
+     assert not requires_padding
++
++    # Future allocation drift must fail before either the Triton copy or a
++    # paged indexer kernel can consume mismatched row strides.
++    builder.expanded_block_table_buffer = torch.zeros(
++        (buffer_rows, 1875), dtype=torch.int32
++    )
++    with pytest.raises(ValueError, match="block-table row width"):
++        builder._prepare_decode_tensors(
++            seq_lens=seq_lens,
++            block_table=block_table,
++            decode_lens=decode_lens,
++            decode_lens_cpu=decode_lens,
++            query_start_loc=query_start_loc,
++            num_decodes=3,
++            num_decode_tokens=7,
++            use_native=False,
++            next_n=4,
++            max_decode_len=3,
++        )
+diff --git a/vllm/v1/attention/backends/mla/indexer.py b/vllm/v1/attention/backends/mla/indexer.py
+index 49283c6a..c47e500b 100644
+--- a/vllm/v1/attention/backends/mla/indexer.py
++++ b/vllm/v1/attention/backends/mla/indexer.py
+@@ -36,6 +36,14 @@ from vllm.v1.worker.cp_utils import get_total_cp_world_size
+ logger = init_logger(__name__)
+ 
+ 
++def _align_block_table_width(num_blocks: int, block_size: int) -> int:
++    """Match the model runner's backend-facing block-table row alignment."""
++    if block_size > 128:
++        return num_blocks
++    alignment = 128 // block_size
++    return cdiv(num_blocks, alignment) * alignment
++
++
+ @triton.jit
+ def _prepare_uniform_decode_kernel(
+     seq_lens_ptr,
+@@ -448,6 +456,17 @@ class DeepseekV32IndexerMetadataBuilder(AttentionMetadataBuilder):
+             self.vllm_config.model_config.max_model_len,
+             self.kv_cache_spec.block_size * get_total_cp_world_size(),
+         )
++        # Keep the expanded decode table layout identical to the model
++        # runner's block table. The runner right-pads rows to a 128-token
++        # boundary for attention backends; sizing this buffer to only the
++        # logical page count can therefore produce a different row stride
++        # (for example 1875 here versus 1876 in the runner at 480k,
++        # block_size=64, DCP=4). Besides breaking variable-width MTP's
++        # repeat_interleave, that divergent stride is passed to the paged
++        # indexer kernels during flattened decode.
++        max_num_blocks_per_req = _align_block_table_width(
++            max_num_blocks_per_req, self.kv_cache_spec.block_size
++        )
+         self.expanded_block_table_buffer = torch.zeros(
+             (
+                 scheduler_config.max_num_batched_tokens,
+@@ -566,6 +585,12 @@ class DeepseekV32IndexerMetadataBuilder(AttentionMetadataBuilder):
+         min_decode_len = int(decode_lens_cpu.min().item())
+         if not use_native and (max_decode_len > 1 or force_flatten):
+             assert self.decode_seq_lens_buffer.dim() == 1
++            if block_table.shape[1] != self.expanded_block_table_buffer.shape[1]:
++                raise ValueError(
++                    "MTP block-table row width does not match its expanded buffer: "
++                    f"{block_table.shape[1]} != "
++                    f"{self.expanded_block_table_buffer.shape[1]}"
++                )
+             if (
+                 min_decode_len == max_decode_len
+                 and num_decodes * max_decode_len == num_decode_tokens
+@@ -630,15 +655,11 @@ class DeepseekV32IndexerMetadataBuilder(AttentionMetadataBuilder):
+                 seq_lens = self.decode_seq_lens_buffer[:num_decode_tokens]
+ 
+                 # Give each of the flattened entries the same block table row as the
+-                # original request. The model runner may right-pad block-table rows
+-                # for backend alignment (for example, 1875 logical blocks becomes
+-                # 1876 at block_size=64), while this indexer buffer is sized to the
+-                # logical page count. Match the uniform Triton path above, which
+-                # copies only expanded_bt_stride entries and drops that unused tail.
+-                expanded_block_table_width = self.expanded_block_table_buffer.shape[1]
++                # original request. The expanded buffer uses the same backend-aligned
++                # row width as the model runner's source table.
+                 self.expanded_block_table_buffer[:actual_expanded] = (
+                     torch.repeat_interleave(
+-                        block_table[:, :expanded_block_table_width],
++                        block_table,
+                         decode_lens,
+                         dim=0,
+                         output_size=actual_expanded,
+-- 
+2.50.1 (Apple Git-155)
+

@@ -1,0 +1,30 @@
+{
+  "cache": {
+    "cache_sha256": "00e94e14639ed66f8077bdc3c833d524dfaa487610fd2e24b82df21a7dbcd397",
+    "gather_exact": true,
+    "insert_exact": true
+  },
+  "device": "cuda:0",
+  "metadata_contract": {
+    "live_decode_b1_normalized": true,
+    "speculative_decode_rejected": true,
+    "zero_based_prefill_required": true
+  },
+  "rope": {
+    "exact": true,
+    "k_sha256": "31f6004a6db00c80b367d6bf62b87fc8f7213ffacdd46bd39d140188ab9db2e2",
+    "q_sha256": "30538cfe9256395da13a250c35a32fd5bba36182968ac46de5ff30f3d5a5e172"
+  },
+  "schema": "v20-glm-official-reference-indexer-gate-v1",
+  "scorer_topk": {
+    "indices_sha256": "fd23685c14b7926f87f6cdebc660c9d8a2477be5002f85ec8822667b69307bfd",
+    "keys": 2111,
+    "rows": 3,
+    "set_exact": true,
+    "topk": 512,
+    "values_match_source": true,
+    "values_sha256": "db02d5f9cb8dbe957460fc4b22399ed7310015757b15bbdeb97c8971f6353fc6"
+  },
+  "status": "PASS",
+  "tf32_state_restored": true
+}

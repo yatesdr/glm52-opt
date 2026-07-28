@@ -1,0 +1,516 @@
+[
+    {
+        "Id": "ca1f96b9f82fb80f277352c245d8fc5f7b34721374945617093c2392c847fce0",
+        "Created": "2026-07-26T09:17:47.370314685Z",
+        "Path": "/usr/local/bin/serve-gilded-gnosis.sh",
+        "Args": [],
+        "State": {
+            "Status": "running",
+            "Running": true,
+            "Paused": false,
+            "Restarting": false,
+            "OOMKilled": false,
+            "Dead": false,
+            "Pid": 473215,
+            "ExitCode": 0,
+            "Error": "",
+            "StartedAt": "2026-07-26T09:17:47.430788289Z",
+            "FinishedAt": "0001-01-01T00:00:00Z",
+            "Health": {
+                "Status": "healthy",
+                "FailingStreak": 0,
+                "Log": [
+                    {
+                        "Start": "2026-07-26T09:33:22.247603919Z",
+                        "End": "2026-07-26T09:33:22.407577905Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    },
+                    {
+                        "Start": "2026-07-26T09:33:52.408915205Z",
+                        "End": "2026-07-26T09:33:52.561987386Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    },
+                    {
+                        "Start": "2026-07-26T09:34:22.562687411Z",
+                        "End": "2026-07-26T09:34:22.719711928Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    },
+                    {
+                        "Start": "2026-07-26T09:34:52.720593343Z",
+                        "End": "2026-07-26T09:34:52.873410943Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    },
+                    {
+                        "Start": "2026-07-26T09:35:22.875079115Z",
+                        "End": "2026-07-26T09:35:23.023720515Z",
+                        "ExitCode": 0,
+                        "Output": ""
+                    }
+                ]
+            }
+        },
+        "Image": "sha256:2566f905f13252c514a0f96c177ba982bd16321943927966310bf8c7c92d94b7",
+        "ResolvConfPath": "/var/lib/docker/containers/ca1f96b9f82fb80f277352c245d8fc5f7b34721374945617093c2392c847fce0/resolv.conf",
+        "HostnamePath": "/var/lib/docker/containers/ca1f96b9f82fb80f277352c245d8fc5f7b34721374945617093c2392c847fce0/hostname",
+        "HostsPath": "/var/lib/docker/containers/ca1f96b9f82fb80f277352c245d8fc5f7b34721374945617093c2392c847fce0/hosts",
+        "LogPath": "/var/lib/docker/containers/ca1f96b9f82fb80f277352c245d8fc5f7b34721374945617093c2392c847fce0/ca1f96b9f82fb80f277352c245d8fc5f7b34721374945617093c2392c847fce0-json.log",
+        "Name": "/glm52-v20-nvfp4-scales-causal",
+        "RestartCount": 0,
+        "Driver": "overlayfs",
+        "Platform": "linux",
+        "MountLabel": "",
+        "ProcessLabel": "",
+        "AppArmorProfile": "docker-default",
+        "ExecIDs": null,
+        "HostConfig": {
+            "Binds": [
+                "/home/claude/LLM/GLM-5.2-hybrid:/model:ro",
+                "/home/claude/glm52-v20-prod-ready/cache:/cache:rw",
+                "/home/claude/glm52-v20-prod-ready/cache:/root/.cache:rw",
+                "/nvme-kv:/nvme-kv:rw"
+            ],
+            "ContainerIDFile": "",
+            "LogConfig": {
+                "Type": "json-file",
+                "Config": {
+                    "max-file": "3",
+                    "max-size": "50m"
+                }
+            },
+            "NetworkMode": "v20-nvfp4-scales-causal_default",
+            "PortBindings": {
+                "5001/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "5001"
+                    }
+                ]
+            },
+            "RestartPolicy": {
+                "Name": "no",
+                "MaximumRetryCount": 0
+            },
+            "AutoRemove": false,
+            "VolumeDriver": "",
+            "VolumesFrom": null,
+            "ConsoleSize": [
+                0,
+                0
+            ],
+            "CapAdd": null,
+            "CapDrop": null,
+            "CgroupnsMode": "private",
+            "Dns": null,
+            "DnsOptions": null,
+            "DnsSearch": null,
+            "ExtraHosts": [],
+            "GroupAdd": null,
+            "IpcMode": "host",
+            "Cgroup": "",
+            "Links": null,
+            "OomScoreAdj": 0,
+            "PidMode": "",
+            "Privileged": false,
+            "PublishAllPorts": false,
+            "ReadonlyRootfs": false,
+            "SecurityOpt": [
+                "label=disable"
+            ],
+            "UTSMode": "",
+            "UsernsMode": "",
+            "ShmSize": 34359738368,
+            "Runtime": "runc",
+            "Isolation": "",
+            "CpuShares": 0,
+            "Memory": 0,
+            "NanoCpus": 0,
+            "CgroupParent": "",
+            "BlkioWeight": 0,
+            "BlkioWeightDevice": null,
+            "BlkioDeviceReadBps": null,
+            "BlkioDeviceWriteBps": null,
+            "BlkioDeviceReadIOps": null,
+            "BlkioDeviceWriteIOps": null,
+            "CpuPeriod": 0,
+            "CpuQuota": 0,
+            "CpuRealtimePeriod": 0,
+            "CpuRealtimeRuntime": 0,
+            "CpusetCpus": "",
+            "CpusetMems": "",
+            "Devices": null,
+            "DeviceCgroupRules": null,
+            "DeviceRequests": [
+                {
+                    "Driver": "nvidia",
+                    "Count": -1,
+                    "DeviceIDs": null,
+                    "Capabilities": [
+                        [
+                            "gpu"
+                        ]
+                    ],
+                    "Options": null
+                }
+            ],
+            "MemoryReservation": 0,
+            "MemorySwap": 0,
+            "MemorySwappiness": null,
+            "OomKillDisable": null,
+            "PidsLimit": null,
+            "Ulimits": [
+                {
+                    "Name": "stack",
+                    "Hard": 67108864,
+                    "Soft": 67108864
+                },
+                {
+                    "Name": "memlock",
+                    "Hard": -1,
+                    "Soft": -1
+                }
+            ],
+            "CpuCount": 0,
+            "CpuPercent": 0,
+            "IOMaximumIOps": 0,
+            "IOMaximumBandwidth": 0,
+            "MaskedPaths": [
+                "/proc/acpi",
+                "/proc/asound",
+                "/proc/interrupts",
+                "/proc/kcore",
+                "/proc/keys",
+                "/proc/latency_stats",
+                "/proc/sched_debug",
+                "/proc/scsi",
+                "/proc/timer_list",
+                "/proc/timer_stats",
+                "/sys/devices/virtual/powercap",
+                "/sys/firmware",
+                "/sys/devices/system/cpu/cpu0/thermal_throttle",
+                "/sys/devices/system/cpu/cpu1/thermal_throttle",
+                "/sys/devices/system/cpu/cpu2/thermal_throttle",
+                "/sys/devices/system/cpu/cpu3/thermal_throttle",
+                "/sys/devices/system/cpu/cpu4/thermal_throttle",
+                "/sys/devices/system/cpu/cpu5/thermal_throttle",
+                "/sys/devices/system/cpu/cpu6/thermal_throttle",
+                "/sys/devices/system/cpu/cpu7/thermal_throttle",
+                "/sys/devices/system/cpu/cpu8/thermal_throttle",
+                "/sys/devices/system/cpu/cpu9/thermal_throttle",
+                "/sys/devices/system/cpu/cpu10/thermal_throttle",
+                "/sys/devices/system/cpu/cpu11/thermal_throttle",
+                "/sys/devices/system/cpu/cpu12/thermal_throttle",
+                "/sys/devices/system/cpu/cpu13/thermal_throttle",
+                "/sys/devices/system/cpu/cpu14/thermal_throttle",
+                "/sys/devices/system/cpu/cpu15/thermal_throttle",
+                "/sys/devices/system/cpu/cpu16/thermal_throttle",
+                "/sys/devices/system/cpu/cpu17/thermal_throttle",
+                "/sys/devices/system/cpu/cpu18/thermal_throttle",
+                "/sys/devices/system/cpu/cpu19/thermal_throttle",
+                "/sys/devices/system/cpu/cpu20/thermal_throttle",
+                "/sys/devices/system/cpu/cpu21/thermal_throttle",
+                "/sys/devices/system/cpu/cpu22/thermal_throttle",
+                "/sys/devices/system/cpu/cpu23/thermal_throttle",
+                "/sys/devices/system/cpu/cpu24/thermal_throttle",
+                "/sys/devices/system/cpu/cpu25/thermal_throttle",
+                "/sys/devices/system/cpu/cpu26/thermal_throttle",
+                "/sys/devices/system/cpu/cpu27/thermal_throttle",
+                "/sys/devices/system/cpu/cpu28/thermal_throttle",
+                "/sys/devices/system/cpu/cpu29/thermal_throttle",
+                "/sys/devices/system/cpu/cpu30/thermal_throttle",
+                "/sys/devices/system/cpu/cpu31/thermal_throttle",
+                "/sys/devices/system/cpu/cpu32/thermal_throttle",
+                "/sys/devices/system/cpu/cpu33/thermal_throttle",
+                "/sys/devices/system/cpu/cpu34/thermal_throttle",
+                "/sys/devices/system/cpu/cpu35/thermal_throttle"
+            ],
+            "ReadonlyPaths": [
+                "/proc/bus",
+                "/proc/fs",
+                "/proc/irq",
+                "/proc/sys",
+                "/proc/sysrq-trigger"
+            ]
+        },
+        "Storage": {
+            "RootFS": {
+                "Snapshot": {
+                    "Name": "overlayfs"
+                }
+            }
+        },
+        "Mounts": [
+            {
+                "Type": "bind",
+                "Source": "/home/claude/LLM/GLM-5.2-hybrid",
+                "Destination": "/model",
+                "Mode": "ro",
+                "RW": false,
+                "Propagation": "rprivate"
+            },
+            {
+                "Type": "bind",
+                "Source": "/home/claude/glm52-v20-prod-ready/cache",
+                "Destination": "/cache",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Type": "bind",
+                "Source": "/home/claude/glm52-v20-prod-ready/cache",
+                "Destination": "/root/.cache",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": "rprivate"
+            },
+            {
+                "Type": "bind",
+                "Source": "/nvme-kv",
+                "Destination": "/nvme-kv",
+                "Mode": "rw",
+                "RW": true,
+                "Propagation": "rprivate"
+            }
+        ],
+        "Config": {
+            "Hostname": "ca1f96b9f82f",
+            "Domainname": "",
+            "User": "",
+            "AttachStdin": false,
+            "AttachStdout": true,
+            "AttachStderr": true,
+            "ExposedPorts": {
+                "5001/tcp": {}
+            },
+            "Tty": false,
+            "OpenStdin": false,
+            "StdinOnce": false,
+            "Env": [
+                "MAX_BATCHED_TOKENS=3072",
+                "NCCL_P2P_LEVEL=PXB",
+                "MODEL_FAMILY=glm52-hybrid",
+                "MAX_NUM_SEQS=16",
+                "MTP=3",
+                "DCP=4",
+                "MAX_MODEL_LEN=480000",
+                "KV_FP8_ROPE=1",
+                "TP=4",
+                "VLLM_B12X_MLA_CKV_PREFETCH_DEPTH=0",
+                "GPU_MEMORY_UTILIZATION=0.974",
+                "GRAPH=64",
+                "VLLM_NVFP4_MLA_SCALES_FILE=/opt/vllm/kv-scales/glm52-nvfp4-nf3-hybrid_mla_outer_scales_v1.json",
+                "SERVED_MODEL_NAME=GLM-5.2",
+                "PORT=5001",
+                "DCP_PREFILL_WORKSPACE=auto",
+                "MODEL=/model",
+                "PATH=/opt/venv/bin:/usr/local/nvidia/bin:/usr/local/cuda/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin",
+                "NVARCH=x86_64",
+                "NVIDIA_REQUIRE_CUDA=cuda>=13.2 brand=unknown,driver>=535,driver<536 brand=grid,driver>=535,driver<536 brand=tesla,driver>=535,driver<536 brand=nvidia,driver>=535,driver<536 brand=quadro,driver>=535,driver<536 brand=quadrortx,driver>=535,driver<536 brand=nvidiartx,driver>=535,driver<536 brand=vapps,driver>=535,driver<536 brand=vpc,driver>=535,driver<536 brand=vcs,driver>=535,driver<536 brand=vws,driver>=535,driver<536 brand=cloudgaming,driver>=535,driver<536 brand=unknown,driver>=570,driver<571 brand=grid,driver>=570,driver<571 brand=tesla,driver>=570,driver<571 brand=nvidia,driver>=570,driver<571 brand=quadro,driver>=570,driver<571 brand=quadrortx,driver>=570,driver<571 brand=nvidiartx,driver>=570,driver<571 brand=vapps,driver>=570,driver<571 brand=vpc,driver>=570,driver<571 brand=vcs,driver>=570,driver<571 brand=vws,driver>=570,driver<571 brand=cloudgaming,driver>=570,driver<571 brand=unknown,driver>=580,driver<581 brand=grid,driver>=580,driver<581 brand=tesla,driver>=580,driver<581 brand=nvidia,driver>=580,driver<581 brand=quadro,driver>=580,driver<581 brand=quadrortx,driver>=580,driver<581 brand=nvidiartx,driver>=580,driver<581 brand=vapps,driver>=580,driver<581 brand=vpc,driver>=580,driver<581 brand=vcs,driver>=580,driver<581 brand=vws,driver>=580,driver<581 brand=cloudgaming,driver>=580,driver<581 brand=unknown,driver>=590,driver<591 brand=grid,driver>=590,driver<591 brand=tesla,driver>=590,driver<591 brand=nvidia,driver>=590,driver<591 brand=quadro,driver>=590,driver<591 brand=quadrortx,driver>=590,driver<591 brand=nvidiartx,driver>=590,driver<591 brand=vapps,driver>=590,driver<591 brand=vpc,driver>=590,driver<591 brand=vcs,driver>=590,driver<591 brand=vws,driver>=590,driver<591 brand=cloudgaming,driver>=590,driver<591",
+                "NV_CUDA_CUDART_VERSION=13.2.75-1",
+                "CUDA_VERSION=13.2.1",
+                "LD_LIBRARY_PATH=/usr/local/nvidia/lib:/usr/local/nvidia/lib64:/usr/local/cuda/lib64",
+                "NVIDIA_VISIBLE_DEVICES=all",
+                "NVIDIA_DRIVER_CAPABILITIES=compute,utility",
+                "NV_CUDA_LIB_VERSION=13.2.1-1",
+                "NV_NVTX_VERSION=13.2.75-1",
+                "NV_LIBNPP_VERSION=13.1.0.48-1",
+                "NV_LIBNPP_PACKAGE=libnpp-13-2=13.1.0.48-1",
+                "NV_LIBCUSPARSE_VERSION=12.7.10.1-1",
+                "NV_LIBCUBLAS_PACKAGE_NAME=libcublas-13-2",
+                "NV_LIBCUBLAS_VERSION=13.4.0.1-1",
+                "NV_LIBCUBLAS_PACKAGE=libcublas-13-2=13.4.0.1-1",
+                "NVIDIA_PRODUCT_NAME=CUDA",
+                "NV_CUDA_CUDART_DEV_VERSION=13.2.75-1",
+                "NV_NVML_DEV_VERSION=13.2.82-1",
+                "NV_LIBCUSPARSE_DEV_VERSION=12.7.10.1-1",
+                "NV_LIBNPP_DEV_VERSION=13.1.0.48-1",
+                "NV_LIBNPP_DEV_PACKAGE=libnpp-dev-13-2=13.1.0.48-1",
+                "NV_LIBCUBLAS_DEV_VERSION=13.4.0.1-1",
+                "NV_LIBCUBLAS_DEV_PACKAGE_NAME=libcublas-dev-13-2",
+                "NV_LIBCUBLAS_DEV_PACKAGE=libcublas-dev-13-2=13.4.0.1-1",
+                "NV_CUDA_NSIGHT_COMPUTE_VERSION=13.2.1-1",
+                "NV_CUDA_NSIGHT_COMPUTE_DEV_PACKAGE=cuda-nsight-compute-13-2=13.2.1-1",
+                "LIBRARY_PATH=/usr/local/cuda/lib64/stubs",
+                "NV_CUDNN_VERSION=9.20.0.48-1",
+                "NV_CUDNN_PACKAGE_NAME=libcudnn9-cuda-13",
+                "NV_CUDNN_PACKAGE=libcudnn9-cuda-13=9.20.0.48-1",
+                "NV_CUDNN_PACKAGE_DEV=libcudnn9-dev-cuda-13=9.20.0.48-1",
+                "NV_CUDNN_PACKAGE_DEV_HEADERS=libcudnn9-headers-cuda-13=9.20.0.48-1",
+                "LANG=C.UTF-8",
+                "LC_ALL=C.UTF-8",
+                "PYTHONDONTWRITEBYTECODE=1",
+                "PYTHONUNBUFFERED=1",
+                "PIP_DISABLE_PIP_VERSION_CHECK=1",
+                "NCCL_LOCAL_INFERENCE_PATH=/opt/libnccl-local-inference.so.2.30.4",
+                "NCCL_PR2127_PATH=/opt/libnccl-local-inference.so.2.30.4",
+                "VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4",
+                "VIRTUAL_ENV=/opt/venv",
+                "CUDA_DEVICE_ORDER=PCI_BUS_ID",
+                "TORCH_CUDA_ARCH_LIST=12.0a",
+                "FLASHINFER_CUDA_ARCH_LIST=12.0f",
+                "FLASHINFER_LOCAL_VERSION=cu132",
+                "FLASHINFER_DISABLE_VERSION_CHECK=1",
+                "HF_HOME=/root/.cache/huggingface",
+                "LOCAL_INFERENCE_CACHE_FINGERPRINT=vllm5517197660-b12xbe0edcaae6-08672db528f4991b",
+                "XDG_CACHE_HOME=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b",
+                "VLLM_CACHE_ROOT=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/vllm",
+                "VLLM_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/vllm",
+                "TRITON_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/triton",
+                "TORCHINDUCTOR_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/torchinductor",
+                "TORCH_EXTENSIONS_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/torch_extensions",
+                "FLASHINFER_WORKSPACE_BASE=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/flashinfer",
+                "VLLM_FLASHINFER_AUTOTUNE_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/flashinfer-autotune",
+                "TVM_FFI_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/tvm-ffi",
+                "TVM_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/tvm",
+                "TILELANG_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/tilelang",
+                "TILELANG_TMP_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/tilelang/tmp",
+                "CUTE_DSL_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/cute-dsl",
+                "B12X_CUTE_COMPILE_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/b12x-cute",
+                "SPARKINFER_COMPILE_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/sparkinfer/compile",
+                "DG_JIT_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/deep-gemm",
+                "MM_SPARSE_ATTN_AOT_CACHE=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/minfer/mm_sparse_attn",
+                "MINFER_FMHA_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/minfer/fmha_sm100",
+                "CUDA_CACHE_PATH=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/cuda",
+                "CUPY_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/cupy",
+                "NUMBA_CACHE_DIR=/cache/jit/vllm5517197660-b12xbe0edcaae6-08672db528f4991b/numba",
+                "LD_PRELOAD=/opt/libnccl-local-inference.so.2.30.4",
+                "NCCL_IB_DISABLE=1",
+                "NCCL_PROTO=LL,LL128,Simple",
+                "VLLM_ENABLE_PCIE_ALLREDUCE=1",
+                "VLLM_PCIE_ALLREDUCE_BACKEND=cpp",
+                "VLLM_CPP_AR_1STAGE_NCCL_CUTOFF=56KB",
+                "VLLM_CPP_AR_IGNORE_CUTOFF_MAX_ROWS=0",
+                "VLLM_RTX6K_FUSED_ALLREDUCE_ADD=0",
+                "VLLM_RTX6K_FUSED_ALLREDUCE_ADD_END_BARRIER=0",
+                "VLLM_DISABLE_SHARED_EXPERTS_STREAM=0",
+                "VLLM_MEMORY_PROFILE_INCLUDE_ATTN=1",
+                "VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1",
+                "VLLM_DISABLED_KERNELS=MarlinFP8ScaledMMLinearKernel"
+            ],
+            "Cmd": null,
+            "Healthcheck": {
+                "Test": [
+                    "CMD",
+                    "python3",
+                    "-c",
+                    "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"
+                ],
+                "Interval": 30000000000,
+                "Timeout": 10000000000,
+                "StartPeriod": 300000000000,
+                "Retries": 60
+            },
+            "Image": "glm52-serve:v20-5517197-pxb-20260725",
+            "Volumes": null,
+            "WorkingDir": "/",
+            "Entrypoint": [
+                "/usr/local/bin/serve-gilded-gnosis.sh"
+            ],
+            "Labels": {
+                "com.docker.compose.config-hash": "422abaee521eaa35651b030dd9ce12736c743292438bb6e9795dd574e917d6f4",
+                "com.docker.compose.container-number": "1",
+                "com.docker.compose.depends_on": "",
+                "com.docker.compose.image": "sha256:2566f905f13252c514a0f96c177ba982bd16321943927966310bf8c7c92d94b7",
+                "com.docker.compose.oneoff": "False",
+                "com.docker.compose.project": "v20-nvfp4-scales-causal",
+                "com.docker.compose.project.config_files": "/home/derek/proof-harness/glm52-v20-5517197-nf3-mnbt3072-fit-20260726.yaml,/home/derek/proof-harness/glm52-v20-nf3-outer-scales-causal-20260726.override.yaml",
+                "com.docker.compose.project.working_dir": "/home/derek/proof-harness",
+                "com.docker.compose.service": "glm52-v20-candidate",
+                "com.docker.compose.version": "5.3.1",
+                "com.nvidia.cudnn.version": "9.20.0.48-1",
+                "local-inference.b12x.branch": "build/sparkinfer-v20-dcp-final-20260725",
+                "local-inference.b12x.commit": "be0edcaae6f5d284bb29a82325aba7a0ead6960f",
+                "local-inference.b12x.runtime_version": "source",
+                "local-inference.base.manifest": "sha256:e7a8a8549c10b5d16899e0fb45ff7eeca09dd7c1d1a83eee13fb03930d8eb80a",
+                "local-inference.cache.fingerprint": "vllm5517197660-b12xbe0edcaae6-08672db528f4991b",
+                "local-inference.cublas.version": "13.4.1.2-1",
+                "local-inference.cuda.compat.version": "595.71.05-1ubuntu1",
+                "local-inference.cuda.version": "13.2.1",
+                "local-inference.cudnn.version": "9.22.0.52-1",
+                "local-inference.cutlass_dsl.version": "4.6.0",
+                "local-inference.deepgemm.branch": "a6b593d2826719dcf4892609af7b84ee23aaf32a",
+                "local-inference.deepgemm.commit": "a6b593d2826719dcf4892609af7b84ee23aaf32a",
+                "local-inference.flashinfer.branch": "codex/sm120-dspark-stack-20260711",
+                "local-inference.flashinfer.commit": "801d57a08958c13d375ddbb6be3be4808f48a708",
+                "local-inference.instanttensor.branch": "85e7c5f5539d9c006ee0c26bc1b5233c65251b6b",
+                "local-inference.instanttensor.commit": "85e7c5f5539d9c006ee0c26bc1b5233c65251b6b",
+                "local-inference.launcher.branch": "build/gilded-gnosis-v20-dcp-release-20260725",
+                "local-inference.launcher.commit": "48c8add4907775babeac03da68ee47224c23475c",
+                "local-inference.launcher.patch": "9590e93",
+                "local-inference.launcher.repo": "https://github.com/local-inference-lab/blackwell-llm-docker.git",
+                "local-inference.launchers": "serve-gilded-gnosis.sh serve-fathomless-firmament.sh serve-glm52-v16.sh serve-glm52-v18.sh serve-glm52-v19.sh serve-glm52-hybrid-v17.sh serve-glm52-hybrid-v18.sh serve-glm52-hybrid-v19.sh glm52-dcp-prefill-policy.sh",
+                "local-inference.nccl.branch": "canonical/cu132-nccl2304-amd-noxml",
+                "local-inference.nccl.repo": "local-inference-lab/nccl-canonical",
+                "local-inference.nccl.version": "2.30.4",
+                "local-inference.sparkinfer.branch": "build/sparkinfer-v20-dcp-final-20260725",
+                "local-inference.sparkinfer.commit": "be0edcaae6f5d284bb29a82325aba7a0ead6960f",
+                "local-inference.sparkinfer.runtime_version": "source",
+                "local-inference.tokenspeed_mla.version": "0.1.8",
+                "local-inference.torch.version": "2.12.0+cu132",
+                "local-inference.triton_kernels.branch": "",
+                "local-inference.triton_kernels.commit": "",
+                "local-inference.tvm_ffi.version": "0.1.10",
+                "local-inference.vllm.branch": "build/gilded-gnosis-v20-dcp-final2-20260725",
+                "local-inference.vllm.commit": "551719766029e78824a30d97ae6ac63917405b5f",
+                "local-inference.vllm.patch_file": "",
+                "local-inference.vllm.patch_sha256": "",
+                "local-inference.vllm.patch_url": "",
+                "local-inference.vllm.repo": "https://github.com/voipmonitor/vllm.git",
+                "maintainer": "NVIDIA CORPORATION <cudatools@nvidia.com>",
+                "org.opencontainers.image.description": "Clean CUDA 13.2.1 vLLM+SparkInfer image with PyTorch 2.12 cu132, patched NCCL 2.30.4, FlashInfer git, DeepGEMM, SparkInfer and selected vLLM branch",
+                "org.opencontainers.image.version": "24.04"
+            }
+        },
+        "NetworkSettings": {
+            "SandboxID": "dee5ab2be3962a41b5915dfd0318afa0d01d4d6bec03a311293633da0d7a7cdd",
+            "SandboxKey": "/var/run/docker/netns/dee5ab2be396",
+            "Ports": {
+                "5001/tcp": [
+                    {
+                        "HostIp": "0.0.0.0",
+                        "HostPort": "5001"
+                    }
+                ]
+            },
+            "Networks": {
+                "v20-nvfp4-scales-causal_default": {
+                    "IPAMConfig": null,
+                    "Links": null,
+                    "Aliases": [
+                        "glm52-v20-nvfp4-scales-causal",
+                        "glm52-v20-candidate"
+                    ],
+                    "DriverOpts": null,
+                    "GwPriority": 0,
+                    "NetworkID": "9956cbc351e761d18cb8e37c20b868f2f04bf9c3b4292a938cc030af939b2b56",
+                    "EndpointID": "139e96ac89651a148e1b23fe16fac75827b1303cb65fbe1d7cc4e05cf676d3df",
+                    "Gateway": "172.21.0.1",
+                    "IPAddress": "172.21.0.2",
+                    "MacAddress": "d2:1c:a3:27:5d:4f",
+                    "IPPrefixLen": 16,
+                    "IPv6Gateway": "",
+                    "GlobalIPv6Address": "",
+                    "GlobalIPv6PrefixLen": 0,
+                    "DNSNames": [
+                        "glm52-v20-nvfp4-scales-causal",
+                        "glm52-v20-candidate",
+                        "ca1f96b9f82f"
+                    ]
+                }
+            }
+        },
+        "ImageManifestDescriptor": {
+            "mediaType": "application/vnd.oci.image.manifest.v1+json",
+            "digest": "sha256:84266c686b747fcf4d754ee9a35ff5d2635a58d8c0ee0af020f5f81fc8cb16ac",
+            "size": 6781,
+            "platform": {
+                "architecture": "amd64",
+                "os": "linux"
+            }
+        }
+    }
+]

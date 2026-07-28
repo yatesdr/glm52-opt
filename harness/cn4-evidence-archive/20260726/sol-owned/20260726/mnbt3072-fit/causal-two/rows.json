@@ -1,0 +1,54 @@
+[
+  {
+    "label": "pass-250k-ctl",
+    "role": "PASS_CONTROL",
+    "depth": 250000,
+    "seed": 20260725,
+    "prompt_sha256": "fde493ea5b921594d239e2a743229d61c9977557057aa49bd1389700d5a56b54",
+    "stock_verdict": "EXACT",
+    "verdict": "EXACT",
+    "gate_pass": true,
+    "exact": true,
+    "cold": true,
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 245497,
+      "total_tokens": 245501,
+      "completion_tokens": 4,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "738216",
+    "reasoning_chars": 0,
+    "secs": 248.9
+  },
+  {
+    "label": "fail-350k-r1",
+    "role": "FAIL",
+    "depth": 350000,
+    "seed": 1110001,
+    "prompt_sha256": "f0d1c16d816b777f27a3882d9e6b5ef056852684ea155fb11dd845f9e1654ab5",
+    "stock_verdict": "ABSENT",
+    "verdict": "ABSENT",
+    "gate_pass": false,
+    "exact": false,
+    "cold": true,
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 343727,
+      "total_tokens": 343744,
+      "completion_tokens": 17,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **27**.",
+    "reasoning_chars": 0,
+    "secs": 363.1
+  }
+]

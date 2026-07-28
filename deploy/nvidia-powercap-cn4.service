@@ -1,0 +1,17 @@
+[Unit]
+Description=Apply CN4 NVIDIA production power and clock limits
+After=nvidia-persistenced.service systemd-modules-load.service
+Wants=nvidia-persistenced.service
+ConditionPathExists=/usr/bin/nvidia-smi
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+# Wait up to 30 seconds for the driver and all GPUs after boot.
+ExecStartPre=/bin/bash -c "for i in {1..30}; do /usr/bin/nvidia-smi >/dev/null 2>&1 && exit 0; sleep 1; done; exit 1"
+ExecStart=/usr/bin/nvidia-smi -pm 1
+ExecStart=/usr/bin/nvidia-smi -pl 300
+ExecStart=/usr/bin/nvidia-smi -lgc 0,2600
+
+[Install]
+WantedBy=multi-user.target

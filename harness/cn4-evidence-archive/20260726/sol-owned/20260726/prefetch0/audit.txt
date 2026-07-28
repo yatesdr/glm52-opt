@@ -1,0 +1,3 @@
+fatal_signatures=0
+pool=GPU KV cache size: 608,000 tokens
+prefetch=(Worker_TP0_DCP0 pid=268) INFO 07-26 07:00:18 [b12x_mla_sparse.py:1575] Preallocated 460.2 MiB for 2 persistent CKV execution lane(s)

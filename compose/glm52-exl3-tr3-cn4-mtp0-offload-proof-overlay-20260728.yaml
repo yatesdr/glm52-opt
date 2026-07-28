@@ -1,0 +1,13 @@
+# MTP0 plus constrained-DRAM offload proof overlay.
+#
+# This is not the production DRAM sizing. It deliberately shrinks the primary
+# tier so a short, repeatable request must cascade into the exact bounded NVMe
+# manager used by the 64 GB production compose. It is applied only after the
+# production-posture MTP3 benchmarks are complete.
+
+services:
+  glm52:
+    environment:
+      ENABLE_MTP: "0"
+      KV_TRANSFER_CONFIG_JSON: >-
+        {"kv_connector":"OffloadingConnector","kv_role":"kv_both","kv_connector_extra_config":{"spec_name":"TieringOffloadingSpec","cpu_bytes_to_use":256000000,"secondary_tiers":[{"type":"fs","root_dir":"/nvme-kv/glm52-exl3-tr3-offload-proof-20260728","n_read_threads":16,"n_write_threads":16,"max_cache_size_bytes":1000000000000,"locality":"LOCAL"}]}}

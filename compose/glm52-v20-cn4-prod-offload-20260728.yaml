@@ -1,0 +1,114 @@
+# CN4 clean production boot: the published GLM-5.2 v20 image with dynamic
+# NVFP4 MLA-KV scaling, prefix caching, 64 GB DRAM offload, and bounded Intel
+# NVMe offload.
+#
+# This is intentionally explicit. The only automatic runtime choices are the
+# measured PCIe topology and wire-mode probes supplied by the pinned image.
+# The filesystem tier is bounded to the operator-approved 1 TB of CN4's Intel
+# cache device. Host cache paths and the NVMe namespace are fresh; the prior
+# production state is retained separately for rollback.
+
+name: glm52-v20-cn4-prod-clean
+
+services:
+  glm52:
+    # ghcr.io/yatesdr/glm52-serve:
+    # gilded-gnosis-v20-dynamickv-prod-clean-r2-20260728
+    image: ghcr.io/yatesdr/glm52-serve@sha256:b4ef498c6b3494961ba381ccc85215590d5e3b3cd17ec04146152a101b653790
+    pull_policy: always
+    container_name: glm52-prod
+    restart: unless-stopped
+    ipc: host
+    network_mode: bridge
+    gpus: all
+
+    ports:
+      - "0.0.0.0:${PORT:-5001}:${PORT:-5001}"
+
+    ulimits:
+      memlock: -1
+      nofile: 1048576
+
+    healthcheck:
+      test:
+        - CMD
+        - /opt/venv/bin/python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-5001}/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 2600s
+
+    environment:
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      SERVED_MODEL_NAME: ${SERVED_MODEL_NAME:-GLM-5.2}
+      PORT: ${PORT:-5001}
+
+      GPUS: 0,1,2,3
+      TP: "4"
+      DCP: "4"
+      DCP_BACKEND: a2a
+      DCP_PREFILL_WORKSPACE: auto
+      MTP: "3"
+      MAX_MODEL_LEN: "480000"
+      MAX_NUM_SEQS: "16"
+      MAX_BATCHED_TOKENS: "3072"
+      GRAPH: "64"
+
+      # Keep the production envelope at GMU 0.9848. The exact byte budget is
+      # the minimum post-capture recommendation across all four ranks:
+      # actual graph memory plus vLLM's built-in 150 MiB redundancy margin.
+      # This reclaims the graph estimator's excess without raising GMU.
+      GPU_MEMORY_UTILIZATION: "0.9848"
+      KV_CACHE_MEMORY_BYTES: "4938417470"
+      VLLM_ENABLE_STARTUP_PLAN: "1"
+
+      MOE_MODE: a16
+      MOE_BACKEND: b12x
+      LINEAR_BACKEND: auto
+      QUANTIZATION: nvfp4_nf3_hybrid
+      ONLINE_QUANT: nf3-mxfp8
+      NF3_GRID188: "1"
+      LOAD_FORMAT: instanttensor
+      INSTANTTENSOR_BACKEND: BUFFERED
+
+      KV_CACHE_DTYPE: nvfp4_ds_mla
+      KV_FP8_ROPE: "1"
+      VLLM_NVFP4_MLA_DYNAMIC_SCALE: "1"
+      DESTROYED_MXFP8: "0"
+
+      NCCL_P2P_LEVEL: auto
+      F8_DMA: auto
+      B12X_PCIE_DMA: "1"
+
+      # Discord/community results and the CN3/CN4 measurements agree on this
+      # PCIe TP4 posture: MNBT 3072, no query split, no owner merge, no
+      # indexer sharding, and no CKV prefetch. Owner merge is
+      # correctness-equivalent but regressed PCIe4 prefill for kcramp.
+      DCP_QUERY_SPLIT: "0"
+      DCP_QUERY_SPLIT_MIN_CONTEXT_TOKENS: auto
+      DCP_CKV_GATHER: "1"
+      DCP_TOPK_OWNER_MERGE: "0"
+      DCP_INDEXER_SHARDS: "0"
+      DCP_CKV_PREFETCH_DEPTH: "0"
+      DCP_CKV_PREFETCH_WORKSPACE_MIB: "1024"
+      DCP_CKV_PREFETCH_TOPOLOGY: auto
+      PCIE_CALIBRATION: auto
+      PCIE_DMA_MIN_BYTES: auto
+
+      # Prefix caching remains enabled by the canonical launcher. The primary
+      # tier is 64 GB aggregate DRAM. The secondary tier uses a fresh
+      # dynamic-scale namespace and is bounded to the operator-approved 1 TB.
+      KV_TRANSFER_CONFIG_JSON: >-
+        {"kv_connector":"OffloadingConnector","kv_role":"kv_both","kv_connector_extra_config":{"spec_name":"TieringOffloadingSpec","cpu_bytes_to_use":64000000000,"secondary_tiers":[{"type":"fs","root_dir":"/nvme-kv/glm52-v20-dynamic-prod-clean-r2-20260728","n_read_threads":16,"n_write_threads":16,"max_cache_size_bytes":1000000000000,"locality":"LOCAL"}]}}
+
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:False
+      PYTHONHASHSEED: "0"
+      XDG_CACHE_HOME: /cache
+
+    volumes:
+      - ${MODEL_PATH:-/home/claude/LLM/GLM-5.2-hybrid}:/model:ro
+      - ${CACHE_PATH:-/home/derek/glm52-v20-prod-clean-r2-20260728/cache}:/cache:rw
+      - ${NVME_KV_PATH:-/nvme-kv}:/nvme-kv:rw

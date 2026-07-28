@@ -1,0 +1,266 @@
+[
+  {
+    "depth": 350000,
+    "rep": 1,
+    "arm": "nothink",
+    "seed": 1110001,
+    "ctx": 343721,
+    "verdict": "ABSENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 343727,
+      "total_tokens": 343865,
+      "completion_tokens": 138,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **MNT-2024-087**. \n\nThis ticket number is used to track and manage maintenance requests for the Facility 27 compressor system. It is a unique identifier assigned to the maintenance request to ensure proper tracking and resolution. The number helps the maintenance team prioritize, address issues efficiently, and maintain a record of all maintenance activities. \n\nTo find the maintenance ticket number, **MNT-2024-087**, you can refer to the ticketing system used by the Facility 27 maintenance team. This number is essential for tracking the maintenance request and ensuring that all maintenance activities are properly documented and addressed.",
+    "reasoning_chars": 0,
+    "secs": 475.1
+  },
+  {
+    "depth": 350000,
+    "rep": 1,
+    "arm": "thinking",
+    "seed": 1110001,
+    "ctx": 343721,
+    "verdict": "ABSENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 343733,
+      "total_tokens": 343854,
+      "completion_tokens": 121,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "",
+    "reasoning_chars": 628,
+    "secs": 476.1
+  },
+  {
+    "depth": 350000,
+    "rep": 2,
+    "arm": "nothink",
+    "seed": 1110002,
+    "ctx": 343721,
+    "verdict": "ABSENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 343727,
+      "total_tokens": 343750,
+      "completion_tokens": 23,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **27-483-921**.",
+    "reasoning_chars": 0,
+    "secs": 474.4
+  },
+  {
+    "depth": 350000,
+    "rep": 2,
+    "arm": "thinking",
+    "seed": 1110002,
+    "ctx": 343721,
+    "verdict": "ABSENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 343733,
+      "total_tokens": 343753,
+      "completion_tokens": 20,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "",
+    "reasoning_chars": 84,
+    "secs": 474.9
+  },
+  {
+    "depth": 350000,
+    "rep": 3,
+    "arm": "nothink",
+    "seed": 1110003,
+    "ctx": 343721,
+    "verdict": "ABSENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 343727,
+      "total_tokens": 343753,
+      "completion_tokens": 26,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **MNT-2024-271432**.",
+    "reasoning_chars": 0,
+    "secs": 474.6
+  },
+  {
+    "depth": 350000,
+    "rep": 3,
+    "arm": "thinking",
+    "seed": 1110003,
+    "ctx": 343721,
+    "verdict": "ABSENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 343733,
+      "total_tokens": 343752,
+      "completion_tokens": 19,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "",
+    "reasoning_chars": 82,
+    "secs": 474.8
+  },
+  {
+    "depth": 450000,
+    "rep": 1,
+    "arm": "nothink",
+    "seed": 1210001,
+    "ctx": 441952,
+    "verdict": "IN_CONTENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 441958,
+      "total_tokens": 441977,
+      "completion_tokens": 19,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **738216**.",
+    "reasoning_chars": 0,
+    "secs": 647.0
+  },
+  {
+    "depth": 450000,
+    "rep": 1,
+    "arm": "thinking",
+    "seed": 1210001,
+    "ctx": 441952,
+    "verdict": "EXACT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 441964,
+      "total_tokens": 441998,
+      "completion_tokens": 34,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "738216",
+    "reasoning_chars": 133,
+    "secs": 647.1
+  },
+  {
+    "depth": 450000,
+    "rep": 2,
+    "arm": "nothink",
+    "seed": 1210002,
+    "ctx": 441949,
+    "verdict": "IN_CONTENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 441955,
+      "total_tokens": 441974,
+      "completion_tokens": 19,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **738216**.",
+    "reasoning_chars": 0,
+    "secs": 646.8
+  },
+  {
+    "depth": 450000,
+    "rep": 2,
+    "arm": "thinking",
+    "seed": 1210002,
+    "ctx": 441949,
+    "verdict": "ABSENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 441961,
+      "total_tokens": 442109,
+      "completion_tokens": 148,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "I'm sorry, but there is no maintenance ticket number provided in the document you shared. The document appears to be a list of entries without any specific ticket number. If you have a specific ticket number you'd like me to look up, please provide it, and I'll be happy to help you.",
+    "reasoning_chars": 470,
+    "secs": 648.9
+  },
+  {
+    "depth": 450000,
+    "rep": 3,
+    "arm": "nothink",
+    "seed": 1210003,
+    "ctx": 441951,
+    "verdict": "IN_CONTENT",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 441957,
+      "total_tokens": 441976,
+      "completion_tokens": 19,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **738216**.",
+    "reasoning_chars": 0,
+    "secs": 647.5
+  },
+  {
+    "depth": 450000,
+    "rep": 3,
+    "arm": "thinking",
+    "seed": 1210003,
+    "ctx": 441951,
+    "verdict": "REASONING_ONLY",
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 441963,
+      "total_tokens": 441981,
+      "completion_tokens": 18,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "",
+    "reasoning_chars": 80,
+    "secs": 646.9
+  }
+]

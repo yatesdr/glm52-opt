@@ -1,0 +1,320 @@
+2210-  File "/opt/venv/lib/python3.12/site-packages/vllm/distributed/device_communicators/shm_broadcast.py", line 198, in wait
+2211-(Worker_TP1_DCP1 pid=345) (Worker_TP3_DCP3 pid=550) (Worker_TP2_DCP2 pid=444)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2212-
+2213-(Worker_TP3_DCP3 pid=550)     events = dict(self.poller.poll(timeout=timeout_ms))
+2214-(Worker_TP0_DCP0 pid=267) During handling of the above exception, another exception occurred:
+2215-(Worker_TP2_DCP2 pid=444) 
+2216-(Worker_TP3_DCP3 pid=550) (Worker_TP0_DCP0 pid=267) 
+2217-(Worker_TP1_DCP1 pid=345)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2218-During handling of the above exception, another exception occurred:
+2219-(Worker_TP0_DCP0 pid=267)   File "zmq/backend/cython/_zmq.py", line 1680, in zmq.backend.cython._zmq.zmq_poll
+2220-(Worker_TP3_DCP3 pid=550) 
+2221:Traceback (most recent call last):
+2222-(Worker_TP1_DCP1 pid=345) (Worker_TP0_DCP0 pid=267) (Worker_TP2_DCP2 pid=444)     _check_rc(rc)
+2223:Traceback (most recent call last):
+2224-  File "/opt/venv/lib/python3.12/site-packages/zmq/sugar/poll.py", line 106, in poll
+2225-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444)     ^^^^^^^^^^^
+2226-    return zmq_poll(self.sockets, timeout=timeout)
+2227-(Worker_TP2_DCP2 pid=444) (Worker_TP1_DCP1 pid=345)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2228-  File "zmq/backend/cython/_zmq.py", line 179, in zmq.backend.cython._zmq._check_rc
+2229-(Worker_TP1_DCP1 pid=345)     PyErr_CheckSignals()
+2230-(Worker_TP2_DCP2 pid=444) (Worker_TP1_DCP1 pid=345)   File "zmq/backend/cython/_zmq.py", line 1680, in zmq.backend.cython._zmq.zmq_poll
+2231-    ^^^^^^^^^^^
+2232-(Worker_TP2_DCP2 pid=444)     _check_rc(rc)
+2233-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 826, in signal_handler
+2234-    ^^^^^^^^^^^
+2235-(Worker_TP1_DCP1 pid=345)     raise SystemExit()
+2236-(Worker_TP2_DCP2 pid=444)   File "zmq/backend/cython/_zmq.py", line 179, in zmq.backend.cython._zmq._check_rc
+2237-(Worker_TP2_DCP2 pid=444)     PyErr_CheckSignals()
+2238-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444) SystemExit
+2239-    ^^^^^^^^^^^
+2240-(Worker_TP2_DCP2 pid=444)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 826, in signal_handler
+2241-(Worker_TP2_DCP2 pid=444) (Worker_TP1_DCP1 pid=345)     raise SystemExit()
+2242-
+2243-(Worker_TP1_DCP1 pid=345) During handling of the above exception, another exception occurred:
+2244-(Worker_TP1_DCP1 pid=345) 
+2245-(Worker_TP2_DCP2 pid=444) SystemExit
+2246:(Worker_TP1_DCP1 pid=345) Traceback (most recent call last):
+2247-(Worker_TP2_DCP2 pid=444) 
+2248-(Worker_TP2_DCP2 pid=444) During handling of the above exception, another exception occurred:
+2249-(Worker_TP2_DCP2 pid=444) 
+2250:(Worker_TP2_DCP2 pid=444) Traceback (most recent call last):
+2251-(Worker_TP3_DCP3 pid=550) (Worker_TP0_DCP0 pid=267)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+2252-(Worker_TP3_DCP3 pid=550)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+2253-(Worker_TP0_DCP0 pid=267)     self.run()
+2254-    self.run()
+2255-(Worker_TP3_DCP3 pid=550)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+2256-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+2257-    self._target(*self._args, **self._kwargs)
+2258-(Worker_TP0_DCP0 pid=267)     self._target(*self._args, **self._kwargs)
+2259-(Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 933, in worker_main
+2260-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 933, in worker_main
+2261-    worker.shutdown()
+2262-(Worker_TP0_DCP0 pid=267)     worker.shutdown()
+2263-(Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 778, in shutdown
+2264-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 778, in shutdown
+2265-    self.worker.shutdown()
+2266-(Worker_TP0_DCP0 pid=267)     self.worker.shutdown()
+2267-(Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/worker_base.py", line 220, in shutdown
+2268-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/worker_base.py", line 220, in shutdown
+2269-    self.worker.shutdown()
+2270-(Worker_TP0_DCP0 pid=267)     self.worker.shutdown()
+2271-(Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 1357, in shutdown
+2272-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 1357, in shutdown
+2273-    shutdown()
+2274-(Worker_TP0_DCP0 pid=267)     shutdown()
+2275-(Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/model_runner.py", line 2108, in shutdown
+2276-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/model_runner.py", line 2108, in shutdown
+2277-    torch.accelerator.synchronize()
+2278-(Worker_TP0_DCP0 pid=267)     torch.accelerator.synchronize()
+2279-(Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/torch/accelerator/__init__.py", line 270, in synchronize
+2280-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550)   File "/opt/venv/lib/python3.12/site-packages/torch/accelerator/__init__.py", line 270, in synchronize
+2281-    torch._C._accelerator_synchronizeDevice(device_index)
+2282-(Worker_TP0_DCP0 pid=267)     torch._C._accelerator_synchronizeDevice(device_index)
+2283:(Worker_TP3_DCP3 pid=550) torch.AcceleratorError: CUDA error: an illegal memory access was encountered
+2284:(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550) torch.AcceleratorError: CUDA error: an illegal memory access was encountered
+2285-Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+2286-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550) Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+2287-CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+2288-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550) CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+2289-For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+2290-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550) For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+2291-Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+2292-(Worker_TP0_DCP0 pid=267) (Worker_TP3_DCP3 pid=550) Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+2293-
+2294-(Worker_TP0_DCP0 pid=267) 
+2295-(Worker_TP1_DCP1 pid=345)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+2296-(Worker_TP1_DCP1 pid=345)     self.run()
+2297-(Worker_TP1_DCP1 pid=345)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+2298-(Worker_TP1_DCP1 pid=345)     self._target(*self._args, **self._kwargs)
+2299-(Worker_TP2_DCP2 pid=444)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+2300-(Worker_TP2_DCP2 pid=444) (Worker_TP1_DCP1 pid=345)     self.run()
+2301-  File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 933, in worker_main
+2302-(Worker_TP1_DCP1 pid=345)     worker.shutdown()
+2303-(Worker_TP2_DCP2 pid=444)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+2304-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 778, in shutdown
+2305-(Worker_TP1_DCP1 pid=345)     self._target(*self._args, **self._kwargs)
+2306-    self.worker.shutdown()
+2307-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/worker_base.py", line 220, in shutdown
+2308-(Worker_TP1_DCP1 pid=345)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 933, in worker_main
+2309-    self.worker.shutdown()
+2310-(Worker_TP2_DCP2 pid=444)     worker.shutdown()
+2311-(Worker_TP1_DCP1 pid=345)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 1357, in shutdown
+2312-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444)     shutdown()
+2313-  File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 778, in shutdown
+2314-(Worker_TP1_DCP1 pid=345)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/model_runner.py", line 2108, in shutdown
+2315-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444)     torch.accelerator.synchronize()
+2316-    self.worker.shutdown()
+2317-(Worker_TP1_DCP1 pid=345)   File "/opt/venv/lib/python3.12/site-packages/torch/accelerator/__init__.py", line 270, in synchronize
+2318-(Worker_TP2_DCP2 pid=444) (Worker_TP1_DCP1 pid=345)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/worker_base.py", line 220, in shutdown
+2319-    torch._C._accelerator_synchronizeDevice(device_index)
+2320-(Worker_TP2_DCP2 pid=444)     self.worker.shutdown()
+2321-(Worker_TP2_DCP2 pid=444)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu_worker.py", line 1357, in shutdown
+2322:(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444) torch.AcceleratorError: CUDA error: an illegal memory access was encountered
+2323-    shutdown()
+2324-(Worker_TP1_DCP1 pid=345) Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+2325-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444) CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+2326-  File "/opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/model_runner.py", line 2108, in shutdown
+2327-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444) For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+2328-(Worker_TP1_DCP1 pid=345)     torch.accelerator.synchronize()
+2329-Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+2330-(Worker_TP1_DCP1 pid=345) (Worker_TP2_DCP2 pid=444) 
+2331-  File "/opt/venv/lib/python3.12/site-packages/torch/accelerator/__init__.py", line 270, in synchronize
+2332-(Worker_TP2_DCP2 pid=444)     torch._C._accelerator_synchronizeDevice(device_index)
+2333:(Worker_TP2_DCP2 pid=444) torch.AcceleratorError: CUDA error: an illegal memory access was encountered
+2334-(Worker_TP2_DCP2 pid=444) Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+2335-(Worker_TP2_DCP2 pid=444) CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+2336-(Worker_TP2_DCP2 pid=444) For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+2337-(Worker_TP2_DCP2 pid=444) Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+2338-(Worker_TP2_DCP2 pid=444) 
+2339:[rank2]:[W727 05:50:05.482268727 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2340:[rank2]:[W727 05:50:05.482305028 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2341:[rank2]:[W727 05:50:05.482321308 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2342:[rank2]:[W727 05:50:05.482332895 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2343:[rank2]:[W727 05:50:05.482342921 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2344:[rank2]:[W727 05:50:05.482351274 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2345:[rank2]:[W727 05:50:05.482358537 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2346:[rank2]:[W727 05:50:05.482370168 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2347:[rank2]:[W727 05:50:05.482381537 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2348:[rank2]:[W727 05:50:05.482391991 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2349:[rank2]:[W727 05:50:05.482402539 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2350:[rank2]:[W727 05:50:05.482413383 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2351:[rank2]:[W727 05:50:05.482424581 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2352:[rank2]:[W727 05:50:05.482431528 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2353:[rank2]:[W727 05:50:05.482438150 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2354:[rank2]:[W727 05:50:05.482444306 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2355:[rank2]:[W727 05:50:05.482451898 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2356:[rank2]:[W727 05:50:05.482457969 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2357:[rank3]:[W727 05:50:05.488209530 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2358:[rank3]:[W727 05:50:05.488241498 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2359:[rank3]:[W727 05:50:05.488265244 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2360:[rank3]:[W727 05:50:05.488276890 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2361:[rank3]:[W727 05:50:05.488288362 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2362:[rank3]:[W727 05:50:05.488299578 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2363:[rank3]:[W727 05:50:05.488310758 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2364:[rank3]:[W727 05:50:05.488331628 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2365:[rank3]:[W727 05:50:05.488343805 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2366:[rank3]:[W727 05:50:05.488355167 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2367:[rank3]:[W727 05:50:05.488366468 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2368:[rank3]:[W727 05:50:05.488377927 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2369:[rank3]:[W727 05:50:05.488389191 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2370:[rank3]:[W727 05:50:05.488420323 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2371:[rank3]:[W727 05:50:05.488433681 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2372:[rank3]:[W727 05:50:05.488446266 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2373:[rank3]:[W727 05:50:05.488460679 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2374:[rank3]:[W727 05:50:05.488473513 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2375:[rank0]:[W727 05:50:05.488592804 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2376:[rank0]:[W727 05:50:05.488617551 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2377:[rank0]:[W727 05:50:05.488629389 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2378:[rank0]:[W727 05:50:05.488635670 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2379:[rank0]:[W727 05:50:05.488640939 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2380:[rank0]:[W727 05:50:05.488646117 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2381:[rank0]:[W727 05:50:05.488651459 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2382:[rank0]:[W727 05:50:05.488656597 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2383:[rank0]:[W727 05:50:05.488661853 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2384:[rank0]:[W727 05:50:05.488667165 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2385:[rank0]:[W727 05:50:05.488672554 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2386:[rank0]:[W727 05:50:05.488677839 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2387:[rank0]:[W727 05:50:05.488683379 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2388:[rank0]:[W727 05:50:05.488688657 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2389:[rank0]:[W727 05:50:05.488694291 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2390:[rank0]:[W727 05:50:05.488707043 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2391:[rank0]:[W727 05:50:05.488723779 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2392:[rank0]:[W727 05:50:05.488730228 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2393:[rank1]:[W727 05:50:05.496703455 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2394:[rank1]:[W727 05:50:05.496730255 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2395:[rank1]:[W727 05:50:05.496742671 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2396:[rank1]:[W727 05:50:05.496748938 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2397:[rank1]:[W727 05:50:05.496754079 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2398:[rank1]:[W727 05:50:05.496759263 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2399:[rank1]:[W727 05:50:05.496764291 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2400:[rank1]:[W727 05:50:05.496769378 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2401:[rank1]:[W727 05:50:05.496774677 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2402:[rank1]:[W727 05:50:05.496779908 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2403:[rank1]:[W727 05:50:05.496786838 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2404:[rank1]:[W727 05:50:05.496791921 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2405:[rank1]:[W727 05:50:05.496796933 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2406:[rank1]:[W727 05:50:05.496801907 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2407:[rank1]:[W727 05:50:05.496807238 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2408:[rank1]:[W727 05:50:05.496812410 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2409:[rank1]:[W727 05:50:05.496822554 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2410:[rank1]:[W727 05:50:05.496833973 CUDAEvent.h:57] Warning: CUDA warning: an illegal memory access was encountered (function ~CUDAEvent)
+2411-[rank0]:[W727 05:50:05.506983928 ProcessGroupNCCL.cpp:1647] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+2412-[rank1]:[W727 05:50:05.594646314 ProcessGroupNCCL.cpp:1647] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+2413-[rank2]:[W727 05:50:05.603773552 ProcessGroupNCCL.cpp:1647] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+2414-[rank3]:[W727 05:50:05.612343069 ProcessGroupNCCL.cpp:1647] Warning: WARNING: destroy_process_group() was not called before program exit, which can leak resources. For more info, please see https://pytorch.org/docs/stable/distributed.html#shutdown (function operator())
+2415-(EngineCore pid=191) ERROR 07-27 05:50:07 [multiproc_executor.py:284] Worker proc VllmWorker-3 died unexpectedly (exit code: None), shutting down executor.
+2416-(EngineCore pid=191) INFO 07-27 05:50:07 [multiproc_executor.py:429] [shutdown] Executor: waiting for worker exit count=4
+2417-(EngineCore pid=191) Process EngineCore:
+2418:(EngineCore pid=191) Traceback (most recent call last):
+2419-(EngineCore pid=191)   File "/usr/lib/python3.12/multiprocessing/process.py", line 314, in _bootstrap
+2420-(EngineCore pid=191)     self.run()
+2421-(EngineCore pid=191)   File "/usr/lib/python3.12/multiprocessing/process.py", line 108, in run
+2422-(EngineCore pid=191)     self._target(*self._args, **self._kwargs)
+2423-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1363, in run_engine_core
+2424-(EngineCore pid=191)     raise e
+2425-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1328, in run_engine_core
+2426-(EngineCore pid=191)     engine_core = EngineCoreProc(*args, engine_index=dp_rank, **kwargs)
+2427-(EngineCore pid=191)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2428-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+2429-(EngineCore pid=191)     return func(*args, **kwargs)
+2430-(EngineCore pid=191)            ^^^^^^^^^^^^^^^^^^^^^
+2431-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 1094, in __init__
+2432-(EngineCore pid=191)     super().__init__(
+2433-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 136, in __init__
+2434-(EngineCore pid=191)     kv_cache_config = self._initialize_kv_caches(vllm_config)
+2435-(EngineCore pid=191)                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2436-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+2437-(EngineCore pid=191)     return func(*args, **kwargs)
+2438-(EngineCore pid=191)            ^^^^^^^^^^^^^^^^^^^^^
+2439-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/core.py", line 291, in _initialize_kv_caches
+2440-(EngineCore pid=191)     available_gpu_memory = self.model_executor.determine_available_memory()
+2441-(EngineCore pid=191)                            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2442-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/abstract.py", line 147, in determine_available_memory
+2443-(EngineCore pid=191)     return self.collective_rpc("determine_available_memory")
+2444-(EngineCore pid=191)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2445-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 405, in collective_rpc
+2446-(EngineCore pid=191)     return future if non_block else future.result()
+2447-(EngineCore pid=191)                                     ^^^^^^^^^^^^^^^
+2448-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 91, in result
+2449-(EngineCore pid=191)     return super().result()
+2450-(EngineCore pid=191)            ^^^^^^^^^^^^^^^^
+2451-(EngineCore pid=191)   File "/usr/lib/python3.12/concurrent/futures/_base.py", line 449, in result
+2452-(EngineCore pid=191)     return self.__get_result()
+2453-(EngineCore pid=191)            ^^^^^^^^^^^^^^^^^^^
+2454-(EngineCore pid=191)   File "/usr/lib/python3.12/concurrent/futures/_base.py", line 401, in __get_result
+2455-(EngineCore pid=191)     raise self._exception
+2456-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 95, in _wait_for_response
+2457-(EngineCore pid=191)     response = self.aggregate(self.get_response())
+2458-(EngineCore pid=191)                               ^^^^^^^^^^^^^^^^^^^
+2459-(EngineCore pid=191)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/executor/multiproc_executor.py", line 394, in get_response
+2460-(EngineCore pid=191)     raise RuntimeError(
+2461:(EngineCore pid=191) RuntimeError: Worker failed with error 'CUDA error: an illegal memory access was encountered
+2462-(EngineCore pid=191) Search for `cudaErrorIllegalAddress' in https://docs.nvidia.com/cuda/cuda-runtime-api/group__CUDART__TYPES.html for more information.
+2463-(EngineCore pid=191) CUDA kernel errors might be asynchronously reported at some other API call, so the stacktrace below might be incorrect.
+2464-(EngineCore pid=191) For debugging consider passing CUDA_LAUNCH_BLOCKING=1
+2465-(EngineCore pid=191) Compile with `TORCH_USE_CUDA_DSA` to enable device-side assertions.
+2466-(EngineCore pid=191) ', please check the stack trace above for the root cause
+2467-(EngineCore pid=191) INFO 07-27 05:50:09 [multiproc_executor.py:436] [shutdown] Executor: all workers exited gracefully
+2468:(APIServer pid=1) Traceback (most recent call last):
+2469-(APIServer pid=1)   File "/opt/venv/bin/vllm", line 7, in <module>
+2470-(APIServer pid=1)     sys.exit(main())
+2471-(APIServer pid=1)              ^^^^^^
+2472-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/cli/main.py", line 95, in main
+2473-(APIServer pid=1)     args.dispatch_function(args)
+2474-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/cli/serve.py", line 148, in cmd
+2475-(APIServer pid=1)     uvloop.run(run_server(args))
+2476-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/uvloop/__init__.py", line 96, in run
+2477-(APIServer pid=1)     return __asyncio.run(
+2478-(APIServer pid=1)            ^^^^^^^^^^^^^^
+2479-(APIServer pid=1)   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+2480-(APIServer pid=1)     return runner.run(main)
+2481-(APIServer pid=1)            ^^^^^^^^^^^^^^^^
+2482-(APIServer pid=1)   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+2483-(APIServer pid=1)     return self._loop.run_until_complete(task)
+2484-(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2485-(APIServer pid=1)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+2486-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/uvloop/__init__.py", line 48, in wrapper
+2487-(APIServer pid=1)     return await main
+2488-(APIServer pid=1)            ^^^^^^^^^^
+2489-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 759, in run_server
+2490-(APIServer pid=1)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+2491-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 773, in run_server_worker
+2492-(APIServer pid=1)     async with build_async_engine_client(
+2493-(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+2494-(APIServer pid=1)     return await anext(self.gen)
+2495-(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+2496-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 139, in build_async_engine_client
+2497-(APIServer pid=1)     async with build_async_engine_client_from_engine_args(
+2498-(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+2499-(APIServer pid=1)     return await anext(self.gen)
+2500-(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+2501-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 175, in build_async_engine_client_from_engine_args
+2502-(APIServer pid=1)     async_llm = AsyncLLM.from_vllm_config(
+2503-(APIServer pid=1)                 ^^^^^^^^^^^^^^^^^^^^^^^^^^
+2504-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/async_llm.py", line 217, in from_vllm_config
+2505-(APIServer pid=1)     return cls(
+2506-(APIServer pid=1)            ^^^^
+2507-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/async_llm.py", line 146, in __init__
+2508-(APIServer pid=1)     self.engine_core = EngineCoreClient.make_async_mp_client(
+2509-(APIServer pid=1)                        ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2510-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+2511-(APIServer pid=1)     return func(*args, **kwargs)
+2512-(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+2513-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 132, in make_async_mp_client
+2514-(APIServer pid=1)     return AsyncMPClient(*client_args)
+2515-(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2516-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/tracing/otel.py", line 178, in sync_wrapper
+2517-(APIServer pid=1)     return func(*args, **kwargs)
+2518-(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+2519-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 963, in __init__
+2520-(APIServer pid=1)     super().__init__(
+2521-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/core_client.py", line 573, in __init__
+2522-(APIServer pid=1)     with launch_core_engines(
+2523-(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 144, in __exit__
+2524-(APIServer pid=1)     next(self.gen)
+2525-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/utils.py", line 1213, in launch_core_engines
+2526-(APIServer pid=1)     wait_for_engine_startup(
+2527-(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/v1/engine/utils.py", line 1272, in wait_for_engine_startup
+2528-(APIServer pid=1)     raise RuntimeError(
+2529-(APIServer pid=1) RuntimeError: Engine core initialization failed. See root cause above. Failed core proc(s): {}

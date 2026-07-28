@@ -1,0 +1,22 @@
+name: glm52-v20-cn4-pr-cleanup-mtp0
+
+services:
+  glm52:
+    image: glm52-v20-pr86-pr189-cleanup:20260728
+    pull_policy: never
+    container_name: glm52-pr-cleanup-mtp0
+    restart: "no"
+
+    environment:
+      # Isolate reader/writer kernel cost from speculative acceptance.
+      MTP: "0"
+      VLLM_NVFP4_MLA_DYNAMIC_SCALE: ${DYNAMIC_SCALE:-1}
+      VLLM_NVFP4_MLA_SCALES_FILE: ${SCALES_FILE:-}
+
+      # Persistent offload is unrelated to this kernel-cost measurement.
+      # Leaving it disabled also prevents either arm from consuming records
+      # produced under the other cache ABI.
+      KV_TRANSFER_CONFIG_JSON: ""
+
+    volumes:
+      - /home/claude/glm52-pr-cleanup-mtp0/cache:/cache:rw

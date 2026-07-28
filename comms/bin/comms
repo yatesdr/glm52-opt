@@ -1,0 +1,723 @@
+#!/usr/bin/env python3
+"""comms — Fable/Sol coordination bus (per-channel JSONL + aggregated inbox).
+
+Both agents run on the same Mac; comms/ is a shared local directory.
+Identity comes from $COMMS_AGENT (default 'fable'); override with --as.
+
+Reliability rules (why this file looks the way it does):
+  * message ids are GLOBAL and monotonic — allocated under an flock, and
+    self-healed from the logs so a lost registry write can never collide;
+  * every mutation is atomic (tmp + os.replace) so a concurrent reader
+    never sees a half-written registry/render;
+  * unread = id > per-channel cursor; acks are keyed "channel#id" so an ack
+    in one channel can never clear another channel's item;
+  * `comms doctor` proves the above on demand (and repairs legacy state).
+
+Commands:
+  comms send --channel dev --to sol --type handoff --subject "..." [--body "..."|--body-file f|-]
+             [--ref k=v ...] [--reply ID] [--ack] [--notify|--no-notify]
+  comms inbox [--channel C] [--for AGENT] [--peek] [--json] [--quiet-if-clear]
+  comms ack ID [ID ...]          # ID = 12 or dev#12
+  comms status [--channel C] · comms channels · comms feed [-n N]
+  comms watch [--channel C] [--from ID] [--interval S]     # live tail
+  comms board [--interval S]                               # live dashboard (Derek's monitor)
+  comms open NAME --owner A --purpose "..." [--policy "..."]
+  comms handoff --channel C --to AGENT [--note "..."]
+  comms archive --channel C · comms render
+  comms doctor [--json] [--repair] [--stale-min N]         # health gate
+  comms nudge [--stale-min N] [--force]                    # notify on stale ack-required items
+  comms install-hook [--print] [--uninstall]               # codex auto-injection for Sol
+"""
+import argparse, json, os, sys, time, datetime, pathlib, fcntl, subprocess, shutil, tempfile
+
+ROOT = pathlib.Path(os.environ.get("COMMS_ROOT",
+        pathlib.Path(__file__).resolve().parent.parent))
+CH = ROOT / "channels"
+REG = ROOT / "registry.json"
+LOCK = ROOT / ".lock"
+AGENTS = ("fable", "sol")
+STALE_MIN_DEFAULT = 30
+HOOK = ROOT / "hooks" / "inject_inbox.py"
+STOP_HOOK = ROOT / "hooks" / "stop_await_instruction.py"
+HOOK_LOG = ROOT / ".hook.log"
+HOLD = ROOT / ".sol-hold"
+STOP_STATE = ROOT / ".stop-state.json"
+# Codex reads project hooks from <repo>/.codex/hooks.json (same shape homebrew ships in its own repo).
+HOOKS_JSON = ROOT.parent / ".codex" / "hooks.json"
+# inject = show open items at session start / each prompt; Stop = wake him at end of turn.
+HOOK_EVENTS = {"SessionStart": "comms/hooks/inject_inbox.py",
+               "UserPromptSubmit": "comms/hooks/inject_inbox.py",
+               "Stop": "comms/hooks/stop_await_instruction.py"}
+# The Stop hook long-polls, so codex must allow it more time than its poll window.
+# Codex records hook trust as a hash of the ENTRY (command + timeout), so changing this value
+# silently untrusts the Stop hook and it stops firing until re-accepted. 75 is the trusted value:
+# do not change it without asking Derek to re-accept. Poll windows must stay under it.
+HOOK_TIMEOUTS = {"Stop": 75}
+
+def now(): return datetime.datetime.now(datetime.timezone.utc).strftime("%Y-%m-%dT%H:%M:%SZ")
+def parse_ts(s):
+    try: return datetime.datetime.strptime(s, "%Y-%m-%dT%H:%M:%SZ").replace(tzinfo=datetime.timezone.utc)
+    except Exception: return datetime.datetime.now(datetime.timezone.utc)
+def age_min(ts): return (datetime.datetime.now(datetime.timezone.utc) - parse_ts(ts)).total_seconds() / 60.0
+def me(a):
+    """Resolve identity. NEVER defaults: on 2026-07-25 the old default of 'fable' silently
+    attributed Sol's message dev#47 to Fable (he had no COMMS_AGENT set), which corrupts the
+    audit trail this ledger exists to provide. Fail loudly instead."""
+    who = a or os.environ.get("COMMS_AGENT")
+    if not who:
+        sys.exit("[comms] identity unknown: export COMMS_AGENT=fable|sol (or pass --as <agent>).\n"
+                 "        Refusing to guess — a wrong 'from' field is worse than an error.")
+    if who not in AGENTS:
+        sys.exit(f"[comms] unknown agent '{who}'; expected one of: {', '.join(AGENTS)}")
+    return who
+
+# ---------- atomic io + locking ----------
+def write_atomic(path, text):
+    path.parent.mkdir(parents=True, exist_ok=True)
+    fd, tmp = tempfile.mkstemp(dir=str(path.parent), prefix="." + path.name + ".")
+    try:
+        with os.fdopen(fd, "w") as f: f.write(text); f.flush(); os.fsync(f.fileno())
+        os.replace(tmp, path)
+    except BaseException:
+        try: os.unlink(tmp)
+        except OSError: pass
+        raise
+
+class locked:
+    """Serialize mutations across both agents (send/handoff/ack/repair)."""
+    def __enter__(self):
+        ROOT.mkdir(parents=True, exist_ok=True)
+        self.f = LOCK.open("a+")
+        fcntl.flock(self.f, fcntl.LOCK_EX)
+        return self
+    def __exit__(self, *e):
+        fcntl.flock(self.f, fcntl.LOCK_UN); self.f.close(); return False
+
+def load_reg():
+    if REG.exists():
+        try: return json.loads(REG.read_text())
+        except json.JSONDecodeError: sys.exit(f"[comms] registry.json is corrupt: {REG}")
+    return {"next_id": 1, "channels": {}}
+def save_reg(r): write_atomic(REG, json.dumps(r, indent=2) + "\n")
+
+def ch_dir(name): return CH / name
+def log_path(name): return ch_dir(name) / "log.jsonl"
+def cursor_path(name, agent): return ch_dir(name) / f"cursor.{agent}"
+def acks_path(agent): return ROOT / f"acks.{agent}.json"
+def nudge_path(): return ROOT / ".nudged.json"
+
+def read_log(name):
+    p = log_path(name)
+    if not p.exists(): return []
+    out = []
+    for ln in p.read_text().splitlines():
+        if ln.strip():
+            try: out.append(json.loads(ln))
+            except json.JSONDecodeError: pass   # never let one bad line hide the rest
+    return out
+
+def read_cursor(name, agent):
+    p = cursor_path(name, agent)
+    try: return int(p.read_text().strip()) if p.exists() else 0
+    except ValueError: return 0
+def write_cursor(name, agent, v): write_atomic(cursor_path(name, agent), str(v) + "\n")
+
+def key(name, mid): return f"{name}#{mid}"
+
+def read_acks(agent):
+    """Ack keys are 'channel#id'. Legacy bare ints are tolerated on read."""
+    p = acks_path(agent)
+    if not p.exists(): return set()
+    try: raw = json.loads(p.read_text())
+    except json.JSONDecodeError: return set()
+    return {str(x) for x in raw}
+def write_acks(agent, s): write_atomic(acks_path(agent), json.dumps(sorted(s)) + "\n")
+def is_acked(acks, name, m): return key(name, m["id"]) in acks or str(m["id"]) in acks
+
+def all_channels(reg): return list(reg["channels"].keys())
+def active_channels(reg): return [n for n, c in reg["channels"].items() if c.get("status") != "archived"]
+
+def max_id(reg):
+    hi = 0
+    for n in all_channels(reg):
+        for m in read_log(n): hi = max(hi, int(m.get("id", 0)))
+    return hi
+
+def alloc_id(reg):
+    """Global monotonic id, self-healing: never trust the counter alone."""
+    mid = max(int(reg.get("next_id", 1)), max_id(reg) + 1)
+    reg["next_id"] = mid + 1
+    return mid
+
+def append_msg(name, msg):
+    log_path(name).parent.mkdir(parents=True, exist_ok=True)
+    with log_path(name).open("a") as f:
+        f.write(json.dumps(msg) + "\n"); f.flush(); os.fsync(f.fileno())
+
+def latest_status(name):
+    for m in reversed(read_log(name)):
+        if m.get("status"): return m["status"]
+    return {}
+
+# ---------- notification (so a message lands even when nobody is at the terminal) ----------
+NOTIFY_SCRIPT = 'on run {b, t, s}\ndisplay notification b with title t subtitle s sound name "Ping"\nend run'
+def notify(title, subtitle, body):
+    if os.environ.get("COMMS_NOTIFY") == "0": return False
+    osa = shutil.which("osascript")
+    if not osa: return False
+    try:
+        subprocess.run([osa, "-e", NOTIFY_SCRIPT, body[:200], title, subtitle[:120]],
+                       check=False, capture_output=True, timeout=10)
+        return True
+    except Exception:
+        return False
+
+# ---------- commands ----------
+def cmd_open(a):
+    with locked():
+        reg = load_reg()
+        if a.name in reg["channels"]: sys.exit(f"channel '{a.name}' exists")
+        ch_dir(a.name).mkdir(parents=True, exist_ok=True)
+        reg["channels"][a.name] = {"owner": a.owner, "status": "active",
+            "purpose": a.purpose or "", "policy": a.policy or "", "created": now()}
+        save_reg(reg); render(reg)
+    print(f"opened channel '{a.name}' (owner={a.owner})")
+
+def cmd_send(a):
+    body = a.body
+    if a.body_file == "-": body = sys.stdin.read()
+    elif a.body_file: body = pathlib.Path(a.body_file).read_text()
+    if body is None: body = ""
+    refs = {}
+    for kv in (a.ref or []):
+        k, _, v = kv.partition("="); refs[k] = v
+    with locked():
+        reg = load_reg()
+        if a.channel not in reg["channels"]: sys.exit(f"no channel '{a.channel}' (use: comms open {a.channel} ...)")
+        sender = me(a.as_agent)
+        if a.to == sender and not a.allow_self:
+            sys.exit(f"[comms] refusing to send from '{sender}' to '{sender}': that is almost always a\n"
+                     f"        missing COMMS_AGENT (the sender's identity defaulted). Set COMMS_AGENT\n"
+                     f"        and resend, or pass --allow-self if you really mean a note to yourself.")
+        if a.to not in AGENTS + ("both", "all"):
+            sys.exit(f"[comms] unknown recipient '{a.to}'; expected {', '.join(AGENTS)}, both, all")
+        mid = alloc_id(reg)
+        msg = {"id": mid, "channel": a.channel, "ts": now(), "from": sender,
+               "to": a.to, "type": a.type, "subject": a.subject}
+        if a.reply: msg["in_reply_to"] = a.reply
+        if a.ack: msg["needs_ack"] = True
+        if refs: msg["refs"] = refs
+        if any([a.last, a.in_flight, a.next, a.blocking]):
+            msg["status"] = {"last": a.last or "", "in_flight": a.in_flight or "",
+                             "next": a.next or "", "blocking": a.blocking or ""}
+        msg["body"] = body
+        append_msg(a.channel, msg)
+        save_reg(reg)          # id counter persisted in the same critical section as the append
+        render(reg)
+    want_notify = a.notify or (a.ack and not a.no_notify)
+    if want_notify and not a.no_notify:
+        notify(f"comms → {a.to}", f"{a.channel}#{mid} · {a.type}" + (" · ACK NEEDED" if a.ack else ""), a.subject)
+    print(f"sent {a.channel}#{mid} -> {a.to}{' [ack-required]' if a.ack else ''}")
+
+def pending_for(agent, reg, only=None):
+    """(channel, msg, unread, unacked) for everything still open for agent."""
+    acks = read_acks(agent); out = []
+    for name in active_channels(reg):
+        if only and name != only: continue
+        cur = read_cursor(name, agent)
+        for m in read_log(name):
+            if m.get("to") not in (agent, "both", "all"): continue
+            unread = int(m["id"]) > cur
+            unacked = bool(m.get("needs_ack")) and not is_acked(acks, name, m)
+            if unread or unacked: out.append((name, m, unread, unacked))
+    return out
+
+def item_json(name, m, unread, unacked):
+    return {"ref": key(name, m["id"]), "channel": name, "id": m["id"], "ts": m["ts"],
+            "from": m.get("from"), "to": m.get("to"), "type": m.get("type"),
+            "subject": m.get("subject"), "refs": m.get("refs", {}), "status": m.get("status", {}),
+            "body": m.get("body", ""), "unread": unread, "needs_ack": unacked,
+            "age_min": round(age_min(m["ts"]), 1)}
+
+def cmd_inbox(a):
+    agent = me(a.for_agent); reg = load_reg()
+    items = pending_for(agent, reg, only=a.channel)
+    if a.json:
+        print(json.dumps({"agent": agent, "count": len(items),
+                          "items": [item_json(*i) for i in sorted(items, key=lambda t: -t[1]["id"])]}, indent=2))
+    elif not items:
+        if not a.quiet_if_clear: print(f"[comms] inbox clear for {agent}.")
+    else:
+        by = {}
+        for name, m, unread, unacked in items: by.setdefault(name, []).append((m, unread, unacked))
+        print(f"[comms] {len(items)} open item(s) for {agent} — newest first:\n")
+        for name in sorted(by):
+            print(f"### channel: {name}")
+            for m, unread, unacked in sorted(by[name], key=lambda t: -t[0]["id"]):
+                flags = ("NEW " if unread else "") + ("ACK-NEEDED " if unacked else "")
+                print(f"  {key(name, m['id'])} [{m['type']}] from {m['from']} · {m['ts']} {flags}".rstrip())
+                print(f"    {m['subject']}")
+                if m.get("refs"): print(f"    refs: {json.dumps(m['refs'])}")
+                body = (m.get('body') or '').strip()
+                if body:
+                    for ln in body.splitlines()[:12]: print(f"    | {ln}")
+                if m.get("needs_ack"): print(f"    -> ack with: comms ack {key(name, m['id'])}")
+            print()
+    if not a.peek:  # advance read cursors (the read receipt); acks stay until explicit
+        with locked():
+            for name in (active_channels(reg) if not a.channel else [a.channel]):
+                log = read_log(name)
+                if log: write_cursor(name, agent, max(int(m["id"]) for m in log))
+            render(load_reg())
+
+def resolve_ack(reg, token):
+    """Accept 'dev#12' or bare '12'; bare resolves to the channel that owns that id."""
+    token = str(token).strip()
+    if "#" in token:
+        name, _, i = token.partition("#")
+        if name not in reg["channels"]: sys.exit(f"[comms] no channel '{name}'")
+        return key(name, int(i))
+    for name in all_channels(reg):
+        for m in read_log(name):
+            if str(m.get("id")) == token: return key(name, int(token))
+    sys.exit(f"[comms] no message with id {token}")
+
+def cmd_ack(a):
+    agent = me(a.as_agent)
+    with locked():
+        reg = load_reg(); acks = read_acks(agent)
+        resolved = [resolve_ack(reg, t) for t in a.ids]
+        acks.update(resolved); write_acks(agent, acks); render(reg)
+    print(f"{agent} acked: {', '.join(resolved)}")
+
+def cmd_channels(a):
+    reg = load_reg()
+    print(f"{'channel':14} {'owner':7} {'status':9} open(f/s)  purpose")
+    for name, c in reg["channels"].items():
+        pf = len(pending_for('fable', reg, only=name)); ps = len(pending_for('sol', reg, only=name))
+        print(f"{name:14} {c['owner']:7} {c['status']:9} {pf}/{ps:<6}   {c.get('purpose','')}")
+
+def cmd_status(a):
+    reg = load_reg(); print(render_status(reg, a.channel), end="")
+
+def all_messages(reg, only=None, include_archived=False):
+    msgs = []
+    for name in (all_channels(reg) if include_archived else active_channels(reg)):
+        if only and name != only: continue
+        msgs += read_log(name)
+    return sorted(msgs, key=lambda m: int(m["id"]))
+
+def fmt_feed(m):
+    head = f"┌─ {m['channel']}#{m['id']} · {m['ts']} · {m['from']} → {m['to']} · [{m['type']}]"
+    if m.get("needs_ack"): head += " · ACK-REQUIRED"
+    lines = [head, f"│ {m.get('subject','')}"]
+    if m.get("refs"): lines.append(f"│ refs: {json.dumps(m['refs'])}")
+    st = m.get("status")
+    if st:
+        bits = " | ".join(f"{k}:{v}" for k, v in st.items() if v)
+        if bits: lines.append(f"│ status: {bits}")
+    for ln in (m.get("body") or "").strip().splitlines(): lines.append(f"│ {ln}")
+    lines.append("└" + "─" * 40)
+    return "\n".join(lines)
+
+def cmd_feed(a):
+    reg = load_reg()
+    msgs = all_messages(reg, a.channel)[-a.n:]
+    for m in msgs: print(fmt_feed(m))
+    print(f"[comms feed] {len(msgs)} message(s); newest #{msgs[-1]['id'] if msgs else 0}")
+
+def cmd_watch(a):
+    """Live-follow the feed so Derek can observe Fable<->Sol traffic in his own terminal."""
+    reg = load_reg()
+    seen = a.from_id if a.from_id is not None else max([int(m["id"]) for m in all_messages(reg, a.channel)], default=0)
+    scope = f" [{a.channel}]" if a.channel else ""
+    print(f"[comms watch{scope}] following new messages (Ctrl-C to stop). start after #{seen}\n", flush=True)
+    try:
+        while True:
+            reg = load_reg()
+            for m in [m for m in all_messages(reg, a.channel) if int(m["id"]) > seen]:
+                print(fmt_feed(m), flush=True); seen = int(m["id"])
+            time.sleep(a.interval)
+    except KeyboardInterrupt:
+        print("\n[comms watch] stopped.")
+
+def cmd_board(a):
+    """Full-screen live dashboard: channel state + open items + recent traffic."""
+    try:
+        while True:
+            reg = load_reg()
+            out = ["\033[2J\033[H", render_status(reg), "", "## Recent traffic", ""]
+            for m in all_messages(reg)[-a.tail:]:
+                ack = " ⚠ACK" if m.get("needs_ack") else ""
+                out.append(f"  {m['channel']}#{m['id']:<4} {m['ts'][11:16]} {m['from']:>5} → {m['to']:<5} "
+                           f"[{m['type']}]{ack}  {m.get('subject','')[:70]}")
+            stale = [(n, m) for n, m, _u, ua in pending_for('sol', reg) + pending_for('fable', reg)
+                     if ua and age_min(m["ts"]) > a.stale_min]
+            if stale:
+                out += ["", f"## ⚠ STALE (ack-required > {a.stale_min}m)", ""]
+                out += [f"  {key(n, m['id'])} → {m['to']} · {int(age_min(m['ts']))}m · {m.get('subject','')[:60]}"
+                        for n, m in stale]
+            out += ["", f"_refresh {a.interval}s · Ctrl-C to stop · {now()}_"]
+            print("\n".join(out), flush=True)
+            time.sleep(a.interval)
+    except KeyboardInterrupt:
+        print("\n[comms board] stopped.")
+
+def cmd_handoff(a):
+    with locked():
+        reg = load_reg()
+        if a.channel not in reg["channels"]: sys.exit(f"no channel '{a.channel}'")
+        prev = reg["channels"][a.channel]["owner"]
+        reg["channels"][a.channel]["owner"] = a.to
+        mid = alloc_id(reg)
+        msg = {"id": mid, "channel": a.channel, "ts": now(), "from": me(a.as_agent),
+               "to": a.to, "type": "handoff-owner", "subject": f"ownership {prev} -> {a.to}",
+               "needs_ack": True, "body": a.note or ""}
+        append_msg(a.channel, msg); save_reg(reg); render(reg)
+    notify(f"comms → {a.to}", f"{a.channel}#{mid} · ownership", f"{prev} -> {a.to}")
+    print(f"{a.channel}: owner {prev} -> {a.to} (msg {key(a.channel, mid)}, ack-required)")
+
+def cmd_archive(a):
+    with locked():
+        reg = load_reg()
+        if a.channel not in reg["channels"]: sys.exit(f"no channel '{a.channel}'")
+        reg["channels"][a.channel]["status"] = "archived"; save_reg(reg); render(reg)
+    print(f"archived '{a.channel}'")
+
+def cmd_render(a):
+    with locked(): render(load_reg())
+    print("rendered INBOX-*.md, STATUS.md, FEED.md, per-channel thread.md")
+
+def cmd_hold(a):
+    """Stop the Stop hook from holding Sol's session — gives Derek his prompt back at once."""
+    if a.release:
+        HOLD.unlink(missing_ok=True); STOP_STATE.unlink(missing_ok=True)
+        print("[comms] hold released — Sol's Stop hook will long-poll and stand by again")
+    else:
+        write_atomic(HOLD, f"held by {me(a.as_agent)} at {now()}\n"
+                           f"reason: {a.reason or 'not given'}\n")
+        print(f"[comms] hold set ({HOLD.name}) — Sol's turns end normally; `comms hold --release` to undo")
+    return 0
+
+# ---------- doctor: prove delivery works, repair legacy state ----------
+def collect_ids(reg):
+    seen = {}
+    for name in all_channels(reg):
+        for m in read_log(name): seen.setdefault(int(m.get("id", 0)), []).append(key(name, m.get("id")))
+    return seen
+
+def doctor_checks(reg, stale_min):
+    checks = []
+    def add(ok, name, detail, fatal=True):
+        checks.append({"check": name, "ok": bool(ok), "detail": detail, "fatal": fatal})
+    ids = collect_ids(reg)
+    dupes = {i: v for i, v in ids.items() if len(v) > 1}
+    add(not dupes, "unique-ids", f"{len(dupes)} duplicated id(s): " +
+        ", ".join(f"{i}→{v}" for i, v in list(dupes.items())[:5]) if dupes else "all message ids unique")
+    hi = max(ids) if ids else 0
+    add(int(reg.get("next_id", 1)) > hi, "id-counter",
+        f"next_id={reg.get('next_id')} vs max id={hi}" + ("" if int(reg.get("next_id", 1)) > hi else " (counter behind → collisions)"))
+    bad_cursor = []
+    for name in active_channels(reg):
+        for ag in AGENTS:
+            c = read_cursor(name, ag)
+            if c > hi: bad_cursor.append(f"{name}/{ag}={c}")
+    add(not bad_cursor, "cursors", ", ".join(bad_cursor) + " ahead of max id" if bad_cursor else "all cursors <= max id")
+    # renders exist and are not older than the newest message
+    newest = max([parse_ts(m["ts"]) for m in all_messages(reg)], default=None)
+    stale_render = []
+    for f in [ROOT / "STATUS.md", ROOT / "FEED.md"] + [ROOT / f"INBOX-{a}.md" for a in AGENTS]:
+        if not f.exists(): stale_render.append(f.name + " missing")
+        elif newest and datetime.datetime.fromtimestamp(f.stat().st_mtime, datetime.timezone.utc) < newest:
+            stale_render.append(f.name + " older than newest message")
+    add(not stale_render, "renders", ", ".join(stale_render) if stale_render else "INBOX/STATUS/FEED current")
+    # sol delivery path
+    missing = [str(h) for h in (HOOK, STOP_HOOK) if not (h.exists() and os.access(h, os.X_OK))]
+    add(not missing, "hook-scripts",
+        "inject_inbox.py + stop_await_instruction.py present+executable" if not missing
+        else "MISSING or not executable: " + ", ".join(missing))
+    installed = hook_installed()
+    add(installed, "hook-installed",
+        f"{HOOKS_JSON}: " + (f"registered for {', '.join(HOOK_EVENTS)}" if installed
+                             else "NOT registered (run: comms install-hook)"))
+    add(not HOLD.exists(), "sol-not-held",
+        HOLD.read_text().replace("\n", " ").strip() + " (`comms hold --release` to resume waking him)"
+        if HOLD.exists() else "Stop hook free to wake Sol", fatal=False)
+    # Proof the path is live, not just configured: the hook logs every invocation.
+    fired = HOOK_LOG.exists() and HOOK_LOG.stat().st_size > 0
+    last = HOOK_LOG.read_text().splitlines()[-1] if fired else ""
+    add(fired, "hook-fired",
+        f"last: {last}" if fired else "hook has never run — start a codex session in this repo and "
+        "accept the trust prompt", fatal=False)
+    selfsent = [key(n, m["id"]) for n in all_channels(reg) for m in read_log(n)
+                if m.get("from") == m.get("to")]
+    add(not selfsent, "attribution",
+        "self-addressed (likely mis-attributed, sender had no COMMS_AGENT): " + ", ".join(selfsent)
+        if selfsent else "no self-addressed messages", fatal=False)
+    agents_md = ROOT.parent / "AGENTS.md"
+    has_line = agents_md.exists() and "comms inbox" in agents_md.read_text()
+    add(has_line, "agents-md", "AGENTS.md instructs `comms inbox`" if has_line else "AGENTS.md missing the comms instruction", fatal=False)
+    # stale ack-required
+    stale = [(n, m, ag) for ag in AGENTS for n, m, _u, ua in pending_for(ag, reg)
+             if ua and age_min(m["ts"]) > stale_min]
+    add(not stale, "no-stale-acks",
+        "; ".join(f"{key(n, m['id'])}→{ag} {int(age_min(m['ts']))}m" for n, m, ag in stale) if stale
+        else f"no ack-required item older than {stale_min}m", fatal=False)
+    return checks
+
+def cmd_doctor(a):
+    if a.repair:
+        with locked(): repaired = repair()
+        for line in repaired: print(f"[repair] {line}")
+        if not repaired: print("[repair] nothing to fix")
+    reg = load_reg()
+    checks = doctor_checks(reg, a.stale_min)
+    if a.json:
+        print(json.dumps({"ok": all(c["ok"] for c in checks if c["fatal"]), "checks": checks}, indent=2))
+    else:
+        print(f"# comms doctor — {now()}\n")
+        for c in checks:
+            tag = "PASS" if c["ok"] else ("FAIL" if c["fatal"] else "WARN")
+            print(f"  [{tag}] {c['check']:16} {c['detail']}")
+        bad = [c for c in checks if not c["ok"]]
+        print("\n" + ("all checks pass — delivery path is sound" if not bad else
+              f"{len(bad)} problem(s); fatal={sum(1 for c in bad if c['fatal'])}"))
+    return 0 if all(c["ok"] for c in checks if c["fatal"]) else 1
+
+def repair():
+    """Renumber duplicate/missing ids globally by timestamp, keeping per-channel order.
+    Remaps ack keys, clamps cursors, rewrites renders. Idempotent."""
+    reg = load_reg(); notes = []
+    entries = []           # (ts, channel, position, msg)
+    for name in all_channels(reg):
+        for pos, m in enumerate(read_log(name)): entries.append((parse_ts(m["ts"]), name, pos, m))
+    if not entries:
+        save_reg(reg); render(reg); return notes
+    ids = collect_ids(reg)
+    needs = any(len(v) > 1 for v in ids.values()) or any(i <= 0 for i in ids)
+    if needs:
+        entries.sort(key=lambda t: (t[0], t[1], t[2]))
+        remap = {}         # (channel, old_id, position) -> new_id
+        per_channel = {}
+        for new_id, (_ts, name, pos, m) in enumerate(entries, start=1):
+            remap[(name, pos)] = (int(m.get("id", 0)), new_id)
+            m["id"] = new_id
+            per_channel.setdefault(name, []).append(m)
+        for name, msgs in per_channel.items():
+            # in_reply_to fixups where unambiguous
+            write_atomic(log_path(name), "".join(json.dumps(m) + "\n" for m in msgs))
+        notes.append(f"renumbered {len(entries)} message(s) to unique global ids 1..{len(entries)}")
+        # rebuild acks: legacy bare ints and stale channel#id keys -> new channel#id
+        for ag in AGENTS:
+            old = read_acks(ag)
+            if not old: continue
+            new = set()
+            for name, msgs in per_channel.items():
+                for pos, m in enumerate(msgs):
+                    old_id = remap[(name, pos)][0]
+                    if f"{name}#{old_id}" in old or str(old_id) in old: new.add(key(name, m["id"]))
+            if new != old:
+                write_acks(ag, new); notes.append(f"acks[{ag}]: {sorted(old)} -> {sorted(new)}")
+        # cursors are meaningless after renumber: reset to 0 so nothing is silently swallowed
+        for name in all_channels(reg):
+            for ag in AGENTS:
+                if cursor_path(name, ag).exists():
+                    cursor_path(name, ag).unlink(); notes.append(f"cursor reset: {name}/{ag}")
+    hi = max_id(reg)
+    if int(reg.get("next_id", 1)) <= hi:
+        reg["next_id"] = hi + 1; notes.append(f"next_id -> {reg['next_id']}")
+    for name in active_channels(reg):
+        for ag in AGENTS:
+            if read_cursor(name, ag) > hi:
+                write_cursor(name, ag, hi); notes.append(f"cursor clamped: {name}/{ag} -> {hi}")
+    save_reg(reg); render(reg)
+    return notes
+
+def cmd_nudge(a):
+    """Notify (macOS) about ack-required items left too long — the unattended safety net.
+    Rate-limited to once per item per hour unless --force."""
+    reg = load_reg()
+    state = {}
+    if nudge_path().exists():
+        try: state = json.loads(nudge_path().read_text())
+        except json.JSONDecodeError: state = {}
+    fired = []
+    for ag in AGENTS:
+        for name, m, _u, unacked in pending_for(ag, reg):
+            if not unacked or age_min(m["ts"]) <= a.stale_min: continue
+            k = f"{key(name, m['id'])}->{ag}"
+            last = state.get(k, 0)
+            if not a.force and time.time() - last < 3600: continue
+            notify(f"comms: {ag} has not acked", f"{key(name, m['id'])} · {int(age_min(m['ts']))} min old",
+                   m.get("subject", ""))
+            state[k] = time.time(); fired.append(k)
+    write_atomic(nudge_path(), json.dumps(state, indent=2) + "\n")
+    print(f"[comms nudge] {len(fired)} notification(s)" + (": " + ", ".join(fired) if fired else ""))
+
+# ---------- codex hook install ----------
+def load_hooks_json():
+    if not HOOKS_JSON.exists(): return {}
+    try: return json.loads(HOOKS_JSON.read_text())
+    except json.JSONDecodeError: sys.exit(f"[comms] {HOOKS_JSON} is not valid JSON")
+
+def hook_entry(ev):
+    return {"type": "command", "command": HOOK_EVENTS[ev], "timeout": HOOK_TIMEOUTS.get(ev, 15)}
+
+def is_ours(h):
+    """Match any comms hook, including older names, so reinstall never leaves a dead entry."""
+    c = str(h.get("command", "")) if isinstance(h, dict) else ""
+    return "inject_inbox" in c or "stop_await_instruction" in c or "comms/hooks/" in c
+
+def hook_installed():
+    cfg = load_hooks_json().get("hooks", {})
+    return all(any(is_ours(h) for g in cfg.get(ev, []) for h in g.get("hooks", []))
+               for ev in HOOK_EVENTS) if cfg else False
+
+def cmd_install_hook(a):
+    doc = load_hooks_json()
+    if a.print_only:
+        print(json.dumps({"hooks": {ev: [{"hooks": [hook_entry(ev)]}] for ev in HOOK_EVENTS}}, indent=2)); return 0
+    hooks = doc.setdefault("hooks", {})
+    changed = []
+    for ev in HOOK_EVENTS:
+        groups = hooks.setdefault(ev, [])
+        for g in groups: g["hooks"] = [h for h in g.get("hooks", []) if not is_ours(h)]
+        hooks[ev] = [g for g in groups if g.get("hooks")]
+        if not a.uninstall:
+            hooks[ev].append({"hooks": [hook_entry(ev)]}); changed.append(ev)
+        elif not hooks[ev]:
+            del hooks[ev]
+    # HooksFile accepts only `description` and `hooks` — any other key makes codex reject the file.
+    doc.pop("//", None)
+    doc["description"] = ("comms inbox auto-injection for Sol (managed by `comms install-hook`); "
+                          "project-scoped so it only fires in this repo. Verify with `comms doctor`.")
+    write_atomic(HOOKS_JSON, json.dumps(doc, indent=2) + "\n")
+    if a.uninstall:
+        print(f"[comms] hook removed from {HOOKS_JSON}"); return 0
+    print(f"[comms] hook registered in {HOOKS_JSON} for {', '.join(changed)}")
+    print("        codex trust-gates hooks: the first codex session in this repo prompts to trust")
+    print("        them. Accept once; `comms doctor` then shows hook-fired PASS.")
+    return 0
+
+# ---------- rendering ----------
+def render_status(reg, only=None):
+    L = ["# comms status — " + now(), ""]
+    L.append("## OPEN ITEMS (unacked / unread)")
+    any_open = False
+    for agent in AGENTS:
+        items = pending_for(agent, reg)
+        if items:
+            any_open = True
+            L.append(f"- **{agent}**: " + ", ".join(
+                f"{key(n, m['id'])}({m['type']}{', ack' if ua else ''})"
+                for n, m, _u, ua in sorted(items, key=lambda t: -int(t[1]['id']))))
+    if not any_open: L.append("- _all clear_")
+    L.append("\n## Channels")
+    L.append("| channel | owner | status | open f/s | current (last / in-flight / next / blocking) |")
+    L.append("|---|---|---|---|---|")
+    for name, c in reg["channels"].items():
+        if only and name != only: continue
+        if c.get("status") == "archived" and not only: continue
+        st = latest_status(name)
+        cur = " / ".join(x for x in [st.get("last",""), st.get("in_flight",""), st.get("next",""),
+               ("⛔ "+st["blocking"]) if st.get("blocking") else ""] if x) or "—"
+        pf = len(pending_for('fable', reg, only=name)); ps = len(pending_for('sol', reg, only=name))
+        L.append(f"| {name} | {c['owner']} | {c.get('status')} | {pf}/{ps} | {cur} |")
+    return "\n".join(L) + "\n"
+
+def render_inbox(reg, agent):
+    other = "fable" if agent == "sol" else "sol"
+    L = [f"# INBOX — {agent}",
+         f"_generated {now()} · unacked/unread across all channels, newest first_", "",
+         f"> {agent}: these are open items from {other}. `comms ack <channel#id>` as you clear them;",
+         f"> reply with `comms send --channel <c> --to {other} ...`.", ""]
+    items = pending_for(agent, reg)
+    if not items: L.append("_inbox clear._")
+    by = {}
+    for name, m, unread, unacked in items: by.setdefault(name, []).append((m, unread, unacked))
+    for name in sorted(by):
+        L.append(f"## {name}")
+        for m, unread, unacked in sorted(by[name], key=lambda t: -int(t[0]["id"])):
+            flags = ("`NEW` " if unread else "") + ("`ACK-NEEDED` " if unacked else "")
+            L.append(f"- **{key(name, m['id'])}** [{m['type']}] from {m['from']} · {m['ts']} {flags}".rstrip())
+            L.append(f"  - {m['subject']}")
+            if m.get("refs"): L.append(f"  - refs: `{json.dumps(m['refs'])}`")
+            body = (m.get('body') or '').strip()
+            if body:
+                for ln in body.splitlines()[:20]: L.append(f"  - > {ln}")
+            if m.get("needs_ack"): L.append(f"  - _ack: `comms ack {key(name, m['id'])}`_")
+        L.append("")
+    return "\n".join(L) + "\n"
+
+def render_thread(name):
+    L = [f"# thread: {name}", ""]
+    for m in reversed(read_log(name)):
+        L.append(f"## {name}#{m['id']} · {m['type']} · {m['from']} → {m['to']} · {m['ts']}")
+        L.append(f"**{m.get('subject','')}**")
+        if m.get("refs"): L.append(f"`refs: {json.dumps(m['refs'])}`")
+        if m.get("status"): L.append(f"`status: {json.dumps(m['status'])}`")
+        if m.get("needs_ack"): L.append("`ack-required`")
+        if m.get("in_reply_to"): L.append(f"_in reply to #{m['in_reply_to']}_")
+        L.append(""); L.append(m.get("body","")); L.append("")
+    return "\n".join(L) + "\n"
+
+def render_feed(reg, n=60):
+    L = ["# FEED — all channels, newest first", f"_generated {now()}_", ""]
+    for m in reversed(all_messages(reg)[-n:]):
+        ack = " · `ack-required`" if m.get("needs_ack") else ""
+        L.append(f"- **{m['channel']}#{m['id']}** {m['ts']} · {m['from']} → {m['to']} · [{m['type']}]{ack}")
+        L.append(f"  - {m.get('subject','')}")
+    return "\n".join(L) + "\n"
+
+def render(reg):
+    for agent in AGENTS: write_atomic(ROOT / f"INBOX-{agent}.md", render_inbox(reg, agent))
+    write_atomic(ROOT / "STATUS.md", render_status(reg))
+    write_atomic(ROOT / "FEED.md", render_feed(reg))
+    for name in reg["channels"]:
+        if ch_dir(name).exists(): write_atomic(ch_dir(name) / "thread.md", render_thread(name))
+
+# ---------- argparse ----------
+def main():
+    p = argparse.ArgumentParser(prog="comms"); p.add_argument("--as", dest="as_agent")
+    sub = p.add_subparsers(dest="cmd", required=True)
+    s = sub.add_parser("open"); s.add_argument("name"); s.add_argument("--owner", required=True)
+    s.add_argument("--purpose"); s.add_argument("--policy"); s.set_defaults(fn=cmd_open)
+    s = sub.add_parser("send")
+    for f in ["channel","to","type","subject"]: s.add_argument("--"+f, required=True)
+    s.add_argument("--body"); s.add_argument("--body-file", dest="body_file")
+    s.add_argument("--ref", action="append"); s.add_argument("--reply", type=int)
+    s.add_argument("--ack", action="store_true")
+    s.add_argument("--notify", action="store_true"); s.add_argument("--no-notify", action="store_true")
+    s.add_argument("--allow-self", action="store_true", dest="allow_self")
+    for f in ["last","in-flight","next","blocking"]: s.add_argument("--"+f, dest=f.replace("-","_"))
+    s.set_defaults(fn=cmd_send)
+    s = sub.add_parser("inbox"); s.add_argument("--channel"); s.add_argument("--for", dest="for_agent")
+    s.add_argument("--peek", action="store_true"); s.add_argument("--json", action="store_true")
+    s.add_argument("--quiet-if-clear", action="store_true", dest="quiet_if_clear"); s.set_defaults(fn=cmd_inbox)
+    s = sub.add_parser("ack"); s.add_argument("ids", nargs="+"); s.set_defaults(fn=cmd_ack)
+    s = sub.add_parser("channels"); s.set_defaults(fn=cmd_channels)
+    s = sub.add_parser("status"); s.add_argument("--channel"); s.set_defaults(fn=cmd_status)
+    s = sub.add_parser("feed"); s.add_argument("--channel"); s.add_argument("-n", type=int, default=20)
+    s.set_defaults(fn=cmd_feed)
+    s = sub.add_parser("watch"); s.add_argument("--channel"); s.add_argument("--from", dest="from_id", type=int)
+    s.add_argument("--interval", type=float, default=2.0); s.set_defaults(fn=cmd_watch)
+    s = sub.add_parser("board"); s.add_argument("--interval", type=float, default=5.0)
+    s.add_argument("--tail", type=int, default=12); s.add_argument("--stale-min", type=int, default=STALE_MIN_DEFAULT, dest="stale_min")
+    s.set_defaults(fn=cmd_board)
+    s = sub.add_parser("handoff"); s.add_argument("--channel", required=True)
+    s.add_argument("--to", required=True); s.add_argument("--note"); s.set_defaults(fn=cmd_handoff)
+    s = sub.add_parser("archive"); s.add_argument("--channel", required=True); s.set_defaults(fn=cmd_archive)
+    s = sub.add_parser("render"); s.set_defaults(fn=cmd_render)
+    s = sub.add_parser("hold"); s.add_argument("--release", action="store_true")
+    s.add_argument("--reason"); s.set_defaults(fn=cmd_hold)
+    s = sub.add_parser("doctor"); s.add_argument("--json", action="store_true")
+    s.add_argument("--repair", action="store_true")
+    s.add_argument("--stale-min", type=int, default=STALE_MIN_DEFAULT, dest="stale_min"); s.set_defaults(fn=cmd_doctor)
+    s = sub.add_parser("nudge"); s.add_argument("--stale-min", type=int, default=STALE_MIN_DEFAULT, dest="stale_min")
+    s.add_argument("--force", action="store_true"); s.set_defaults(fn=cmd_nudge)
+    s = sub.add_parser("install-hook"); s.add_argument("--print", action="store_true", dest="print_only")
+    s.add_argument("--uninstall", action="store_true"); s.set_defaults(fn=cmd_install_hook)
+    a = p.parse_args()
+    sys.exit(a.fn(a) or 0)
+
+if __name__ == "__main__": main()

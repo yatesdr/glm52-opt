@@ -1,0 +1,28 @@
+[
+  {
+    "label": "fail-350k-r1",
+    "role": "FAIL",
+    "depth": 350000,
+    "seed": 1110001,
+    "prompt_sha256": "f0d1c16d816b777f27a3882d9e6b5ef056852684ea155fb11dd845f9e1654ab5",
+    "stock_verdict": "ABSENT",
+    "verdict": "ABSENT",
+    "gate_pass": false,
+    "exact": false,
+    "cold": true,
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 343727,
+      "total_tokens": 343982,
+      "completion_tokens": 255,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "8,0,1.1.8,0,0,0,1,0,1 0.1,1.0,1,0,0,0.1,0.0,0,0,0.1 =1,0,0.0,1,0.3,0.0,1 1,0,0,0,0,1,0,1,1,1.0.1 &0,0\n0,0,1,0,0,0,0,0,0,0,1 0,1,0,0,1,1:1,1 1,0.0,1 1,2 0,2.0,0,0,0,0,0,1,1 =1.9,0,1.01.0,0,1.1,2.0,0,0.1 1,0,0.0,3,,1 1 1,3.1 3.1,1,1 1 and0.0,0,1.1,0,1,0,1,0.0,1e",
+    "reasoning_chars": 0,
+    "secs": 415.2
+  }
+]

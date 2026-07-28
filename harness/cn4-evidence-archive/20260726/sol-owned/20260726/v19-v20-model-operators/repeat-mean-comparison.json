@@ -1,0 +1,62 @@
+{
+  "comparisons": {
+    "cross_first_halves": {
+      "different": 31767,
+      "max_abs": 0.00390625,
+      "mean_abs": 5.173105675746725e-07,
+      "p999_abs": 0.000152587890625,
+      "p99_abs": 0.0,
+      "rms": 1.5117177213488915e-05,
+      "signed_mean": -6.584388686726136e-09
+    },
+    "cross_overall_means": {
+      "different": 34157,
+      "max_abs": 0.00146484375,
+      "mean_abs": 3.2792236200223006e-07,
+      "p999_abs": 0.0001220703125,
+      "p99_abs": 0.0,
+      "rms": 9.38620008529638e-06,
+      "signed_mean": -4.4169655373980784e-09
+    },
+    "cross_second_halves": {
+      "different": 27410,
+      "max_abs": 0.00390625,
+      "mean_abs": 4.465924751693185e-07,
+      "p999_abs": 0.0001220703125,
+      "p99_abs": 0.0,
+      "rms": 1.4103820686558845e-05,
+      "signed_mean": -2.24954238807002e-09
+    },
+    "within_v19_halves": {
+      "different": 32936,
+      "max_abs": 0.0048828125,
+      "mean_abs": 5.994328652522528e-07,
+      "p999_abs": 0.000244140625,
+      "p99_abs": 0.0,
+      "rms": 1.773719249104238e-05,
+      "signed_mean": 4.9943460141392615e-09
+    },
+    "within_v20_halves": {
+      "different": 33279,
+      "max_abs": 0.0048828125,
+      "mean_abs": 6.358971326767429e-07,
+      "p999_abs": 0.000244140625,
+      "p99_abs": 0.0,
+      "rms": 1.8413929675095463e-05,
+      "signed_mean": 9.329192312795378e-09
+    }
+  },
+  "cross_overall_rms_to_max_within_half_rms": 0.5097336772167139,
+  "elements": 10512384,
+  "hidden": 6144,
+  "input_sha256": {
+    "v19_first_half": "b56e237ae09fe981629e61ef105c0d1c9e7e817409b2865c5c8a10a694bc7c3e",
+    "v19_overall": "9e0222381a1ad673828d066d34000fabb879f0eaec9337c06fe3f1661aeb85ac",
+    "v19_second_half": "7274b14dc832426d79ec0e3b74f2b4e1e66f8d05156f247a2d4a0c9de44c726d",
+    "v20_first_half": "0f399ade6be15ac363cf9f28c3420ac94a2cb587f34e2a0ff7e0ef45f19a2253",
+    "v20_overall": "0236b2e688e15504ff7a6c3a8495076d8906befe4f644b1acf39fb487e65ac00",
+    "v20_second_half": "47918f592ebad8ab2a09b7ac15de78c12b4c31802a7bf4cd1414b3f487a255fb"
+  },
+  "kind": "v19_v20_nf3_moe_repeat_mean_comparison",
+  "rows": 1711
+}

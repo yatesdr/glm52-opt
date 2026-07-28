@@ -1,0 +1,13 @@
+# server=http://localhost:5001 model=GLM-5.2 filler=56 tok/block position=40% max_tokens=3000 runtag=sol-2600
+depth=50000 pos=40% ctx=49141 cached=0 completion=73 finish=stop secs=130
+   retrieval=PASS (where=content)   finalization=PASS
+   content='738216'
+   reasoning_tail='rence, the maintenance ticket number for the Facility 27 compressor overhaul is 738216."\nThe number is 738216.'
+depth=150000 pos=40% ctx=147371 cached=0 completion=2 finish=stop secs=497
+   retrieval=MISS (where=-)   finalization=FAIL(content empty)
+   content=''
+   reasoning_tail='The'
+depth=250000 pos=40% ctx=245602 cached=0 completion=117 finish=stop secs=978
+   retrieval=MISS (where=-)   finalization=FAIL(content empty)
+   content=''
+   reasoning_tail='40 40 40 40  40 40 40 40 40 40 40  40 40 40 40 40 40 40 40 40 40 40 40 40 40 40 40  40 40 40 40 40 40 40 40 40'

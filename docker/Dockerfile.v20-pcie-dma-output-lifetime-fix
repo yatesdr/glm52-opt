@@ -1,0 +1,23 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+ARG BASE_PCIE_DMA_SHA256
+ARG FIXED_PCIE_DMA_SHA256
+ARG FIX_SOURCE_COMMIT
+
+COPY workspace/sparkinfer-v20-output-lifetime-fix/sparkinfer/comm/pcie/pcie_dma.py \
+    /tmp/pcie-output-lifetime/pcie_dma.py
+
+RUN set -eu; \
+    installed=/opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py; \
+    fixed=/tmp/pcie-output-lifetime/pcie_dma.py; \
+    test "$(sha256sum "${installed}" | cut -d' ' -f1)" = "${BASE_PCIE_DMA_SHA256}"; \
+    test "$(sha256sum "${fixed}" | cut -d' ' -f1)" = "${FIXED_PCIE_DMA_SHA256}"; \
+    install -m 0644 "${fixed}" "${installed}"; \
+    /opt/venv/bin/python -m py_compile "${installed}"; \
+    test "$(sha256sum "${installed}" | cut -d' ' -f1)" = "${FIXED_PCIE_DMA_SHA256}"; \
+    rm -rf /tmp/pcie-output-lifetime
+
+LABEL local-inference.fix="pcie-dma-output-lifetime" \
+      local-inference.fix.source_commit="${FIX_SOURCE_COMMIT}" \
+      local-inference.fix.contract="default all-reduce results remain live across later calls"

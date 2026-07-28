@@ -1,0 +1,74 @@
+{
+  "verdict": "PASS",
+  "ladder": [
+    50000,
+    150000,
+    250000,
+    300000,
+    350000,
+    475000
+  ],
+  "cells": [
+    {
+      "depth": 50000,
+      "verdict": "PASS",
+      "context_tokens": 49102,
+      "cached_tokens": 0,
+      "completion_tokens": 66,
+      "elapsed_s": 36.88,
+      "failed_checks": [],
+      "answer": "738216"
+    },
+    {
+      "depth": 150000,
+      "verdict": "PASS",
+      "context_tokens": 147275,
+      "cached_tokens": 0,
+      "completion_tokens": 65,
+      "elapsed_s": 118.46,
+      "failed_checks": [],
+      "answer": "738216"
+    },
+    {
+      "depth": 250000,
+      "verdict": "PASS",
+      "context_tokens": 245505,
+      "cached_tokens": 0,
+      "completion_tokens": 81,
+      "elapsed_s": 213.11,
+      "failed_checks": [],
+      "answer": "738216"
+    },
+    {
+      "depth": 300000,
+      "verdict": "PASS",
+      "context_tokens": 294620,
+      "cached_tokens": 0,
+      "completion_tokens": 93,
+      "elapsed_s": 265.15,
+      "failed_checks": [],
+      "answer": "738216"
+    },
+    {
+      "depth": 350000,
+      "verdict": "PASS",
+      "context_tokens": 343734,
+      "cached_tokens": 0,
+      "completion_tokens": 66,
+      "elapsed_s": 319.31,
+      "failed_checks": [],
+      "answer": "738216"
+    },
+    {
+      "depth": 475000,
+      "verdict": "PASS",
+      "context_tokens": 466493,
+      "cached_tokens": 0,
+      "completion_tokens": 71,
+      "elapsed_s": 468.62,
+      "failed_checks": [],
+      "answer": "738216"
+    }
+  ],
+  "ts": "2026-07-28T00:02:46Z"
+}

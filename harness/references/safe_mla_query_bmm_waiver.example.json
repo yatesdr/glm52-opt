@@ -1,0 +1,25 @@
+{
+  "schema_version": 1,
+  "gate_id": "safe_mla_query_bmm.post_fp8.sm120-cu132.v1",
+  "status": "approved",
+  "reference_sha256": "08ae9da7501debee3dfb4144371f9f9c7929828047d57e737da17b610ca60084",
+  "intended_change_commit": "replace-with-exact-source-commit",
+  "author": "replace-with-author",
+  "reviewed_by": "replace-with-independent-reviewer",
+  "reviewed_at": "YYYY-MM-DDTHH:MM:SSZ",
+  "reason": "Explain why changing post-FP8 bytes is intended.",
+  "evidence": [
+    "Link the numeric A/B, quality ladder, and performance result."
+  ],
+  "observed_fingerprint_set_sha256": "replace-with-gate-reported-digest",
+  "changed_cases": [
+    {
+      "tokens": 3072,
+      "heads": 8,
+      "seed": 7,
+      "q_scale": 0.5,
+      "expected_fp8_sha256": "replace-with-reference-case-digest",
+      "observed_fp8_sha256": "replace-with-candidate-case-digest"
+    }
+  ]
+}

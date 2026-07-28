@@ -1,0 +1,7 @@
+[chain] start 2026-07-26T03:17:10Z pid=363533
+##### REPRODUCIBILITY: 350k, 3 seeds x 3 reps, interleaved, no-think arm #####
+[build] seed=20260725 ctx=343721 needles=1
+[build] seed=1110001 ctx=343721 needles=1
+[build] seed=1110002 ctx=343721 needles=1
+
+rep1 seed=20260725  ABSENT          finish=stop out=19 cached=0 content='The maintenance ticket number for the Fa' 475s

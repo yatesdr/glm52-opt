@@ -1,0 +1,149 @@
+From d367318c9a74ddc4d79de0ab6db81e9aab9b81dc Mon Sep 17 00:00:00 2001
+From: OpenAI Codex <noreply@openai.com>
+Date: Sat, 25 Jul 2026 20:23:26 -0400
+Subject: [PATCH] fix(mla): add staged projection compatibility mode
+
+---
+ tests/v1/attention/test_mla_backends.py       | 45 +++++++++++++++++++
+ vllm/envs.py                                  |  6 +++
+ .../layers/attention/mla_attention.py         | 23 +++++++++-
+ 3 files changed, 73 insertions(+), 1 deletion(-)
+
+diff --git a/tests/v1/attention/test_mla_backends.py b/tests/v1/attention/test_mla_backends.py
+index 0218d3335..3d399655c 100644
+--- a/tests/v1/attention/test_mla_backends.py
++++ b/tests/v1/attention/test_mla_backends.py
+@@ -368,6 +368,30 @@ def test_b12x_absorb_bmm_uses_zero_copy_checkpoint_views(monkeypatch):
+     ]
+ 
+ 
++@pytest.mark.cpu_test
++def test_legacy_b12x_mla_projection_disables_absorbed_pack(monkeypatch):
++    layer = _make_b12x_absorb_bmm_layer()
++    monkeypatch.setattr(
++        mla_attention_module,
++        "_use_legacy_b12x_mla_projection",
++        lambda: True,
++    )
++    monkeypatch.setattr(
++        mla_attention_module,
++        "_b12x_absorb_bmm_enabled",
++        lambda: True,
++    )
++    monkeypatch.setattr(
++        mla_attention_module,
++        "can_implement_b12x_mxfp8_bmm",
++        lambda **_: pytest.fail("legacy mode must not inspect the MXFP8 kernel"),
++    )
++
++    assert not layer._prepare_b12x_absorb_bmm(torch.bfloat16)
++    assert not hasattr(layer, "_b12x_absorb_uk_rhs")
++    assert not hasattr(layer, "_b12x_absorb_uv_rhs")
++
++
+ @pytest.mark.cpu_test
+ def test_b12x_absorb_bmm_unsupported_pack_uses_materialized_pair(monkeypatch):
+     layer = MLAAttention.__new__(MLAAttention)
+@@ -654,6 +678,27 @@ def test_fused_mla_query_dispatch_uses_backend_workspace(monkeypatch):
+     ]
+ 
+ 
++@pytest.mark.cpu_test
++def test_legacy_b12x_mla_projection_skips_fused_query(monkeypatch):
++    layer = MLAAttention.__new__(MLAAttention)
++    layer.is_aiter_triton_fp4_bmm_enabled = False
++    layer.is_aiter_triton_fp8_bmm_enabled = False
++    monkeypatch.setattr(
++        mla_attention_module,
++        "_use_legacy_b12x_mla_projection",
++        lambda: True,
++    )
++    monkeypatch.setattr(
++        mla_attention_module,
++        "can_implement_mxfp8_mla_query",
++        lambda **_: pytest.fail("legacy mode must not inspect the fused kernel"),
++    )
++
++    q_nope = torch.empty((8, 1, 192), dtype=torch.bfloat16)
++    q_pe = torch.empty((1, 8, 64), dtype=torch.bfloat16)
++    assert layer._try_fused_mla_query(q_nope, q_pe) is None
++
++
+ @pytest.mark.cpu_test
+ def test_fused_mla_query_dispatch_preserves_unsupported_fallback(monkeypatch):
+     layer = MLAAttention.__new__(MLAAttention)
+diff --git a/vllm/envs.py b/vllm/envs.py
+index 1d794e84e..0b429ba1c 100755
+--- a/vllm/envs.py
++++ b/vllm/envs.py
+@@ -62,6 +62,7 @@ if TYPE_CHECKING:
+     VLLM_USE_B12X_MHC: bool = False
+     VLLM_USE_B12X_FP8_GEMM: bool = False
+     VLLM_B12X_ABSORB_BMM: bool = False
++    VLLM_B12X_MLA_PROJECTION_MODE: Literal["auto", "legacy"] = "auto"
+     VLLM_DSPARK_FP8_DRAFT_HEAD: bool = False
+     VLLM_USE_B12X_WO_PROJECTION: bool = False
+     VLLM_USE_B12X_MOE: bool = False
+@@ -1103,6 +1104,11 @@ environment_variables: dict[str, Callable[[], Any]] = {
+     ),
+     # Serve MLA absorbed projections directly from the B12X MXFP8 pack.
+     "VLLM_B12X_ABSORB_BMM": lambda: bool(int(os.getenv("VLLM_B12X_ABSORB_BMM", "0"))),
++    # Select the B12X MLA absorbed-query/value projection implementation.
++    # "legacy" restores materialized BF16 weights and staged torch BMMs.
++    "VLLM_B12X_MLA_PROJECTION_MODE": lambda: os.getenv(
++        "VLLM_B12X_MLA_PROJECTION_MODE", "auto"
++    ).lower(),
+     # Compute DSpark draft-proposal logits with a rowwise-fp8 copy of the
+     # shared target lm_head. Verification is unchanged, so accepted outputs
+     # retain target-model semantics. Requires fp8 tensor cores (SM89+).
+diff --git a/vllm/model_executor/layers/attention/mla_attention.py b/vllm/model_executor/layers/attention/mla_attention.py
+index 1bcb1e632..59cbedd0d 100644
+--- a/vllm/model_executor/layers/attention/mla_attention.py
++++ b/vllm/model_executor/layers/attention/mla_attention.py
+@@ -338,6 +338,17 @@ def _b12x_absorb_bmm_enabled() -> bool:
+     return envs.VLLM_B12X_ABSORB_BMM
+ 
+ 
++@functools.cache
++def _use_legacy_b12x_mla_projection() -> bool:
++    mode = envs.VLLM_B12X_MLA_PROJECTION_MODE
++    if mode not in ("auto", "legacy"):
++        raise ValueError(
++            "VLLM_B12X_MLA_PROJECTION_MODE must be 'auto' or 'legacy', "
++            f"got {mode!r}."
++        )
++    return mode == "legacy"
++
++
+ def _find_linear_weight_device(layer: torch.nn.Module) -> torch.device | None:
+     """Find the device that owns a linear layer's loaded weights.
+ 
+@@ -1034,7 +1045,11 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+         q_pe: torch.Tensor,
+     ) -> torch.Tensor | None:
+         """Fuse a qualified BF16/MXFP8 query BMM with query assembly."""
+-        if self.is_aiter_triton_fp4_bmm_enabled or self.is_aiter_triton_fp8_bmm_enabled:
++        if (
++            _use_legacy_b12x_mla_projection()
++            or self.is_aiter_triton_fp4_bmm_enabled
++            or self.is_aiter_triton_fp8_bmm_enabled
++        ):
+             return None
+ 
+         num_heads, num_tokens, nope_dim = q_nope.shape
+@@ -1658,6 +1673,12 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+         for name in ("_b12x_absorb_uk_rhs", "_b12x_absorb_uv_rhs"):
+             if hasattr(self, name):
+                 delattr(self, name)
++        if _use_legacy_b12x_mla_projection():
++            logger.info_once(
++                "Using materialized BF16 MLA projection weights and staged BMMs "
++                "(VLLM_B12X_MLA_PROJECTION_MODE=legacy)."
++            )
++            return False
+         if not _b12x_absorb_bmm_enabled():
+             return False
+         if (
+-- 
+2.50.1 (Apple Git-155)
+

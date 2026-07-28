@@ -1,0 +1,116 @@
+--- /private/tmp/claude-501/-Users-derek-glm52-opt/ce5a7d2d-8bcc-4f85-8882-b6c54d6495df/scratchpad/cn3b12x/b12x/attention/indexer/api.py	2026-07-18 19:05:48
++++ /private/tmp/claude-501/-Users-derek-glm52-opt/ce5a7d2d-8bcc-4f85-8882-b6c54d6495df/scratchpad/overlay5/b12x/attention/indexer/api.py	2026-07-26 18:43:06
+@@ -1698,3 +1698,113 @@
+             is_first=is_first,
+         )
+     return topk_indices
++
++
++# --- two-level cross-chunk fold planning -------------------------------------
++#
++# The fold candidate buffer is (q_rows * total_slices, topk). Historically only
++# `total_slices` was capped (at TWO_LEVEL_MAX_SLICES), so the buffer still grew
++# linearly with q_rows and could reach ~1.4 GiB at the widest shapes while the
++# scratch reserved nothing for it -> unprofiled OOM at deep context.
++#
++# Slice COUNT is a free parameter for correctness: every element of the true
++# global top-k also ranks within its own slice's top-k, so the union of per-slice
++# top-k lists always contains the global top-k for ANY slicing. That lets us
++# budget the PRODUCT q_rows * total_slices instead of one factor, which makes the
++# buffer a fixed size that the scratch can reserve exactly.
++TWO_LEVEL_SLICE_TOKENS = 16384
++TWO_LEVEL_MAX_SLICES = 32
++# Target for slice coarsening. This is a goal, not a guarantee: each chunk
++# contributes at least one slice, so total_slices can never fall below
++# num_chunks. two_level_fold_reserved_rows() computes the ACHIEVABLE bound that
++# the scratch must actually reserve.
++TWO_LEVEL_FOLD_TARGET_ROWS = 24576
++
++
++def two_level_fold_reserved_rows(
++    *,
++    max_q_rows: int,
++    page_table_width: int,
++    page_size: int,
++    supertile_pages: int,
++) -> int:
++    """Rows the scratch reserves for the two-level fold: a flat budget.
++
++    ``plan_two_level_fold`` DECLINES (returns no slices) whenever a plan would
++    exceed TWO_LEVEL_FOLD_TARGET_ROWS, and the caller then uses the legacy
++    streaming-carry path -- which already has its own reserved buffers. So the
++    reservation never has to cover the worst-case product, only the budget.
++    """
++    del max_q_rows, supertile_pages  # bound by the budget, not by the shape
++    width_tokens = max(int(page_table_width), 1) * max(int(page_size), 1)
++    if not two_level_fold_engages(width_tokens=width_tokens):
++        return 0
++    return TWO_LEVEL_FOLD_TARGET_ROWS
++
++
++def two_level_fold_engages(*, width_tokens: int, output_physical_slots: bool = False) -> bool:
++    """Whether the two-level fold path can run at this context width."""
++    if output_physical_slots:
++        return False
++    return int(width_tokens) >= 2 * TWO_LEVEL_SLICE_TOKENS
++
++
++def plan_two_level_fold(
++    *,
++    width_tokens: int,
++    page_size: int,
++    q_rows: int,
++    supertile_pages: int,
++    page_table_width: int,
++    num_chunks: int,
++) -> tuple[list[tuple[int, int]], int]:
++    """Plan the per-chunk slice split for the two-level fold.
++
++    Returns ``(two_level_slices, total_slices)`` where ``two_level_slices`` is a
++    list of ``(splits_for_chunk, base_offset)``.
++
++    Coarsens the slice size to fit ``TWO_LEVEL_FOLD_TARGET_ROWS``; if even the
++    coarsest achievable slicing would not fit, returns ``([], 0)`` so the caller
++    uses the legacy carry path. Callers may therefore rely on a flat
++    ``TWO_LEVEL_FOLD_TARGET_ROWS * topk`` reservation.
++    """
++    page_size = max(int(page_size), 1)
++    q_rows = max(int(q_rows), 1)
++    width_tokens = int(width_tokens)
++    slice_tokens = TWO_LEVEL_SLICE_TOKENS
++
++    # existing global cap on the number of slices
++    min_slice = -(-width_tokens // TWO_LEVEL_MAX_SLICES)
++    if min_slice > slice_tokens:
++        slice_tokens = -(-min_slice // page_size) * page_size
++
++    # Bound the PRODUCT, not just the slice count: coarsen the slices when a
++    # large query chunk would otherwise inflate the fold buffer. Best effort --
++    # the per-chunk floor (one slice each) may still exceed the target, which is
++    # why the reservation uses two_level_fold_reserved_rows().
++    target_slices = max(1, TWO_LEVEL_FOLD_TARGET_ROWS // q_rows)
++    min_slice_target = -(-width_tokens // target_slices)
++    if min_slice_target > slice_tokens:
++        slice_tokens = -(-min_slice_target // page_size) * page_size
++
++    two_level_slices: list[tuple[int, int]] = []
++    base = 0
++    for c in range(int(num_chunks)):
++        c_pages = (
++            min((c + 1) * int(supertile_pages), int(page_table_width))
++            - c * int(supertile_pages)
++        )
++        if c_pages <= 0:
++            break
++        c_tokens = c_pages * page_size
++        splits_c = max(1, -(-c_tokens // slice_tokens))
++        two_level_slices.append((splits_c, base))
++        base += splits_c
++
++    if q_rows * base > TWO_LEVEL_FOLD_TARGET_ROWS:
++        # Would not fit the reservation. Decline: the caller falls back to the
++        # legacy streaming-carry chain, whose buffers are already reserved. That
++        # costs some speed at these shapes but needs no extra memory, and it is
++        # the pre-existing, proven code path.
++        return [], 0
++    return two_level_slices, base

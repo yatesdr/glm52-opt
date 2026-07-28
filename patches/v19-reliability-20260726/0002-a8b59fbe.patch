@@ -1,0 +1,430 @@
+From a8b59fbe085b855b6390eee4a438e76585c3bcaa Mon Sep 17 00:00:00 2001
+From: Martin Vit <martin@voipmonitor.org>
+Date: Sun, 19 Jul 2026 18:33:51 +0000
+Subject: [PATCH] fix(workspace): isolate speculative execution buffers
+
+---
+ tests/v1/worker/test_workspace.py  | 63 +++++++++++++++++++
+ vllm/v1/worker/gpu/model_runner.py | 99 +++++++++++++++++-------------
+ vllm/v1/worker/gpu/warmup.py       |  4 +-
+ vllm/v1/worker/gpu_worker.py       |  8 ++-
+ vllm/v1/worker/workspace.py        | 66 +++++++++++++++-----
+ 5 files changed, 178 insertions(+), 62 deletions(-)
+ create mode 100644 tests/v1/worker/test_workspace.py
+
+diff --git a/tests/v1/worker/test_workspace.py b/tests/v1/worker/test_workspace.py
+new file mode 100644
+index 00000000..282100a1
+--- /dev/null
++++ b/tests/v1/worker/test_workspace.py
+@@ -0,0 +1,63 @@
++# SPDX-License-Identifier: Apache-2.0
++# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++
++import pytest
++import torch
++
++import vllm.v1.worker.workspace as workspace
++
++
++def test_workspace_lanes_do_not_alias_and_restore_context(monkeypatch) -> None:
++    ubatch_id = 0
++    monkeypatch.setattr(workspace, "dbo_current_ubatch_id", lambda: ubatch_id)
++    manager = workspace.WorkspaceManager(
++        torch.device("cpu"), num_ubatches=2, num_lanes=2
++    )
++
++    (target,) = manager.get_simultaneous(((16,), torch.uint8))
++    with workspace.use_workspace_lane(1):
++        (draft,) = manager.get_simultaneous(((16,), torch.uint8))
++        (draft_reused,) = manager.get_simultaneous(((8,), torch.uint8))
++
++    (target_reused,) = manager.get_simultaneous(((8,), torch.uint8))
++
++    assert target.data_ptr() != draft.data_ptr()
++    assert draft.data_ptr() == draft_reused.data_ptr()
++    assert target.data_ptr() == target_reused.data_ptr()
++
++
++def test_workspace_lanes_compose_with_ubatches(monkeypatch) -> None:
++    active_ubatch = [0]
++    monkeypatch.setattr(workspace, "dbo_current_ubatch_id", lambda: active_ubatch[0])
++    manager = workspace.WorkspaceManager(
++        torch.device("cpu"), num_ubatches=2, num_lanes=2
++    )
++
++    pointers = set()
++    for ubatch_id in range(2):
++        active_ubatch[0] = ubatch_id
++        for lane in range(2):
++            with workspace.use_workspace_lane(lane):
++                (buffer,) = manager.get_simultaneous(((16,), torch.uint8))
++                pointers.add(buffer.data_ptr())
++
++    assert len(pointers) == 4
++
++
++def test_workspace_lane_validation() -> None:
++    manager = workspace.WorkspaceManager(torch.device("cpu"), num_lanes=1)
++
++    with (
++        pytest.raises(ValueError, match="non-negative"),
++        workspace.use_workspace_lane(-1),
++    ):
++        pass
++
++    with (
++        workspace.use_workspace_lane(1),
++        pytest.raises(RuntimeError, match="is not configured"),
++    ):
++        manager.get_simultaneous(((1,), torch.uint8))
++
++    with pytest.raises(ValueError, match="at least one"):
++        workspace.WorkspaceManager(torch.device("cpu"), num_lanes=0)
+diff --git a/vllm/v1/worker/gpu/model_runner.py b/vllm/v1/worker/gpu/model_runner.py
+index 77ce4204..d548397d 100644
+--- a/vllm/v1/worker/gpu/model_runner.py
++++ b/vllm/v1/worker/gpu/model_runner.py
+@@ -124,7 +124,7 @@ from vllm.v1.worker.gpu.states import RequestState
+ from vllm.v1.worker.gpu.structured_outputs import StructuredOutputsWorker
+ from vllm.v1.worker.lora_model_runner_mixin import LoRAModelRunnerMixin
+ from vllm.v1.worker.utils import KVBlockZeroer, copy_kv_cache_blocks_inplace
+-from vllm.v1.worker.workspace import lock_workspace
++from vllm.v1.worker.workspace import lock_workspace, use_workspace_lane
+ 
+ logger = init_logger(__name__)
+ 
+@@ -342,10 +342,11 @@ class GPUModelRunner(LoRAModelRunnerMixin):
+                 assert self.speculative_config is not None
+                 set_eagle3_aux_hidden_state_layers(self.model, self.speculative_config)
+             if isinstance(self.speculator, DraftModelSpeculator):
+-                self.speculator.load_model(self.model)
+-                eplb_models_added = self.eplb.maybe_register_speculator(
+-                    self.speculator, self.speculative_config, load_dummy_weights
+-                )
++                with use_workspace_lane(1):
++                    self.speculator.load_model(self.model)
++                    eplb_models_added = self.eplb.maybe_register_speculator(
++                        self.speculator, self.speculative_config, load_dummy_weights
++                    )
+         time_after_load = time.perf_counter()
+ 
+         self.model_memory_usage = m.consumed_memory
+@@ -547,25 +548,27 @@ class GPUModelRunner(LoRAModelRunnerMixin):
+         )
+         check_attention_cp_compatibility(self.vllm_config)
+         if isinstance(self.speculator, DraftModelSpeculator):
+-            # HACK(woosuk)
+-            self.speculator.set_attn(
+-                self.model_state,
+-                self.kv_cache_config,
+-                self.block_tables,
+-                self.input_buffers,
+-                self.attn_groups,
+-            )
+-            if hasattr(self.speculator, "set_num_cached_tokens"):
+-                # DFlash/DSpark mask cache-restored tokens out of the draft's
+-                # context (their draft context KV was never computed).
+-                self.speculator.set_num_cached_tokens(
+-                    self.req_states.num_cached_tokens.gpu,
+-                    self.req_states.num_cached_tokens_np,
++            with use_workspace_lane(1):
++                # HACK(woosuk)
++                self.speculator.set_attn(
++                    self.model_state,
++                    self.kv_cache_config,
++                    self.block_tables,
++                    self.input_buffers,
++                    self.attn_groups,
+                 )
++                if hasattr(self.speculator, "set_num_cached_tokens"):
++                    # DFlash/DSpark mask cache-restored tokens out of the draft's
++                    # context (their draft context KV was never computed).
++                    self.speculator.set_num_cached_tokens(
++                        self.req_states.num_cached_tokens.gpu,
++                        self.req_states.num_cached_tokens_np,
++                    )
+         if self.speculator is not None:
+             # After set_attn, so the speculator can size its cudagraph mode
+             # to its own attention support.
+-            self.speculator.init_cudagraph_manager(cudagraph_mode)
++            with use_workspace_lane(1):
++                self.speculator.init_cudagraph_manager(cudagraph_mode)
+ 
+         self.kv_caches: list[torch.Tensor] = []
+         kv_caches_dict = init_kv_cache(
+@@ -691,27 +694,28 @@ class GPUModelRunner(LoRAModelRunnerMixin):
+             if hasattr(self.model, "get_mtp_target_hidden_states"):
+                 pre_hc_hidden_states = self.model.get_mtp_target_hidden_states()
+                 spec_hidden_states = pre_hc_hidden_states[: hidden_states.shape[0]]  # type: ignore[union-attr]
+-            self.speculator.propose(
+-                input_batch=input_batch,
+-                attn_metadata=attn_metadata,
+-                slot_mappings=slot_mappings_by_layer,
+-                last_hidden_states=spec_hidden_states,
+-                aux_hidden_states=aux_hidden_states,
+-                num_sampled=torch.ones(
+-                    input_batch.num_reqs, dtype=torch.int32, device=self.device
+-                ),
+-                num_rejected=torch.zeros(
+-                    input_batch.num_reqs, dtype=torch.int32, device=self.device
+-                ),
+-                last_sampled=self.req_states.last_sampled_tokens,
+-                next_prefill_tokens=self.req_states.next_prefill_tokens,
+-                temperature=self.sampler.sampling_states.temperature.gpu,
+-                seeds=self.sampler.sampling_states.seeds.gpu,
+-                dummy_run=True,
+-                skip_attn_for_dummy_run=skip_attn,
+-                mm_inputs=mm_inputs,
+-                is_profile=is_profile,
+-            )
++            with use_workspace_lane(1):
++                self.speculator.propose(
++                    input_batch=input_batch,
++                    attn_metadata=attn_metadata,
++                    slot_mappings=slot_mappings_by_layer,
++                    last_hidden_states=spec_hidden_states,
++                    aux_hidden_states=aux_hidden_states,
++                    num_sampled=torch.ones(
++                        input_batch.num_reqs, dtype=torch.int32, device=self.device
++                    ),
++                    num_rejected=torch.zeros(
++                        input_batch.num_reqs, dtype=torch.int32, device=self.device
++                    ),
++                    last_sampled=self.req_states.last_sampled_tokens,
++                    next_prefill_tokens=self.req_states.next_prefill_tokens,
++                    temperature=self.sampler.sampling_states.temperature.gpu,
++                    seeds=self.sampler.sampling_states.seeds.gpu,
++                    dummy_run=True,
++                    skip_attn_for_dummy_run=skip_attn,
++                    mm_inputs=mm_inputs,
++                    is_profile=is_profile,
++                )
+ 
+         assert hidden_states is not None  # Last PP rank always has hidden_states
+         sample_hidden_states = hidden_states[input_batch.logits_indices]
+@@ -804,7 +808,8 @@ class GPUModelRunner(LoRAModelRunnerMixin):
+                 lora_capture_hook=create_lora_capture_hook(self.lora_config, self),
+             )
+             if self.speculator is not None:
+-                self.speculator.capture()
++                with use_workspace_lane(1):
++                    self.speculator.capture()
+             self._zero_cudagraph_capture_kv_blocks()
+ 
+         end_time = time.perf_counter()
+@@ -1764,7 +1769,10 @@ class GPUModelRunner(LoRAModelRunnerMixin):
+             if hasattr(self.model, "get_mtp_target_hidden_states"):
+                 pre_hc_hidden_states = self.model.get_mtp_target_hidden_states()
+                 spec_hidden_states = pre_hc_hidden_states[: hidden_states.shape[0]]  # type: ignore[union-attr]
+-            with record_function_or_nullcontext(f"vllm:v2/speculator/{phase}/propose"):
++            with (
++                use_workspace_lane(1),
++                record_function_or_nullcontext(f"vllm:v2/speculator/{phase}/propose"),
++            ):
+                 draft_tokens = self.speculator.propose(
+                     input_batch,
+                     attn_metadata,
+@@ -1807,7 +1815,10 @@ class GPUModelRunner(LoRAModelRunnerMixin):
+                 self.verification_capacity_manager is not None
+                 and not self.verification_capacity_manager.capacity_bypassed
+             ):
+-                draft_token_capacity = self.speculator.compute_capacities(input_batch)
++                with use_workspace_lane(1):
++                    draft_token_capacity = self.speculator.compute_capacities(
++                        input_batch
++                    )
+                 assert draft_token_capacity is not None
+                 self.verification_capacity_manager.update_capacities(
+                     draft_token_capacity
+diff --git a/vllm/v1/worker/gpu/warmup.py b/vllm/v1/worker/gpu/warmup.py
+index 6908e833..e6cd42ba 100644
+--- a/vllm/v1/worker/gpu/warmup.py
++++ b/vllm/v1/worker/gpu/warmup.py
+@@ -21,6 +21,7 @@ from vllm.v1.core.sched.output import (
+ from vllm.v1.kv_cache_interface import CrossAttentionSpec, MambaSpec
+ from vllm.v1.request import Request
+ from vllm.v1.worker.gpu.model_runner import GPUModelRunner
++from vllm.v1.worker.workspace import use_workspace_lane
+ 
+ logger = init_logger(__name__)
+ 
+@@ -348,7 +349,8 @@ def warmup_kernels(
+                 model_runner.input_buffers
+             )
+             assert model_runner.speculator is not None
+-            model_runner.speculator.warmup_capacity_kernels()
++            with use_workspace_lane(1):
++                model_runner.speculator.warmup_capacity_kernels()
+             if model_runner.speculator.wants_auto_sps_curve:
+                 _profile_sps_curve(model_runner)
+                 model_runner.kv_connector.set_disabled(True)
+diff --git a/vllm/v1/worker/gpu_worker.py b/vllm/v1/worker/gpu_worker.py
+index 8846c417..d91d2570 100644
+--- a/vllm/v1/worker/gpu_worker.py
++++ b/vllm/v1/worker/gpu_worker.py
+@@ -399,7 +399,13 @@ class Worker(WorkerBase):
+ 
+         # Initialize workspace manager
+         num_ubatches = 2 if self.vllm_config.parallel_config.enable_dbo else 1
+-        init_workspace_manager(self.device, num_ubatches)
++        num_workspace_lanes = (
++            2
++            if self.use_v2_model_runner
++            and self.vllm_config.speculative_config is not None
++            else 1
++        )
++        init_workspace_manager(self.device, num_ubatches, num_workspace_lanes)
+ 
+         # Construct the model runner
+         if self.use_v2_model_runner:
+diff --git a/vllm/v1/worker/workspace.py b/vllm/v1/worker/workspace.py
+index 1c502bfd..b13749ce 100644
+--- a/vllm/v1/worker/workspace.py
++++ b/vllm/v1/worker/workspace.py
+@@ -3,6 +3,9 @@
+ 
+ import inspect
+ import os
++from collections.abc import Iterator
++from contextlib import contextmanager
++from contextvars import ContextVar
+ from itertools import accumulate
+ from math import prod
+ 
+@@ -26,22 +29,43 @@ _GiB = 1024**3
+ 
+ # Global workspace manager instance
+ _manager: "WorkspaceManager | None" = None
++_workspace_lane: ContextVar[int] = ContextVar("vllm_workspace_lane", default=0)
++
++
++@contextmanager
++def use_workspace_lane(lane: int) -> Iterator[None]:
++    """Select an independent workspace lane for the current execution context."""
++    if lane < 0:
++        raise ValueError(f"Workspace lane must be non-negative, got {lane}.")
++    token = _workspace_lane.set(lane)
++    try:
++        yield
++    finally:
++        _workspace_lane.reset(token)
+ 
+ 
+ class WorkspaceManager:
+     """Manager for workspace allocation.
+ 
+-    Manages one workspace buffer per active ubatch slot.
++    Manages one workspace buffer per active ubatch slot and execution lane.
+     Can be locked to prevent further growth during execution.
+     """
+ 
+-    def __init__(self, device: torch.device, num_ubatches: int | None = None):
++    def __init__(
++        self,
++        device: torch.device,
++        num_ubatches: int | None = None,
++        num_lanes: int = 1,
++    ):
+         self._device = device
+         # Cache num ubatches at init based on configuration (default to 1)
+         self._num_ubatches = num_ubatches if num_ubatches is not None else 1
+-        self._current_workspaces: list[torch.Tensor | None] = [
+-            None
+-        ] * self._num_ubatches
++        if num_lanes < 1:
++            raise ValueError(f"num_lanes must be at least one, got {num_lanes}.")
++        self._num_lanes = num_lanes
++        self._current_workspaces: list[torch.Tensor | None] = [None] * (
++            self._num_ubatches * self._num_lanes
++        )
+         self._locked: bool = False
+ 
+     @staticmethod
+@@ -126,7 +150,14 @@ class WorkspaceManager:
+             The current workspace tensor.
+         """
+         ubatch_id = dbo_current_ubatch_id()
+-        current_workspace = self._current_workspaces[ubatch_id]
++        lane = _workspace_lane.get()
++        if lane >= self._num_lanes:
++            raise RuntimeError(
++                f"Workspace lane {lane} is not configured; manager has "
++                f"{self._num_lanes} lane(s)."
++            )
++        workspace_id = ubatch_id * self._num_lanes + lane
++        current_workspace = self._current_workspaces[workspace_id]
+         current_size = self._workspace_size_bytes(current_workspace)
+ 
+         if current_size < required_bytes:
+@@ -161,11 +192,10 @@ class WorkspaceManager:
+                     "Workspace growth is not allowed after locking."
+                 )
+ 
+-            # Only resize the requesting ubatch's workspace.  Other
+-            # ubatches resize lazily on their next get_simultaneous call.
+-            # Resizing all ubatches here would orphan the other ubatch's
+-            # old tensor when it still holds views into it (DBO leak).
+-            self._current_workspaces[ubatch_id] = None
++            # Only resize the requesting ubatch/lane workspace. Other slots
++            # resize lazily on their next get_simultaneous call. Resizing all
++            # slots here would orphan a tensor that still has live views.
++            self._current_workspaces[workspace_id] = None
+             del current_workspace
+             # Release the freed segment back to CUDA so the caching
+             # allocator can reuse the GPU memory for the larger
+@@ -173,19 +203,20 @@ class WorkspaceManager:
+             # dead segment in reserved memory which can cause higher peak
+             # memory usage.
+             torch.accelerator.empty_cache()
+-            self._current_workspaces[ubatch_id] = torch.empty(
++            self._current_workspaces[workspace_id] = torch.empty(
+                 (required_bytes,), dtype=torch.uint8, device=self._device
+             )
+-            current_workspace = self._current_workspaces[ubatch_id]
++            current_workspace = self._current_workspaces[workspace_id]
+ 
+             if envs.VLLM_DEBUG_WORKSPACE:
+                 logger.info(
+                     "[WORKSPACE DEBUG] Resized workspace from '%s': %.2f MB -> "
+-                    "%.2f MB (ubatch %d)",
++                    "%.2f MB (ubatch %d, lane %d)",
+                     get_caller_info(),
+                     current_size / _MB,
+                     required_bytes / _MB,
+                     ubatch_id,
++                    lane,
+                 )
+ 
+         return current_workspace
+@@ -214,7 +245,9 @@ def current_workspace_manager() -> "WorkspaceManager":
+ 
+ 
+ def init_workspace_manager(
+-    device: torch.device, num_ubatches: int | None = None
++    device: torch.device,
++    num_ubatches: int | None = None,
++    num_lanes: int = 1,
+ ) -> None:
+     """Initialize the workspace manager with a device.
+ 
+@@ -224,6 +257,7 @@ def init_workspace_manager(
+     Args:
+         device: The device to allocate workspace on.
+         num_ubatches: Number of workspace ubatch slots. Defaults to 1.
++        num_lanes: Number of independent execution lanes per ubatch. Defaults to 1.
+     """
+     global _manager
+     if _manager is not None:
+@@ -233,7 +267,7 @@ def init_workspace_manager(
+             _manager._device,
+             device,
+         )
+-    _manager = WorkspaceManager(device, num_ubatches)
++    _manager = WorkspaceManager(device, num_ubatches, num_lanes)
+ 
+ 
+ def lock_workspace() -> None:
+-- 
+2.50.1 (Apple Git-155)
+

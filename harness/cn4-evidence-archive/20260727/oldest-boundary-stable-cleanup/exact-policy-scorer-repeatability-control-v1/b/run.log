@@ -1,0 +1,71 @@
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+{
+  "implementation": "sparkinfer.attention.nsa_indexer",
+  "results": [
+    {
+      "captured_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 2048,
+        "jaccard": 1.0,
+        "set_exact": true,
+        "union": 2048
+      },
+      "execution": {
+        "cuda": "13.2",
+        "device": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+        "implementation": "sparkinfer.attention.nsa_indexer",
+        "kernel_seconds_including_first_compile": 11.890338711000368,
+        "python": "3.12.3",
+        "route": "packed_contiguous",
+        "torch": "2.12.0+cu132"
+      },
+      "input": {
+        "cache_sha256": "08b5ed6a7623577b229adabe19bf5dad6cc9a4dd04243af59c00e48deb68ff87",
+        "page_width": 1343,
+        "production_rows": 2735,
+        "q_sha256": "3f31e2bf1e58cba03e0ae58f7c81a516b10184ea8176fe2899194e32aa1f399b",
+        "replay_rows": 2735,
+        "seq_len": 85932,
+        "topk": 2048,
+        "weights_sha256": "a48b140e01b20efa47c7988187b69a7be6dcb59dbe6b234825f5702f021b5ba6"
+      },
+      "rank": 0,
+      "reference": {
+        "indices_sha256": "e1a6a4011eebcfa6356e583630ffb02afa66aea060bd59d8afdd6f426a4d5ba4",
+        "kth_score": 5.328878879547119,
+        "scores_sha256": "b101d90f6d625ec3edd6a6470c4b3e70f4d43857fd431c609002077f6ad1b58a",
+        "strictly_better_omitted": 0
+      },
+      "replay": {
+        "indices_sha256": "82974824c017e7010537bfcb53343f8e7ef217633b3a414131dc3b7c713064c6",
+        "min_score": 5.328878879547119,
+        "score_vs_reference_max_abs": 9.5367431640625e-07,
+        "score_vs_reference_mean_abs": 2.7567148208618164e-07,
+        "scores_sha256": "a03712aa7bce5b0e532cf17990cb313e486109bfa45145e572ac54484373451f",
+        "valid_indices": 2048
+      },
+      "replay_vs_captured": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 2048,
+        "jaccard": 1.0,
+        "set_exact": true,
+        "union": 2048
+      },
+      "replay_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 2048,
+        "jaccard": 1.0,
+        "set_exact": true,
+        "union": 2048
+      },
+      "source_trace": "/traces/tp0/layer00-indexer-local.pt",
+      "tensor_output": "/out/tp0-replay.pt"
+    }
+  ],
+  "schema": "v19-v20-learned-paged-indexer-replay-v1",
+  "trace_root": "/traces"
+}

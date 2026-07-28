@@ -1,0 +1,20 @@
+{
+  "policy": "exact",
+  "run": 2,
+  "image": "glm52-serve:v20-20260726-oldest-boundary-pr-candidate",
+  "image_id": "sha256:43e5a48781ee5cf40a92cc494749b21306b72280bd1a875721a45422323f2599",
+  "model_dir": "/home/claude/LLM/GLM-5.2-hybrid",
+  "reference_logits": "/home/derek/kld-pr84/reference-logits",
+  "reference_logits_sha256": "87f992a689c054a0548a4b3863da6c809f9239beacd5786d0401e45904fec063",
+  "runner_sha256": "d1dc1a63b9889e881f3bd899638d0ec65a1a1079132f6a207a600d9cba845405",
+  "context_length": 2048,
+  "max_num_batched_tokens": 512,
+  "gpu_memory_utilization": 0.90,
+  "kv_cache_dtype": "nvfp4_ds_mla",
+  "quantization": "nvfp4_nf3_hybrid",
+  "online_quantization": "nf3-mxfp8",
+  "kv_fp8_rope": true,
+  "tensor_parallel_size": 4,
+  "decode_context_parallel_size": 1,
+  "enforce_eager": true
+}

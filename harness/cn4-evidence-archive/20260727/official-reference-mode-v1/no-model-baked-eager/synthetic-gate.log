@@ -1,0 +1,42 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.2.1
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+{
+  "cache": {
+    "cache_sha256": "00e94e14639ed66f8077bdc3c833d524dfaa487610fd2e24b82df21a7dbcd397",
+    "gather_exact": true,
+    "insert_exact": true
+  },
+  "device": "cuda:0",
+  "rope": {
+    "exact": true,
+    "k_sha256": "31f6004a6db00c80b367d6bf62b87fc8f7213ffacdd46bd39d140188ab9db2e2",
+    "q_sha256": "30538cfe9256395da13a250c35a32fd5bba36182968ac46de5ff30f3d5a5e172"
+  },
+  "schema": "v20-glm-official-reference-indexer-gate-v1",
+  "scorer_topk": {
+    "indices_sha256": "ff149bddf3a729e598112f23ee933e1726d46dfad6dc6900aa51606169bfb459",
+    "keys": 2111,
+    "rows": 3,
+    "set_exact": true,
+    "topk": 512,
+    "values_match_source": true,
+    "values_sha256": "2f98ef63cb452a804ab8a4f519e53acaca4e4612d31948ff4eb4f73e9b2af090"
+  },
+  "status": "PASS",
+  "tf32_state_restored": true
+}

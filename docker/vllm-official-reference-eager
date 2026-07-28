@@ -1,0 +1,7 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# The stock GLM launcher does not forward extra CLI arguments. Interpose only
+# the vLLM executable for this diagnostic image so the reference indexer can
+# never be captured into a graph without live request metadata.
+exec /opt/venv/bin/vllm "$@" --enforce-eager --no-enable-prefix-caching

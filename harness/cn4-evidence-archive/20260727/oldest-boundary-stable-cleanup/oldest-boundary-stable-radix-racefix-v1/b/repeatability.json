@@ -1,0 +1,80 @@
+{
+  "pass": false,
+  "results": [
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 69707,
+          "score": 5.846487998962402
+        },
+        {
+          "index": 70257,
+          "score": 5.3730878829956055
+        }
+      ],
+      "intersection": 2046,
+      "rank": 0,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 22017,
+          "score": 5.2987470626831055
+        },
+        {
+          "index": 69872,
+          "score": 5.365313529968262
+        }
+      ],
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "first_only": [],
+      "intersection": 2048,
+      "rank": 1,
+      "second_count": 2048,
+      "second_only": [],
+      "set_exact": true
+    },
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 68194,
+          "score": 5.766693115234375
+        }
+      ],
+      "intersection": 2047,
+      "rank": 2,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 67671,
+          "score": 5.33827018737793
+        }
+      ],
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 7940,
+          "score": 5.304372310638428
+        }
+      ],
+      "intersection": 2047,
+      "rank": 3,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 73680,
+          "score": 5.391030311584473
+        }
+      ],
+      "set_exact": false
+    }
+  ],
+  "schema": "v20-indexer-replay-repeatability-v1"
+}

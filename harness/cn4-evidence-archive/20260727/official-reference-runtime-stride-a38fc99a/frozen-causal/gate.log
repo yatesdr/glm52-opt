@@ -1,0 +1,15 @@
+[gate] image=sha256:3b4a665ea5662b389391b39699d6f83398368fdc7506bf1491446de924e7a6c8
+[gate] freeze=/home/derek/causal-gate-freeze-20260726  stock_image=glm52-serve:v20-5517197-pxb-20260725
+[gate] note=official BF16/FP32 scorer oracle on runtime-stride RC; PR84 absent; prefix cache off; fresh cache; i8_ring
+
+pass-250k-ctl   EXACT           gate=PASS finish=stop out=4 prompt_tok=245497 cached=0 stock=EXACT 362s
+                content='738216'
+fail-350k-r1    ERROR HTTPError: HTTP Error 500: Internal Server Error
+fail-350k-r2    ERROR URLError: <urlopen error [Errno 104] Connection reset by peer>
+fail-350k-r3    ERROR URLError: <urlopen error [Errno 104] Connection reset by peer>
+
+===== CAUSAL GATE SUMMARY =====
+  FAIL-role prompts recovered: 0/3
+  PASS control still passing:   True
+  VERDICT: REFUTED — at least one frozen stock-FAIL prompt did not recover
+CAUSAL_GATE_DONE

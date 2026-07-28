@@ -1,0 +1,127 @@
+{
+  "purpose": "legacy-projection causal gate (Sol dev#148/#151)",
+  "stock_image": "glm52-serve:v20-5517197-pxb-20260725",
+  "stock_image_id": "sha256:2566f905f13252c514a0f96c177ba982bd16321943927966310bf8c7c92d94b7",
+  "filler_tokens": 56,
+  "needle": "738216",
+  "token_decode": {
+    "738216": [
+      22,
+      100919,
+      122250
+    ],
+    "<think>": 154841,
+    "</think>": 154842,
+    "eos": 154827
+  },
+  "prompts": [
+    {
+      "label": "fail-350k-r1",
+      "depth": 350000,
+      "seed": 1110001,
+      "arm": "nothink",
+      "role": "FAIL",
+      "prompt_sha256": "f0d1c16d816b777f27a3882d9e6b5ef056852684ea155fb11dd845f9e1654ab5",
+      "prompt_chars": 2124675,
+      "prompt_tokens": 343721,
+      "expected_ctx": 343721,
+      "ctx_matches_stock": true,
+      "needle_count": 1,
+      "needle_token_offset": 137496,
+      "rendered_input_ids_count": 343727,
+      "rendered_input_ids_sha256": "05adb5ce38c8d621bce4b6b1ddb165d4b62a69e22553cb1cb4a82d5389861a65",
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      },
+      "sampling": {
+        "temperature": 0,
+        "max_tokens": 2000
+      },
+      "endpoint": "/v1/chat/completions",
+      "stock_verdict": "ABSENT",
+      "stock_note": "stock: content fabricated 'MNT-2024-087', 138 tok, finish=stop, cached=0",
+      "gate_requirement": "cold (cached_tokens=0), finish_reason=stop, content == '738216' exactly; needle in reasoning only = FAIL"
+    },
+    {
+      "label": "fail-350k-r2",
+      "depth": 350000,
+      "seed": 1110002,
+      "arm": "nothink",
+      "role": "FAIL",
+      "prompt_sha256": "d5b6755331b634bbabc24486f74925832179eac7842b7a8a7ee225b52b1cdec6",
+      "prompt_chars": 2124675,
+      "prompt_tokens": 343721,
+      "expected_ctx": 343721,
+      "ctx_matches_stock": true,
+      "needle_count": 1,
+      "needle_token_offset": 137496,
+      "rendered_input_ids_count": 343727,
+      "rendered_input_ids_sha256": "07bc302e7c703f924a00059467a3b5367682a7a2c59819b49fb4c68f87c2dd77",
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      },
+      "sampling": {
+        "temperature": 0,
+        "max_tokens": 2000
+      },
+      "endpoint": "/v1/chat/completions",
+      "stock_verdict": "ABSENT",
+      "stock_note": "stock: 23 tok, finish=stop, cached=0",
+      "gate_requirement": "cold (cached_tokens=0), finish_reason=stop, content == '738216' exactly; needle in reasoning only = FAIL"
+    },
+    {
+      "label": "fail-350k-r3",
+      "depth": 350000,
+      "seed": 1110003,
+      "arm": "nothink",
+      "role": "FAIL",
+      "prompt_sha256": "a50329d3866ba97ead8ae10291cfb8903b8e542f79ea4e985d365f9db7447b46",
+      "prompt_chars": 2124675,
+      "prompt_tokens": 343721,
+      "expected_ctx": 343721,
+      "ctx_matches_stock": true,
+      "needle_count": 1,
+      "needle_token_offset": 137496,
+      "rendered_input_ids_count": 343727,
+      "rendered_input_ids_sha256": "083c49f752a405b72dcb80942504be5d758059a42be17fc658902903effb5c54",
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      },
+      "sampling": {
+        "temperature": 0,
+        "max_tokens": 2000
+      },
+      "endpoint": "/v1/chat/completions",
+      "stock_verdict": "ABSENT",
+      "stock_note": "stock: 26 tok, finish=stop, cached=0",
+      "gate_requirement": "cold (cached_tokens=0), finish_reason=stop, content == '738216' exactly; needle in reasoning only = FAIL"
+    },
+    {
+      "label": "pass-250k-ctl",
+      "depth": 250000,
+      "seed": 20260725,
+      "arm": "nothink",
+      "role": "PASS_CONTROL",
+      "prompt_sha256": "fde493ea5b921594d239e2a743229d61c9977557057aa49bd1389700d5a56b54",
+      "prompt_chars": 1517434,
+      "prompt_tokens": 245491,
+      "expected_ctx": 245491,
+      "ctx_matches_stock": true,
+      "needle_count": 1,
+      "needle_token_offset": 98171,
+      "rendered_input_ids_count": 245497,
+      "rendered_input_ids_sha256": "b5d5fdf2f4ed069ae9156359e9644b0d9835cc9914a6ffd25b27b9a7a763b7ab",
+      "chat_template_kwargs": {
+        "enable_thinking": false
+      },
+      "sampling": {
+        "temperature": 0,
+        "max_tokens": 2000
+      },
+      "endpoint": "/v1/chat/completions",
+      "stock_verdict": "EXACT",
+      "stock_note": "stock: content=='738216', 4 tok, finish=stop, cached=0, gen-ids sha 3deb38ee3d70",
+      "gate_requirement": "cold (cached_tokens=0), finish_reason=stop, content == '738216' exactly; needle in reasoning only = FAIL"
+    }
+  ]
+}

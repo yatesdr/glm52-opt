@@ -1,0 +1,26 @@
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+W0726 06:55:50.155000 1 torch/distributed/run.py:862] 
+W0726 06:55:50.155000 1 torch/distributed/run.py:862] *****************************************
+W0726 06:55:50.155000 1 torch/distributed/run.py:862] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0726 06:55:50.155000 1 torch/distributed/run.py:862] *****************************************
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+INFO 07-26 06:56:02 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:56:02 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:56:02 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:56:02 [pynccl.py:113] vLLM is using nccl==2.30.4
+INFO 07-26 06:56:02 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:56:02 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:56:02 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:56:02 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:56:02 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+{"chunk_len": 2048, "final_seq_len": 65537, "gathered_mib_per_rank": 23.09, "global_mismatch_bytes": 0, "global_mismatch_records": 0, "history_len": 63489, "input_scale": 0.25, "interleave": 1, "kind": "ckv_prefetch_record_equivalence", "local_mismatch_bytes": 0, "local_mismatch_records": 0, "nccl_p2p_level": "PXB", "padded_rank_tokens": 16448, "passed": true, "rank_ulp": 0}
+{"chunk_len": 1711, "final_seq_len": 343727, "gathered_mib_per_rank": 120.66, "global_mismatch_bytes": 0, "global_mismatch_records": 0, "history_len": 342016, "input_scale": 0.25, "interleave": 1, "kind": "ckv_prefetch_record_equivalence", "local_mismatch_bytes": 0, "local_mismatch_records": 0, "nccl_p2p_level": "PXB", "padded_rank_tokens": 85952, "passed": true, "rank_ulp": 0}
+{"chunk_len": 2048, "final_seq_len": 343727, "gathered_mib_per_rank": 120.66, "global_mismatch_bytes": 0, "global_mismatch_records": 0, "history_len": 341679, "input_scale": 1.0, "interleave": 1, "kind": "ckv_prefetch_record_equivalence", "local_mismatch_bytes": 0, "local_mismatch_records": 0, "nccl_p2p_level": "PXB", "padded_rank_tokens": 85952, "passed": true, "rank_ulp": 0}

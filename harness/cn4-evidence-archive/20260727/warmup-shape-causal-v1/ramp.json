@@ -1,0 +1,17 @@
+{
+  "all_indices_in_bounds": true,
+  "finite_selected_values": 4195328,
+  "input": {
+    "block_k": 256,
+    "block_q": 32,
+    "length_mode": "ramp",
+    "max_length": 3072,
+    "num_k_tiles": 12,
+    "num_q_tiles": 96,
+    "rows": 3072,
+    "topk": 2048
+  },
+  "pass": true,
+  "schema": "v20-oldest-boundary-warmup-shape-v1",
+  "valid_count_matches": true
+}

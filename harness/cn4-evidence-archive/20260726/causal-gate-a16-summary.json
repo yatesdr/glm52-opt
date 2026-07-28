@@ -1,0 +1,116 @@
+{
+  "image": "glm52-serve:v20-5517197-pxb-20260725 + B12X_MOE_FORCE_A16=1",
+  "note": "A16-only discriminator on EXACT stock, MNBT 2048, pool 559616",
+  "freeze_dir": "/home/derek/causal-gate-freeze-20260726",
+  "stock_image": "glm52-serve:v20-5517197-pxb-20260725",
+  "recovered": 0,
+  "fail_count": 3,
+  "control_ok": true,
+  "verdict": "REFUTED \u2014 at least one frozen stock-FAIL prompt did not recover",
+  "rows": [
+    {
+      "label": "pass-250k-ctl",
+      "role": "PASS_CONTROL",
+      "depth": 250000,
+      "seed": 20260725,
+      "prompt_sha256": "fde493ea5b921594d239e2a743229d61c9977557057aa49bd1389700d5a56b54",
+      "stock_verdict": "EXACT",
+      "verdict": "EXACT",
+      "gate_pass": true,
+      "exact": true,
+      "cold": true,
+      "finish_reason": "stop",
+      "cached_tokens": 0,
+      "usage": {
+        "prompt_tokens": 245497,
+        "total_tokens": 245501,
+        "completion_tokens": 4,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "738216",
+      "reasoning_chars": 0,
+      "secs": 323.3
+    },
+    {
+      "label": "fail-350k-r1",
+      "role": "FAIL",
+      "depth": 350000,
+      "seed": 1110001,
+      "prompt_sha256": "f0d1c16d816b777f27a3882d9e6b5ef056852684ea155fb11dd845f9e1654ab5",
+      "stock_verdict": "ABSENT",
+      "verdict": "ABSENT",
+      "gate_pass": false,
+      "exact": false,
+      "cold": true,
+      "finish_reason": "stop",
+      "cached_tokens": 0,
+      "usage": {
+        "prompt_tokens": 343727,
+        "total_tokens": 343863,
+        "completion_tokens": 136,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **73829**. \n\nTo find the maintenance ticket number for the Facility 27 compressor overhaul, I need to know the specific details of the maintenance request. However, the provided document does not contain any information about a maintenance ticket number. It only contains a repeated phrase: \"For the document above: what is the maintenance ticket number for the Facility 27 compressor overhaul? Reply with the number only.\" \n\nIf you have a specific ticket number, review the ticket details to find the maintenance ticket number. If you do not have a ticket number, please contact the facility management or maintenance department for assistance.",
+      "reasoning_chars": 0,
+      "secs": 486.2
+    },
+    {
+      "label": "fail-350k-r2",
+      "role": "FAIL",
+      "depth": 350000,
+      "seed": 1110002,
+      "prompt_sha256": "d5b6755331b634bbabc24486f74925832179eac7842b7a8a7ee225b52b1cdec6",
+      "stock_verdict": "ABSENT",
+      "verdict": "ABSENT",
+      "gate_pass": false,
+      "exact": false,
+      "cold": true,
+      "finish_reason": "stop",
+      "cached_tokens": 0,
+      "usage": {
+        "prompt_tokens": 343727,
+        "total_tokens": 343744,
+        "completion_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **27**.",
+      "reasoning_chars": 0,
+      "secs": 484.2
+    },
+    {
+      "label": "fail-350k-r3",
+      "role": "FAIL",
+      "depth": 350000,
+      "seed": 1110003,
+      "prompt_sha256": "a50329d3866ba97ead8ae10291cfb8903b8e542f79ea4e985d365f9db7447b46",
+      "stock_verdict": "ABSENT",
+      "verdict": "ABSENT",
+      "gate_pass": false,
+      "exact": false,
+      "cold": true,
+      "finish_reason": "stop",
+      "cached_tokens": 0,
+      "usage": {
+        "prompt_tokens": 343727,
+        "total_tokens": 343744,
+        "completion_tokens": 17,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **27**.",
+      "reasoning_chars": 0,
+      "secs": 484.5
+    }
+  ]
+}

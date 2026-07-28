@@ -1,0 +1,45 @@
+ARG BASE_IMAGE=voipmonitor/vllm@sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0
+FROM ${BASE_IMAGE}
+
+ARG BASE_DEEPSEEK_SHA256=180622452fad2500db4b57cdac3a961c13518aa5a1962c7ff4dd2cc634fa44c3
+ARG TRACE_DEEPSEEK_SHA256=82320e324dcb7668a4981030c3e6c654f3715b62385fc8f9379dc7a122470592
+ARG ACTIVATION_PROOF_SHA256=34b6a7208453ed2b03ade548ca06f7e5922556ae16f6fac220cce854e67f7a8e
+ARG SYNTHETIC_PROOF_SHA256=9457d6a0953a7ad0b20289171010a920c32e2b4b2cbac0b7f9fff13a329309f2
+
+COPY workspace/vllm-v20-indexer-hadamard-proof/vllm/model_executor/models/deepseek_v2.py \
+    /tmp/indexer-prequant-trace/deepseek_v2.py
+COPY harness/v20_indexer_hadamard_activation_proof.py \
+    /tmp/indexer-prequant-trace/v20_indexer_hadamard_activation_proof.py
+COPY harness/v20_indexer_hadamard_precision_cpu_proof.py \
+    /tmp/indexer-prequant-trace/v20_indexer_hadamard_precision_cpu_proof.py
+
+RUN set -eu; \
+    src=/opt/vllm/vllm/model_executor/models/deepseek_v2.py; \
+    installed=/opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py; \
+    trace=/tmp/indexer-prequant-trace/deepseek_v2.py; \
+    activation_proof=/tmp/indexer-prequant-trace/v20_indexer_hadamard_activation_proof.py; \
+    synthetic_proof=/tmp/indexer-prequant-trace/v20_indexer_hadamard_precision_cpu_proof.py; \
+    test "$(sha256sum "${src}" | cut -d' ' -f1)" = "${BASE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${installed}" | cut -d' ' -f1)" = "${BASE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${trace}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${activation_proof}" | cut -d' ' -f1)" = "${ACTIVATION_PROOF_SHA256}"; \
+    test "$(sha256sum "${synthetic_proof}" | cut -d' ' -f1)" = "${SYNTHETIC_PROOF_SHA256}"; \
+    install -m 0644 "${trace}" "${src}"; \
+    install -m 0644 "${trace}" "${installed}"; \
+    install -d -m 0755 /opt/indexer-proofs; \
+    install -m 0644 "${activation_proof}" /opt/indexer-proofs/; \
+    install -m 0644 "${synthetic_proof}" /opt/indexer-proofs/; \
+    /opt/venv/bin/python -m py_compile \
+      "${src}" \
+      "${installed}" \
+      /opt/indexer-proofs/v20_indexer_hadamard_activation_proof.py \
+      /opt/indexer-proofs/v20_indexer_hadamard_precision_cpu_proof.py; \
+    test "$(sha256sum "${src}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${installed}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_SHA256}"; \
+    rm -rf /tmp/indexer-prequant-trace
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 indexer prequant diagnostic" \
+      local-inference.base.digest="sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0" \
+      local-inference.vllm.base_commit="0c79e41db41f250ccdfc4be92d171960a5787f73" \
+      local-inference.diagnostic="real post-RoPE pre-FP8 indexer activation trace" \
+      local-inference.production="false"

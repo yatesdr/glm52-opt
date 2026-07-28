@@ -1,0 +1,12 @@
+[gate] image=sha256:739ff8d3eaaf55e6e5ce0d22b2ad9ce210c42a2837af8c76b4adc8bea847e23d
+[gate] freeze=/home/derek/causal-gate-freeze-20260726  stock_image=glm52-serve:v20-5517197-pxb-20260725
+[gate] note=official-reference-needle-trace-103473cd
+
+fail-350k-r1    ABSENT          gate=FAIL finish=stop out=16 prompt_tok=343727 cached=0 stock=ABSENT 671s
+                content='The maintenance ticket number for the Facility 27 compressor is **27**.'
+
+===== CAUSAL GATE SUMMARY =====
+  FAIL-role prompts recovered: 0/1
+  PASS control still passing:   None
+  VERDICT: REFUTED — at least one frozen stock-FAIL prompt did not recover
+CAUSAL_GATE_DONE

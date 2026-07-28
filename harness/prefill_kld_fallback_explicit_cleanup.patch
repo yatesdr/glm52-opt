@@ -1,0 +1,37 @@
+--- prefill_kld_fallback.py
++++ prefill_kld_fallback_cleanup.py
+@@ -7,4 +7,6 @@
+ import argparse
++import gc
+ import inspect
+ import json
+ import os
++import sys
+@@ -290,6 +292,27 @@
+         ),
+         flush=True,
+     )
++
++    # The offline engine owns multiprocessing resources, and ref_logits is
++    # backed by safetensors/torch.frombuffer storage.  Leaving both for
++    # interpreter finalization can race Python's GIL teardown: the engine
++    # finalizer terminates workers while torch releases the frombuffer
++    # context, producing PyEval_SaveThread/pybind11 segfaults after a valid
++    # result was printed.  Release measurement tensors while the interpreter
++    # and GIL are still live, then shut the engine client down explicitly.
++    del kld_chunk
++    del log_probs_ref, log_probs_model
++    del ref_chunk, model_chunk
++    del ref_logits, model_logits
++    del params, prompt
++    gc.collect()
++    llm.llm_engine.engine_core.shutdown(timeout=30.0)
++    del llm
++    gc.collect()
++    print("fallback_prefill_kld_cleanup_done", flush=True)
++    sys.stdout.flush()
++    sys.stderr.flush()
++    os._exit(0)
+ 
+ 
+ if __name__ == "__main__":

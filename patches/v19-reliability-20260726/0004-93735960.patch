@@ -1,0 +1,266 @@
+From 937359605c317e6b4361929e72d5c6fa0bd1957e Mon Sep 17 00:00:00 2001
+From: Martin Vit <martin@voipmonitor.org>
+Date: Sun, 19 Jul 2026 23:38:00 +0000
+Subject: [PATCH] fix(moe): gate shared expert overlap by kernel capability
+
+---
+ .../fused_moe/test_shared_experts_stream.py   | 44 ++++++++++++++++++-
+ .../layers/test_b12x_moe_warmup.py            | 34 ++++++++++++++
+ .../layers/fused_moe/b12x_moe.py              | 39 ++++++++++++++++
+ .../layers/fused_moe/fused_moe_method_base.py | 14 ++++++
+ .../layers/fused_moe/runner/moe_runner.py     |  5 +++
+ .../layers/fused_moe/runner/shared_experts.py |  3 ++
+ 6 files changed, 137 insertions(+), 2 deletions(-)
+
+diff --git a/tests/model_executor/layers/fused_moe/test_shared_experts_stream.py b/tests/model_executor/layers/fused_moe/test_shared_experts_stream.py
+index c1c71c2f..81cee44c 100644
+--- a/tests/model_executor/layers/fused_moe/test_shared_experts_stream.py
++++ b/tests/model_executor/layers/fused_moe/test_shared_experts_stream.py
+@@ -2,12 +2,52 @@
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
+ from contextlib import contextmanager
+-from unittest.mock import Mock
++from types import SimpleNamespace
++from unittest.mock import Mock, call
+ 
+ import torch
+ 
+ import vllm.model_executor.layers.fused_moe.runner.shared_experts as shared_module
+-from vllm.model_executor.layers.fused_moe.runner.shared_experts import SharedExperts
++from vllm.model_executor.layers.fused_moe.runner.shared_experts import (
++    SharedExperts,
++    SharedExpertsOrder,
++)
++
++
++def test_aux_stream_respects_expert_kernel_capability(monkeypatch) -> None:
++    stream = Mock()
++    supports_aux_stream = Mock(side_effect=lambda num_tokens: num_tokens <= 8)
++    monkeypatch.setattr(shared_module, "aux_stream", Mock(return_value=stream))
++    monkeypatch.setattr(shared_module.envs, "VLLM_DISABLE_SHARED_EXPERTS_STREAM", False)
++    monkeypatch.setattr(
++        shared_module,
++        "current_platform",
++        SimpleNamespace(is_cuda=lambda: True),
++    )
++    moe_config = SimpleNamespace(
++        moe_parallel_config=SimpleNamespace(
++            enable_eplb=False,
++            all2all_backend="allgather_reducescatter",
++            use_fi_nvl_two_sided_kernels=False,
++        )
++    )
++    shared_experts = SharedExperts(
++        layer=Mock(),
++        moe_config=moe_config,
++        enable_dbo=False,
++        mk_can_overlap_shared_experts=Mock(return_value=False),
++        experts_support_aux_stream=supports_aux_stream,
++    )
++
++    assert (
++        shared_experts._determine_shared_experts_order(torch.empty(8, 16))
++        == SharedExpertsOrder.MULTI_STREAM_OVERLAPPED
++    )
++    assert (
++        shared_experts._determine_shared_experts_order(torch.empty(16, 16))
++        == SharedExpertsOrder.NO_OVERLAP
++    )
++    assert supports_aux_stream.call_args_list == [call(8), call(16)]
+ 
+ 
+ def test_aux_stream_output_lifetime_extends_to_consumer(monkeypatch) -> None:
+diff --git a/tests/model_executor/layers/test_b12x_moe_warmup.py b/tests/model_executor/layers/test_b12x_moe_warmup.py
+index f931106c..7fe058fc 100644
+--- a/tests/model_executor/layers/test_b12x_moe_warmup.py
++++ b/tests/model_executor/layers/test_b12x_moe_warmup.py
+@@ -89,6 +89,7 @@ def _make_fake_b12x_experts() -> b12x_moe.B12xExperts:
+     experts._activation_amax_base_num_layers = None
+     experts._activation_amax_state_key = None
+     experts._activation_amax_layer_idx = None
++    experts._aux_stream_overlap_by_tokens = {}
+     return experts
+ 
+ 
+@@ -131,6 +132,39 @@ def test_non_b12x_moe_runner_keeps_generic_custom_op(monkeypatch) -> None:
+     assert forward_entry._qualified_op_name == "vllm::moe_forward"
+ 
+ 
++def test_b12x_shared_expert_overlap_follows_launch_plan_capability(
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    for name in (
++        "B12X_MOE_FORCE_A8",
++        "B12X_FORCE_MOE_A8",
++        "B12X_MOE_FORCE_A16",
++    ):
++        monkeypatch.delenv(name, raising=False)
++    plans = []
++    plan = object()
++
++    def fake_plan(**kwargs):
++        plans.append(kwargs)
++        return plan
++
++    monkeypatch.setattr(b12x_moe, "_plan_b12x_moe_execution", fake_plan)
++    monkeypatch.setattr(
++        b12x_moe,
++        "_b12x_moe_plan_supports_aux_stream_overlap",
++        lambda candidate: candidate is plan,
++    )
++    experts = _make_fake_b12x_experts()
++
++    assert experts.supports_shared_experts_aux_stream(8)
++    assert experts.supports_shared_experts_aux_stream(8)
++
++    assert len(plans) == 1
++    assert plans[0]["tokens"] == 8
++    assert plans[0]["topk"] == 4
++    assert plans[0]["quant_mode"] == "nvfp4"
++
++
+ def test_b12x_moe_custom_op_matches_generic_mutation_contract() -> None:
+     b12x_schema = str(torch.ops.vllm.b12x_moe_forward.default._schema)
+     b12x_shared_schema = str(torch.ops.vllm.b12x_moe_forward_shared.default._schema)
+diff --git a/vllm/model_executor/layers/fused_moe/b12x_moe.py b/vllm/model_executor/layers/fused_moe/b12x_moe.py
+index 83b17c21..bcd3ab03 100644
+--- a/vllm/model_executor/layers/fused_moe/b12x_moe.py
++++ b/vllm/model_executor/layers/fused_moe/b12x_moe.py
+@@ -451,6 +451,12 @@ def _plan_b12x_moe_execution(
+     )
+ 
+ 
++def _b12x_moe_plan_supports_aux_stream_overlap(plan: Any) -> bool:
++    from b12x.integration import tp_moe_plan_supports_aux_stream_overlap
++
++    return bool(tp_moe_plan_supports_aux_stream_overlap(plan))
++
++
+ def _b12x_scratch_nbytes(plan: Any) -> int:
+     specs = plan.scratch_specs()
+     if len(specs) != 1:
+@@ -792,6 +798,7 @@ class B12xExperts(mk.FusedMoEExpertsModular):
+         self._activation_amax_base_num_layers = _current_config_num_hidden_layers()
+         self._activation_amax_state_key: tuple[str, str, int] | None = None
+         self._activation_amax_layer_idx: int | None = None
++        self._aux_stream_overlap_by_tokens: dict[int, bool] = {}
+ 
+     def _quant_mode(self) -> str:
+         source_format = self._source_format()
+@@ -816,6 +823,38 @@ class B12xExperts(mk.FusedMoEExpertsModular):
+             return "w4a16"
+         return "nvfp4" if self.quant_config.quant_dtype == "nvfp4" else "w4a16"
+ 
++    def supports_shared_experts_aux_stream(self, num_tokens: int) -> bool:
++        """Allow overlap only when B12X selected a barrier-free launch."""
++        num_tokens = max(int(num_tokens), 1)
++        cached = self._aux_stream_overlap_by_tokens.get(num_tokens)
++        if cached is not None:
++            return cached
++
++        prepared = self._lookup_prepared_experts()
++        if prepared is None:
++            return False
++        activation = self.moe_config.activation
++        swiglu_limit, swiglu_alpha, swiglu_beta = self._b12x_swiglu_params(activation)
++        quant_mode = self._quant_mode()
++        if (
++            not _supports_swiglu_limit(quant_mode)
++            and activation != MoEActivation.SWIGLUOAI_UNINTERLEAVE
++        ):
++            swiglu_limit = None
++        plan = _plan_b12x_moe_execution(
++            tokens=num_tokens,
++            topk=int(self.moe_config.experts_per_token),
++            device=prepared.w1_fp4.device,
++            quant_mode=quant_mode,
++            experts=prepared,
++            swiglu_limit=swiglu_limit,
++            swiglu_alpha=swiglu_alpha,
++            swiglu_beta=swiglu_beta,
++        )
++        supports_overlap = _b12x_moe_plan_supports_aux_stream_overlap(plan)
++        self._aux_stream_overlap_by_tokens[num_tokens] = supports_overlap
++        return supports_overlap
++
+     def _source_format(self) -> str:
+         if self.quant_config.weight_quant_dtype == "nvfp4":
+             return "modelopt_nvfp4"
+diff --git a/vllm/model_executor/layers/fused_moe/fused_moe_method_base.py b/vllm/model_executor/layers/fused_moe/fused_moe_method_base.py
+index 888d064d..1e046355 100644
+--- a/vllm/model_executor/layers/fused_moe/fused_moe_method_base.py
++++ b/vllm/model_executor/layers/fused_moe/fused_moe_method_base.py
+@@ -49,6 +49,20 @@ class FusedMoEMethodBase(QuantizeMethodBase):
+             self.moe_kernel is not None and self.moe_kernel.can_overlap_shared_experts
+         )
+ 
++    def supports_shared_experts_aux_stream(self, num_tokens: int) -> bool:
++        """Whether the selected expert kernel can overlap another CUDA stream."""
++        if self.moe_kernel is None:
++            return True
++        experts = getattr(self.moe_kernel, "fused_experts", None)
++        supports_overlap = getattr(
++            experts,
++            "supports_shared_experts_aux_stream",
++            None,
++        )
++        if supports_overlap is None:
++            return True
++        return bool(supports_overlap(int(num_tokens)))
++
+     @abstractmethod
+     def create_weights(
+         self,
+diff --git a/vllm/model_executor/layers/fused_moe/runner/moe_runner.py b/vllm/model_executor/layers/fused_moe/runner/moe_runner.py
+index 2162eed1..377328dc 100644
+--- a/vllm/model_executor/layers/fused_moe/runner/moe_runner.py
++++ b/vllm/model_executor/layers/fused_moe/runner/moe_runner.py
+@@ -296,11 +296,16 @@ class MoERunner(MoERunnerInterface):
+         self._shared_experts: SharedExperts | None = None
+         if shared_experts is not None:
+             can_overlap = lambda: self._quant_method.mk_can_overlap_shared_experts
++
++            def supports_aux_stream(num_tokens: int) -> bool:
++                return self._quant_method.supports_shared_experts_aux_stream(num_tokens)
++
+             self._shared_experts = SharedExperts(
+                 shared_experts,
+                 moe_config=moe_config,
+                 enable_dbo=enable_dbo,
+                 mk_can_overlap_shared_experts=can_overlap,
++                experts_support_aux_stream=supports_aux_stream,
+             )
+ 
+         # Needed for string -> MoERunner layer lookup in custom ops.
+diff --git a/vllm/model_executor/layers/fused_moe/runner/shared_experts.py b/vllm/model_executor/layers/fused_moe/runner/shared_experts.py
+index 69b12540..d22ee559 100644
+--- a/vllm/model_executor/layers/fused_moe/runner/shared_experts.py
++++ b/vllm/model_executor/layers/fused_moe/runner/shared_experts.py
+@@ -43,6 +43,7 @@ class SharedExperts(torch.nn.Module):
+         moe_config: FusedMoEConfig,
+         enable_dbo: bool,
+         mk_can_overlap_shared_experts: Callable[[], bool],
++        experts_support_aux_stream: Callable[[int], bool],
+     ):
+         super().__init__()
+ 
+@@ -56,6 +57,7 @@ class SharedExperts(torch.nn.Module):
+         self._moe_config = moe_config
+ 
+         self._mk_can_overlap_shared_experts = mk_can_overlap_shared_experts
++        self._experts_support_aux_stream = experts_support_aux_stream
+ 
+         # Allow disabling of the separate shared experts stream for
+         # debug purposes.
+@@ -99,6 +101,7 @@ class SharedExperts(torch.nn.Module):
+         should_run_shared_in_aux_stream = (
+             current_platform.is_cuda()
+             and self._stream is not None
++            and self._experts_support_aux_stream(int(hidden_states.shape[0]))
+             and hidden_states.shape[0]
+             <= envs.VLLM_SHARED_EXPERTS_STREAM_TOKEN_THRESHOLD
+         )
+-- 
+2.50.1 (Apple Git-155)
+

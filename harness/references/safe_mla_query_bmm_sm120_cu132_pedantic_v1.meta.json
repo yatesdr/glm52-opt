@@ -1,0 +1,35 @@
+{
+  "schema_version": 1,
+  "gate_id": "safe_mla_query_bmm.post_fp8.sm120-cu132.v1",
+  "reference_jsonl": "safe_mla_query_bmm_sm120_cu132_pedantic_v1.jsonl",
+  "reference_sha256": "08ae9da7501debee3dfb4144371f9f9c7929828047d57e737da17b610ca60084",
+  "platform": {
+    "id": "sm120-cu132",
+    "compute_capability": [12, 0],
+    "torch_cuda": "13.2"
+  },
+  "geometry": {
+    "tokens": [1, 4, 9, 16, 32, 3072],
+    "heads": 8,
+    "q_dim": 192,
+    "rope_dim": 64,
+    "latent_dim": 512,
+    "seeds": [7, 19, 41],
+    "q_scales": [0.5, 1.0, 2.0],
+    "cases": 54
+  },
+  "hard_gate_fields": ["fp8_sha256"],
+  "diagnostic_fields": ["bf16_sha256"],
+  "provenance": {
+    "reference_mode": "CUBLAS_COMPUTE_32F_PEDANTIC",
+    "source_image": "ghcr.io/yatesdr/glm52-serve:gilded-gnosis-v20-pedantic-discriminator-20260725",
+    "stable_libtorch_sha256": "fcf056af6607bb4fd0174fda977e45e2ebe69e8c09c0dab4844adc7bf33c635d",
+    "evidence": "harness/cn4-evidence-archive/20260725/gateA/safe-bmm-old.jsonl",
+    "evidence_result": "binary rewind matched the known-good 6d32 operator at 54/54 cases"
+  },
+  "approval": {
+    "status": "accepted_reference",
+    "record": "MEASUREMENT-LIBRARY.md",
+    "policy": "design/safe-query-build-fingerprint-gate.md"
+  }
+}

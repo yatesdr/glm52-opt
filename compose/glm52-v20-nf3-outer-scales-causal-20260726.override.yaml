@@ -1,0 +1,10 @@
+# One-variable causal overlay for the refuted 5517197 NF3 configuration.
+#
+# The base image already ships this exact calibration file and the vLLM
+# reader/writer support. The glm52-hybrid launcher currently leaves the
+# variable unset, selecting latent_scale_identity=1.
+services:
+  glm52-v20-candidate:
+    container_name: glm52-v20-nvfp4-scales-causal
+    environment:
+      VLLM_NVFP4_MLA_SCALES_FILE: /opt/vllm/kv-scales/glm52-nvfp4-nf3-hybrid_mla_outer_scales_v1.json

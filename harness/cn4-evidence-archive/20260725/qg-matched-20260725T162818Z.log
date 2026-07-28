@@ -1,0 +1,20 @@
+=== historical quality_gate 50k rep1 ===
+[PASS] needle@50000: '738216'
+[PASS] arithmetic: tail='= 1507  \n12193 + 1507 = 13700  \n13700 - 256 = 13444  \n\n13444'
+[FAIL] coherence: 39 words, trigram-repeat=0.00
+GATE: FAIL
+=== historical quality_gate 50k rep2 ===
+[PASS] needle@50000: '738216'
+[PASS] arithmetic: tail='93 + 1507 = 13700\\)  \nStep 4: \\(13700 - 256 = 13444\\)\n\n13444'
+[PASS] coherence: 183 words, trigram-repeat=0.00
+GATE: PASS
+=== historical quality_gate 50k rep3 ===
+[PASS] needle@50000: '738216'
+[PASS] arithmetic: tail='= 13700  \nStep 4: Subtract 256: 13700 - 256 = 13444  \n\n13444'
+[PASS] coherence: 183 words, trigram-repeat=0.00
+GATE: PASS
+=== historical quality_gate 150k ===
+[PASS] needle@150000: '38216, 738216,, 738216, 738216, 738216, 738216, 738216, 38216, 7382, 738216, 738'
+[PASS] arithmetic: tail='0\n\\]\n\nStep 4: Subtract 256\n\n\\[\n13700 - 256 = 13444\n\\]\n\n13444'
+[PASS] coherence: 181 words, trigram-repeat=0.00
+GATE: PASS

@@ -1,0 +1,42 @@
+{
+  "id": "chatcmpl-beb38c446e59314f",
+  "object": "chat.completion",
+  "created": 1785033812,
+  "model": "GLM-5.2",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "I'm sorry, but there is no maintenance ticket number provided in the document you shared. The document appears to be a list of entries without any specific ticket number. If you have a specific ticket number you'd like me to look up, please provide it, and I'll be happy to help you.",
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "reasoning": "The user is asking for the maintenance ticket number for \"Facility 27 compressor overhaul\" from the provided document. However, the provided document does not contain any information about a maintenance ticket number for Facility 27 compressor overhaul. The document appears to be a list of entries with no specific ticket number mentioned. \n\nI need to inform the user that the document does not contain the maintenance ticket number for Facility 27 compressor overhaul."
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": 154827,
+      "token_ids": null,
+      "routed_experts": null
+    }
+  ],
+  "service_tier": null,
+  "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm5517197.sibe0edca.fi801d57a.cu132.20260725-tp4-743d1985",
+  "usage": {
+    "prompt_tokens": 441961,
+    "total_tokens": 442109,
+    "completion_tokens": 148,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    }
+  },
+  "prompt_logprobs": null,
+  "prompt_token_ids": null,
+  "prompt_text": null,
+  "kv_transfer_params": null,
+  "ec_transfer_params": null,
+  "metrics": null
+}

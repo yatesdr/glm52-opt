@@ -1,0 +1,33 @@
+{
+  "id": "cmpl-89cfcc724ed7cb42",
+  "object": "text_completion",
+  "created": 1785025807,
+  "model": "GLM-5.2",
+  "choices": [
+    {
+      "index": 0,
+      "text": " \n\n738216",
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": 154827,
+      "token_ids": null,
+      "prompt_logprobs": null,
+      "prompt_token_ids": null,
+      "routed_experts": null
+    }
+  ],
+  "service_tier": null,
+  "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm5517197.sibe0edca.fi801d57a.cu132.20260725-tp4-743d1985",
+  "usage": {
+    "prompt_tokens": 343721,
+    "total_tokens": 343726,
+    "completion_tokens": 5,
+    "prompt_tokens_details": {
+      "cached_tokens": 97792,
+      "multimodal_tokens": null
+    }
+  },
+  "kv_transfer_params": null,
+  "ec_transfer_params": null,
+  "metrics": null
+}

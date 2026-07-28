@@ -1,0 +1,12 @@
+[gate] image=sha256:ca8481687f7169adf177f02df83c06259af0941e9a1de8695b5a4e60d745463a
+[gate] freeze=/home/claude/sol-baseline-20260726/causal-gate-freeze-20260726  stock_image=glm52-serve:v20-5517197-pxb-20260725
+[gate] note=known-good CN3 v19 exact frozen baseline
+
+fail-350k-r1    EXACT           gate=PASS finish=stop out=4 prompt_tok=343727 cached=0 stock=ABSENT 261s
+                content='738216'
+
+===== CAUSAL GATE SUMMARY =====
+  FAIL-role prompts recovered: 1/1
+  PASS control still passing:   None
+  VERDICT: CONFIRMED — every frozen stock-FAIL prompt recovered
+CAUSAL_GATE_DONE

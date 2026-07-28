@@ -1,0 +1,26 @@
+ARG BASE_IMAGE
+FROM ${BASE_IMAGE}
+
+ARG BASE_DEEPSEEK_SHA256
+ARG TRACE_DEEPSEEK_SHA256
+ARG TRACE_SOURCE_COMMIT
+
+COPY deepseek_v2.py /tmp/longctx-trace/deepseek_v2.py
+
+RUN set -eu; \
+    src=/opt/vllm/vllm/model_executor/models/deepseek_v2.py; \
+    installed=/opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py; \
+    trace=/tmp/longctx-trace/deepseek_v2.py; \
+    test "$(sha256sum "${src}" | cut -d' ' -f1)" = "${BASE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${installed}" | cut -d' ' -f1)" = "${BASE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${trace}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_SHA256}"; \
+    install -m 0644 "${trace}" "${src}"; \
+    install -m 0644 "${trace}" "${installed}"; \
+    /opt/venv/bin/python -m py_compile "${src}" "${installed}"; \
+    test "$(sha256sum "${src}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${installed}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_SHA256}"; \
+    rm -rf /tmp/longctx-trace
+
+LABEL local-inference.diagnostic="v20-longctx-first-divergence-v2-compile-safe-op" \
+      local-inference.trace.source_commit="${TRACE_SOURCE_COMMIT}" \
+      local-inference.trace.output_contract="final-query layer input attention topk mlp"

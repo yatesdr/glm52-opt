@@ -1,0 +1,28 @@
+[
+  {
+    "label": "fail-350k-r1",
+    "role": "FAIL",
+    "depth": 350000,
+    "seed": 1110001,
+    "prompt_sha256": "f0d1c16d816b777f27a3882d9e6b5ef056852684ea155fb11dd845f9e1654ab5",
+    "stock_verdict": "ABSENT",
+    "verdict": "ABSENT",
+    "gate_pass": false,
+    "exact": false,
+    "cold": true,
+    "finish_reason": "stop",
+    "cached_tokens": 0,
+    "usage": {
+      "prompt_tokens": 343727,
+      "total_tokens": 343744,
+      "completion_tokens": 17,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **27**.",
+    "reasoning_chars": 0,
+    "secs": 301.5
+  }
+]

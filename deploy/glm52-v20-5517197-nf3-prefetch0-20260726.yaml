@@ -1,0 +1,56 @@
+# v20 NF3 CKV-prefetch causal discriminator.
+#
+# Exact production-candidate image and serving posture from
+# glm52-v20-5517197-nf3-20260725.yaml.  The sole behavioral change is
+# VLLM_B12X_MLA_CKV_PREFETCH_DEPTH=0: compressed-KV gathering remains enabled,
+# but every layer uses the synchronous gather path instead of cross-layer
+# side-stream lookahead.  This distinguishes CKV-prefetch correctness from
+# projection, MoE, wire-format, and scheduler geometry.
+services:
+  glm52-v20-candidate:
+    container_name: glm52-v20-candidate
+    image: glm52-serve:v20-5517197-pxb-20260725
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"]
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    ports:
+      - "0.0.0.0:5001:5001"
+    ipc: host
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      TP: "4"
+      DCP: "4"
+      MTP: "3"
+      DCP_PREFILL_WORKSPACE: auto
+      MAX_MODEL_LEN: "480000"
+      MAX_NUM_SEQS: "16"
+      GRAPH: "64"
+      KV_FP8_ROPE: "1"
+      GPU_MEMORY_UTILIZATION: "0.97"
+      NCCL_P2P_LEVEL: PXB
+      # CAUSAL LEVER: retain CKV gather, disable only asynchronous lookahead.
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+    volumes:
+      - ${GLM52_MODEL_DIR:?set GLM52_MODEL_DIR}:/model:ro
+      - ${GLM52_CACHE_DIR:?set GLM52_CACHE_DIR}:/cache:rw
+      - ${GLM52_CACHE_DIR:?set GLM52_CACHE_DIR}:/root/.cache:rw
+      - ${GLM52_NVME_DIR:?set GLM52_NVME_DIR}:/nvme-kv:rw

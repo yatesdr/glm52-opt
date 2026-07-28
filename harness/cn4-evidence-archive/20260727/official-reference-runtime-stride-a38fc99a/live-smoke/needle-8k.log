@@ -1,0 +1,5 @@
+[gate2] filler block = 56 tokens; results -> /home/derek/proof-results/20260727/official-reference-runtime-stride-a38fc99a/live-smoke/needle-8k
+[gate2] === 8k ===
+  built prompt: 7847 context tokens (target 8000), needle at ~40%
+  PASS ctx=7847 cached=0 out=92 60.69s answer='738216'
+[gate2] VERDICT: PASS

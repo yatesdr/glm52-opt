@@ -1,0 +1,1733 @@
+From 340cd083931addc34c0698d1cb4771de43f6cf6a Mon Sep 17 00:00:00 2001
+From: derek <derek.yates@live.com>
+Date: Sat, 25 Jul 2026 11:06:19 -0400
+Subject: [PATCH] perf: add fail-closed GLM compute phase profiler
+
+---
+ .../passes/fusion/allreduce_rms_fusion.py     |  48 +-
+ vllm/distributed/parallel_state.py            |  19 +-
+ .../layers/attention/mla_attention.py         |  36 +
+ .../layers/compute_phase_profiler.py          | 915 ++++++++++++++++++
+ vllm/model_executor/layers/mla.py             |  17 +
+ .../layers/quantization/nvfp4_nf3_hybrid.py   |  28 +-
+ vllm/model_executor/models/deepseek_v2.py     |  22 +
+ .../attention/backends/mla/b12x_mla_sparse.py |  45 +
+ vllm/v1/attention/ops/common.py               |  32 +
+ vllm/v1/attention/ops/dcp_alltoall.py         |  35 +-
+ vllm/v1/worker/gpu_worker.py                  |  14 +
+ 11 files changed, 1197 insertions(+), 14 deletions(-)
+ create mode 100644 vllm/model_executor/layers/compute_phase_profiler.py
+
+diff --git a/vllm/compilation/passes/fusion/allreduce_rms_fusion.py b/vllm/compilation/passes/fusion/allreduce_rms_fusion.py
+index 3f434e29..05830931 100644
+--- a/vllm/compilation/passes/fusion/allreduce_rms_fusion.py
++++ b/vllm/compilation/passes/fusion/allreduce_rms_fusion.py
+@@ -1,6 +1,7 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ import contextlib
++import os
+ from importlib.util import find_spec
+ from types import ModuleType
+ from typing import Any
+@@ -39,6 +40,13 @@ from vllm.utils.torch_utils import (
+     direct_register_custom_op,
+ )
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++if _COMPUTE_PROF_ENABLED:
++    from vllm.model_executor.layers.compute_phase_profiler import (
++        compute_profiler_tp_start,
++        compute_profiler_tp_stop,
++    )
++
+ from ..inductor_pass import enable_fake_mode
+ from ..vllm_inductor_pass import (
+     VllmFusionPatternMatcherPass,
+@@ -329,15 +337,37 @@ def call_b12x_fused_allreduce_add_rms_norm(
+     rms_eps: float,
+ ) -> None:
+     custom_allreduce = get_b12x_pcie_allreduce()
+-    if custom_allreduce is not None and custom_allreduce.try_fused_add_rms_norm(
+-        allreduce_in,
+-        residual,
+-        rms_gamma,
+-        rms_eps,
+-    ):
+-        return
+-
+-    allreduce_out = get_tp_group()._all_reduce_out_place(allreduce_in)
++    if custom_allreduce is not None:
++        phase = (
++            compute_profiler_tp_start(
++                allreduce_in.numel() * allreduce_in.element_size()
++            )
++            if _COMPUTE_PROF_ENABLED
++            else None
++        )
++        try:
++            fused = custom_allreduce.try_fused_add_rms_norm(
++                allreduce_in,
++                residual,
++                rms_gamma,
++                rms_eps,
++            )
++        finally:
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_tp_stop(phase)
++        if fused:
++            return
++
++    phase = (
++        compute_profiler_tp_start(allreduce_in.numel() * allreduce_in.element_size())
++        if _COMPUTE_PROF_ENABLED
++        else None
++    )
++    try:
++        allreduce_out = get_tp_group()._all_reduce_out_place(allreduce_in)
++    finally:
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_tp_stop(phase)
+     allreduce_in.copy_(allreduce_out)
+     ops.fused_add_rms_norm(allreduce_in, residual, rms_gamma, rms_eps)
+ 
+diff --git a/vllm/distributed/parallel_state.py b/vllm/distributed/parallel_state.py
+index 4187c55c..b6ca2813 100644
+--- a/vllm/distributed/parallel_state.py
++++ b/vllm/distributed/parallel_state.py
+@@ -25,6 +25,7 @@ If you only need to use the distributed environment without model/pipeline
+ 
+ import contextlib
+ import gc
++import os
+ import pickle
+ import weakref
+ from collections import namedtuple
+@@ -58,6 +59,8 @@ from vllm.utils.torch_utils import (
+     direct_register_custom_op,
+ )
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++
+ if TYPE_CHECKING:
+     from vllm.distributed.stateless_coordinator import StatelessGroupCoordinator
+ 
+@@ -132,7 +135,21 @@ def all_reduce(tensor: torch.Tensor, group_name: str) -> torch.Tensor:
+     group = _groups[group_name]()
+     if group is None:
+         raise ValueError(f"Group {group_name} is destroyed.")
+-    return group._all_reduce_out_place(tensor)
++    phase = None
++    profiler_stop = None
++    if _COMPUTE_PROF_ENABLED and group_name.startswith("tp:"):
++        from vllm.model_executor.layers.compute_phase_profiler import (
++            compute_profiler_tp_start,
++            compute_profiler_tp_stop,
++        )
++
++        phase = compute_profiler_tp_start(tensor.numel() * tensor.element_size())
++        profiler_stop = compute_profiler_tp_stop
++    try:
++        return group._all_reduce_out_place(tensor)
++    finally:
++        if profiler_stop is not None:
++            profiler_stop(phase)
+ 
+ 
+ def all_reduce_fake(tensor: torch.Tensor, group_name: str) -> torch.Tensor:
+diff --git a/vllm/model_executor/layers/attention/mla_attention.py b/vllm/model_executor/layers/attention/mla_attention.py
+index 34ee5522..b3951dd4 100644
+--- a/vllm/model_executor/layers/attention/mla_attention.py
++++ b/vllm/model_executor/layers/attention/mla_attention.py
+@@ -296,6 +296,14 @@ from vllm.v1.kv_cache_interface import (
+     get_kv_quant_mode,
+ )
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++if _COMPUTE_PROF_ENABLED:
++    from vllm.model_executor.layers.compute_phase_profiler import (
++        compute_profiler_attention_shape,
++        compute_profiler_runtime_start,
++        compute_profiler_runtime_stop,
++    )
++
+ logger = init_logger(__name__)
+ 
+ _FP8_DTYPE = current_platform.fp8_dtype()
+@@ -1171,6 +1179,10 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+         fp8_attention = is_quantized_kv_cache(self.kv_cache_dtype)
+ 
+         num_actual_toks = attn_metadata.num_actual_tokens
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_attention_shape(
++                num_actual_toks, attn_metadata.max_seq_len
++            )
+ 
+         # Inputs and outputs may be padded for CUDA graphs
+         output_padded = output
+@@ -1417,6 +1429,8 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+                         "B12X sparse MLA prefill"
+                     )
+                 elif dcp_use_b12x:
++                    if _COMPUTE_PROF_ENABLED:
++                        compute_profiler_runtime_start("dcp_query_ag")
+                     mqa_q = dcp_b12x_all_gather_heads(
+                         mqa_q,
+                         get_dcp_group(),
+@@ -1427,6 +1441,8 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+                             else self.kv_lora_rank
+                         ),
+                     )
++                    if _COMPUTE_PROF_ENABLED:
++                        compute_profiler_runtime_stop("dcp_query_ag")
+                 elif workspace_gather_eligible:
+                     workspace_gather = getattr(
+                         self.impl, "dcp_all_gather_query_in_workspace", None
+@@ -1440,13 +1456,21 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+                             f"{type(self.impl).__name__} does not support the "
+                             "enabled workspace DCP query gather"
+                         )
++                    if _COMPUTE_PROF_ENABLED:
++                        compute_profiler_runtime_start("dcp_query_ag")
+                     mqa_q = workspace_gather(mqa_q)
++                    if _COMPUTE_PROF_ENABLED:
++                        compute_profiler_runtime_stop("dcp_query_ag")
+                     workspace_gather_used = True
+                     logger.info_once(
+                         "Using borrowed B12X workspaces for sparse MLA DCP prefill"
+                     )
+                 else:
++                    if _COMPUTE_PROF_ENABLED:
++                        compute_profiler_runtime_start("dcp_query_ag")
+                     mqa_q = get_dcp_group().all_gather(mqa_q, dim=1)
++                    if _COMPUTE_PROF_ENABLED:
++                        compute_profiler_runtime_stop("dcp_query_ag")
+ 
+             # call decode attn
+             if not self.impl.is_sparse:
+@@ -1525,12 +1549,20 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+                                 f"{type(self.impl).__name__} does not support "
+                                 "workspace DCP projection"
+                             )
++                        if _COMPUTE_PROF_ENABLED:
++                            compute_profiler_runtime_start("v_up_proj")
+                         attn_out = workspace_project(attn_out, lse, w_uv_dcp)
++                        if _COMPUTE_PROF_ENABLED:
++                            compute_profiler_runtime_stop("v_up_proj")
+                     else:
+                         projected = attn_out.new_empty(
+                             attn_out.shape[0], attn_out.shape[1], self.v_head_dim
+                         )
++                        if _COMPUTE_PROF_ENABLED:
++                            compute_profiler_runtime_start("v_up_proj")
+                         self._v_up_proj_bmm_chunked(attn_out, projected, w_uv_dcp)
++                        if _COMPUTE_PROF_ENABLED:
++                            compute_profiler_runtime_stop("v_up_proj")
+                         attn_out = projected
+                 if dcp_use_a2a:
+                     attn_out = dcp_a2a_lse_reduce(
+@@ -1602,7 +1634,11 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+                 else:
+                     mqa_output_slice.copy_(attn_out.reshape(mqa_output_slice.shape))
+             else:
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_start("v_up_proj")
+                 self._v_up_proj(attn_out, out=mqa_output_slice)
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_stop("v_up_proj")
+ 
+         if quant_key is not None:
+             quant_idx = num_mqa_tokens if mha_use_quant_output else num_actual_toks
+diff --git a/vllm/model_executor/layers/compute_phase_profiler.py b/vllm/model_executor/layers/compute_phase_profiler.py
+new file mode 100644
+index 00000000..fadcdd84
+--- /dev/null
++++ b/vllm/model_executor/layers/compute_phase_profiler.py
+@@ -0,0 +1,915 @@
++# SPDX-License-Identifier: Apache-2.0
++# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++"""One-shot, compile-safe CUDA-event profiler for Gilded Gnosis v20.
++
++The public ``compute_profiler_*`` graph hooks are custom ops with mutable
++tensor dependencies.  Dynamo therefore keeps them in the compiled graph
++without a ``torch.compiler.disable`` graph break.  In decode mode their
++external CUDA events are captured into the real CUDA graph and updated on
++replay; a worker-lifetime device counter, initialized before graph capture,
++distinguishes the first live replay from startup capture.
++"""
++
++from __future__ import annotations
++
++import os
++from typing import Final
++
++import torch
++
++from vllm.config import CUDAGraphMode
++from vllm.forward_context import get_forward_context, is_forward_context_available
++from vllm.logger import init_logger
++from vllm.utils.torch_utils import direct_register_custom_op
++
++logger = init_logger("vllm.compute_phase_profiler")
++
++COMPUTE_PROF_ENABLED: Final = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++
++_PHASES: Final = (
++    "layer_total",
++    "mla_total",
++    "indexer",
++    "attention_path",
++    "dcp_query_ag",
++    "ckv_remap",
++    "ckv_pack",
++    "ckv_ag",
++    "ckv_wait",
++    "ckv_stage",
++    "sparse_attn",
++    "v_up_proj",
++    "dcp_lse_ag",
++    "dcp_lse_correct",
++    "dcp_output_rs",
++    "dcp_a2a_pack",
++    "dcp_a2a",
++    "dcp_a2a_merge",
++    "o_proj_norm",
++    "tp_ar_attention",
++    "moe_next_norm",
++    "moe_stack",
++    # Decode uses the one-grid hybrid kernel. Prefill/fallback dispatches the
++    # kept and NF3 tiers separately, then adds their outputs. Keeping distinct
++    # phase names makes an unexpected route fail the mode-specific ledger.
++    "moe_hybrid_kernel",
++    "moe_kept_kernel",
++    "moe_nf3_kernel",
++    "moe_tier_sum",
++    "tp_ar_moe",
++    # Work-only side-stream durations. They overlap the critical path and are
++    # deliberately excluded from the exclusive wall-time ledger.
++    "ckv_prefetch_pack",
++    "ckv_prefetch_ag",
++)
++_PHASE_INDEX: Final = {name: index for index, name in enumerate(_PHASES)}
++_PARENTS: Final = {
++    "layer_total": None,
++    "mla_total": "layer_total",
++    "indexer": "mla_total",
++    "attention_path": "mla_total",
++    "dcp_query_ag": "attention_path",
++    "ckv_remap": "attention_path",
++    "ckv_pack": "attention_path",
++    "ckv_ag": "attention_path",
++    "ckv_wait": "attention_path",
++    "ckv_stage": "attention_path",
++    "sparse_attn": "attention_path",
++    "v_up_proj": "attention_path",
++    "dcp_lse_ag": "attention_path",
++    "dcp_lse_correct": "attention_path",
++    "dcp_output_rs": "attention_path",
++    "dcp_a2a_pack": "attention_path",
++    "dcp_a2a": "attention_path",
++    "dcp_a2a_merge": "attention_path",
++    "o_proj_norm": "mla_total",
++    "tp_ar_attention": "o_proj_norm",
++    "moe_next_norm": "layer_total",
++    "moe_stack": "moe_next_norm",
++    "moe_hybrid_kernel": "moe_stack",
++    "moe_kept_kernel": "moe_stack",
++    "moe_nf3_kernel": "moe_stack",
++    "moe_tier_sum": "moe_stack",
++    "tp_ar_moe": "moe_stack",
++    "ckv_prefetch_pack": "attention_path",
++    "ckv_prefetch_ag": "attention_path",
++}
++_ATTENTION_CRITICAL_CHILDREN: Final = (
++    "dcp_query_ag",
++    "ckv_remap",
++    "ckv_pack",
++    "ckv_ag",
++    "ckv_wait",
++    "ckv_stage",
++    "sparse_attn",
++    "v_up_proj",
++    "dcp_lse_ag",
++    "dcp_lse_correct",
++    "dcp_output_rs",
++    "dcp_a2a_pack",
++    "dcp_a2a",
++    "dcp_a2a_merge",
++)
++_AUX_PHASES: Final = ("ckv_prefetch_pack", "ckv_prefetch_ag")
++_TP_PHASES: Final = ("tp_ar_attention", "tp_ar_moe")
++_TP_EVENT_MULTIPLIER: Final = 4
++
++# Decode capture records an increment into the selected graph.  Its storage
++# must be allocated and initialized before capture begins: allocating it from
++# the marker implementation would capture torch.zeros() itself and leave no
++# durable initial value for live replay.  gpu_worker calls
++# compute_profiler_prepare() at the pre-capture lifecycle seam.
++_DECODE_REPLAY_COUNTER: torch.Tensor | None = None
++
++
++def _positive_int(name: str, default: int) -> int:
++    try:
++        value = int(os.getenv(name, str(default)))
++    except ValueError:
++        return default
++    return value if value > 0 else default
++
++
++def _nonnegative_int(name: str, default: int) -> int:
++    try:
++        value = int(os.getenv(name, str(default)))
++    except ValueError:
++        return default
++    return value if value >= 0 else default
++
++
++def _nonnegative_float(name: str, default: float) -> float:
++    try:
++        value = float(os.getenv(name, str(default)))
++    except ValueError:
++        return default
++    return value if value >= 0.0 else default
++
++
++class _ComputePhaseProfiler:
++    """Fixed-event, fail-closed state machine for one measured sample."""
++
++    _MAX_DEPTH: Final = 8
++
++    def __init__(self, mode: str) -> None:
++        if mode not in ("prefill", "decode"):
++            raise ValueError("B12X_COMPUTE_PROF_MODE must be prefill or decode")
++        self.mode = mode
++        self.target = _positive_int("B12X_COMPUTE_PROF_CALLS", 78)
++        self.first_layer = _nonnegative_int("B12X_COMPUTE_PROF_FIRST_LAYER", 0)
++        self.num_layers = _positive_int("B12X_COMPUTE_PROF_NUM_LAYERS", 78)
++        self.row_filter = _nonnegative_int("B12X_COMPUTE_PROF_ROWS", 0)
++        self.poll_tokens = _nonnegative_int("B12X_COMPUTE_PROF_POLL_TOKENS", 1)
++        self.expected_tp_attention = _nonnegative_int(
++            "B12X_COMPUTE_PROF_EXPECT_TP_ATTN", 1
++        )
++        self.expected_tp_moe = _nonnegative_int(
++            "B12X_COMPUTE_PROF_EXPECT_TP_MOE", 1
++        )
++        self.baseline_ms = _nonnegative_float(
++            "B12X_COMPUTE_PROF_BASELINE_MS", 0.0
++        )
++        self.top_n = _positive_int("B12X_COMPUTE_PROF_TOP_N", 8)
++
++        if self.mode == "decode" and self.target != self.num_layers:
++            raise ValueError(
++                "decode CUDA-graph profiling requires CALLS == NUM_LAYERS"
++            )
++
++        self.dead = False
++        self.dead_reason = ""
++        self.armed = False
++        self.summarized = False
++        self.poll_pending_logged = False
++        self.collecting = False
++        self.completed = 0
++        self.current_layer = -1
++        self.profile_rows = 0
++        self.depth = 0
++        self.stack: list[str | None] = [None] * self._MAX_DEPTH
++        self.phase_counts = [0] * len(_PHASES)
++        capacities = tuple(
++            self.target * _TP_EVENT_MULTIPLIER
++            if phase in _TP_PHASES
++            else self.target
++            for phase in _PHASES
++        )
++        external = self.mode == "decode"
++        self.starts = tuple(
++            tuple(
++                torch.cuda.Event(enable_timing=True, external=external)
++                for _ in range(capacity)
++            )
++            for capacity in capacities
++        )
++        self.ends = tuple(
++            tuple(
++                torch.cuda.Event(enable_timing=True, external=external)
++                for _ in range(capacity)
++            )
++            for capacity in capacities
++        )
++        self.tp_attention_calls = 0
++        self.tp_attention_bytes = 0
++        self.tp_moe_calls = 0
++        self.tp_moe_bytes = 0
++        self.tp_attention_per_layer = [0] * self.target
++        self.tp_moe_per_layer = [0] * self.target
++        self.context_bucket = 0
++        self.dcp_lse_bytes = 0
++        self.dcp_rs_bytes = 0
++        self.dcp_a2a_bytes = 0
++        if self.mode == "decode" and _DECODE_REPLAY_COUNTER is None:
++            raise RuntimeError(
++                "decode replay counter was not prepared before CUDA capture"
++            )
++        self.capture_replay_counter = (
++            _DECODE_REPLAY_COUNTER if self.mode == "decode" else None
++        )
++
++    def _disarm(self, reason: str, exc: Exception | None = None) -> None:
++        if self.dead:
++            return
++        self.dead = True
++        self.dead_reason = reason
++        logger.info(
++            "B12X_COMPUTE_PROF_V20 state=disarmed mode=%s reason=%s "
++            "completed=%d rows=%d error=%r",
++            self.mode,
++            reason,
++            self.completed,
++            self.profile_rows,
++            exc,
++        )
++
++    def _eligible_rows(self, rows: int) -> bool:
++        return self.row_filter == 0 or rows == self.row_filter
++
++    def start(self, phase: str) -> bool:
++        if self.dead or self.armed or not self.collecting:
++            return False
++        try:
++            phase_index = _PHASE_INDEX[phase]
++            expected_parent = _PARENTS[phase]
++            actual_parent = self.stack[self.depth - 1] if self.depth else None
++            if expected_parent != actual_parent or self.depth >= self._MAX_DEPTH:
++                self._disarm("phase_parent_or_depth")
++                return False
++            occurrence = self.phase_counts[phase_index]
++            if occurrence >= len(self.starts[phase_index]):
++                self._disarm("phase_capacity")
++                return False
++            self.starts[phase_index][occurrence].record()
++            self.stack[self.depth] = phase
++            self.depth += 1
++            return True
++        except Exception as exc:
++            self._disarm("phase_start_exception", exc)
++            return False
++
++    def stop(self, phase: str) -> None:
++        if self.dead or self.armed or not self.collecting:
++            return
++        try:
++            if self.depth <= 0 or self.stack[self.depth - 1] != phase:
++                self._disarm("phase_stop_order")
++                return
++            phase_index = _PHASE_INDEX[phase]
++            occurrence = self.phase_counts[phase_index]
++            self.ends[phase_index][occurrence].record()
++            self.phase_counts[phase_index] = occurrence + 1
++            self.depth -= 1
++            self.stack[self.depth] = None
++        except Exception as exc:
++            self._disarm("phase_stop_exception", exc)
++
++    def _close_layer(self) -> None:
++        if self.current_layer < 0:
++            self._disarm("close_without_layer")
++            return
++        self.stop("moe_next_norm")
++        self.stop("layer_total")
++        if self.dead:
++            return
++        self.completed += 1
++        self.current_layer = -1
++
++    def layer_enter(self, layer_idx: int, rows: int) -> None:
++        if self.dead or self.armed:
++            return
++        if not self.collecting:
++            if layer_idx != self.first_layer or not self._eligible_rows(rows):
++                return
++            self.collecting = True
++            self.profile_rows = rows
++        else:
++            self._close_layer()
++            if self.dead:
++                return
++            if self.completed == self.target:
++                self._arm()
++                return
++
++        expected = self.first_layer + (self.completed % self.num_layers)
++        if layer_idx != expected or rows != self.profile_rows:
++            self._disarm("layer_ordinal_or_rows")
++            return
++        self.current_layer = layer_idx
++        if not self.start("layer_total") or not self.start("mla_total"):
++            self._disarm("layer_open")
++
++    def o_proj_enter(self) -> None:
++        self.start("o_proj_norm")
++
++    def after_attention_norm(self, layer_idx: int) -> None:
++        if self.dead or self.armed or not self.collecting:
++            return
++        if layer_idx != self.current_layer:
++            self._disarm("attention_norm_layer")
++            return
++        self.stop("o_proj_norm")
++        self.stop("mla_total")
++        self.start("moe_next_norm")
++
++    def model_finish(self) -> None:
++        if self.dead or self.armed or not self.collecting:
++            return
++        self._close_layer()
++        if self.dead:
++            return
++        self.collecting = False
++        if self.completed == self.target:
++            self._arm()
++        elif self.mode == "decode":
++            # A captured decode sample is useful only when one graph contains
++            # exactly the requested main-model layer set.
++            self._disarm("decode_incomplete_model")
++
++    def _arm(self) -> None:
++        if self.depth != 0 or self.completed != self.target:
++            self._disarm("arm_incomplete")
++            return
++        self.collecting = False
++        self.armed = True
++        if self.mode == "decode":
++            if not torch.cuda.is_current_stream_capturing():
++                self._disarm("arm_outside_capture")
++                return
++            assert self.capture_replay_counter is not None
++            # This kernel is outside all timed ranges. Capture records the add
++            # without executing it; the first live graph replay changes the
++            # preinitialized counter from zero to one.
++            self.capture_replay_counter.add_(1)
++
++    def record_attention_shape(self, rows: int, context: int) -> None:
++        if not self.dead and not self.armed and self.collecting:
++            self.context_bucket += rows * context
++
++    def record_dcp_lse(self, byte_count: int) -> None:
++        if not self.dead and not self.armed and self.collecting:
++            self.dcp_lse_bytes += byte_count
++
++    def record_dcp_rs(self, byte_count: int) -> None:
++        if not self.dead and not self.armed and self.collecting:
++            self.dcp_rs_bytes += byte_count
++
++    def record_dcp_a2a(self, byte_count: int) -> None:
++        if not self.dead and not self.armed and self.collecting:
++            self.dcp_a2a_bytes += byte_count
++
++    def tp_start(self, byte_count: int) -> str | None:
++        if self.dead or self.armed or not self.collecting:
++            return None
++        phase = None
++        for index in range(self.depth - 1, -1, -1):
++            active = self.stack[index]
++            if active == "o_proj_norm":
++                phase = "tp_ar_attention"
++                break
++            if active == "moe_next_norm":
++                phase = "tp_ar_moe"
++                break
++        if phase is None or not self.start(phase):
++            return None
++        layer_ordinal = self.completed
++        if layer_ordinal >= self.target:
++            self._disarm("tp_layer_ordinal")
++            return None
++        if phase == "tp_ar_attention":
++            self.tp_attention_calls += 1
++            self.tp_attention_bytes += byte_count
++            self.tp_attention_per_layer[layer_ordinal] += 1
++        else:
++            self.tp_moe_calls += 1
++            self.tp_moe_bytes += byte_count
++            self.tp_moe_per_layer[layer_ordinal] += 1
++        return phase
++
++    def _phase_totals(self) -> dict[str, float]:
++        totals = {phase: 0.0 for phase in _PHASES}
++        for phase_index, phase in enumerate(_PHASES):
++            for occurrence in range(self.phase_counts[phase_index]):
++                totals[phase] += self.starts[phase_index][occurrence].elapsed_time(
++                    self.ends[phase_index][occurrence]
++                )
++        return totals
++
++    def ready_for_poll(self, scheduled_tokens: int) -> bool:
++        if self.dead or self.summarized or not self.armed:
++            return False
++        if self.mode == "decode" and (
++            self.poll_tokens > 0 and scheduled_tokens != self.poll_tokens
++        ):
++            return False
++        return os.getenv("B12X_VLLM_ENGINE_STARTED", "0") == "1"
++
++    def summarize(self) -> None:
++        try:
++            torch.cuda.synchronize()
++            if self.mode == "decode":
++                assert self.capture_replay_counter is not None
++                replay_count = int(self.capture_replay_counter.item())
++                if replay_count < 0:
++                    self._disarm("invalid_replay_counter")
++                    return
++                if replay_count == 0:
++                    if not self.poll_pending_logged:
++                        logger.info(
++                            "B12X_COMPUTE_PROF_V20 state=awaiting_replay "
++                            "rows=%d scheduled_capture_count=%d",
++                            self.profile_rows,
++                            replay_count,
++                        )
++                        self.poll_pending_logged = True
++                    return
++            totals = self._phase_totals()
++            layer_total = totals["layer_total"]
++            attention_children = sum(
++                totals[phase] for phase in _ATTENTION_CRITICAL_CHILDREN
++            )
++            moe_kernel_phases = (
++                "moe_hybrid_kernel",
++                "moe_kept_kernel",
++                "moe_nf3_kernel",
++                "moe_tier_sum",
++            )
++            exclusive = {
++                "layer_transition_other": layer_total
++                - totals["mla_total"]
++                - totals["moe_next_norm"],
++                "mla_prepare": totals["mla_total"]
++                - totals["indexer"]
++                - totals["attention_path"]
++                - totals["o_proj_norm"],
++                "indexer": totals["indexer"],
++                "attention_local": totals["attention_path"] - attention_children,
++                "dcp_query_ag": totals["dcp_query_ag"],
++                "ckv_remap": totals["ckv_remap"],
++                "ckv_pack": totals["ckv_pack"],
++                "ckv_ag": totals["ckv_ag"],
++                "ckv_wait": totals["ckv_wait"],
++                "ckv_stage": totals["ckv_stage"],
++                "sparse_attn": totals["sparse_attn"],
++                "v_up_proj": totals["v_up_proj"],
++                "dcp_lse_ag": totals["dcp_lse_ag"],
++                "dcp_lse_correct": totals["dcp_lse_correct"],
++                "dcp_output_rs": totals["dcp_output_rs"],
++                "dcp_a2a_pack": totals["dcp_a2a_pack"],
++                "dcp_a2a": totals["dcp_a2a"],
++                "dcp_a2a_merge": totals["dcp_a2a_merge"],
++                "o_proj_compute_norm": totals["o_proj_norm"]
++                - totals["tp_ar_attention"],
++                "tp_ar_attention": totals["tp_ar_attention"],
++                "moe_outer_next_norm": totals["moe_next_norm"]
++                - totals["moe_stack"],
++                "moe_hybrid_kernel": totals["moe_hybrid_kernel"],
++                "moe_kept_kernel": totals["moe_kept_kernel"],
++                "moe_nf3_kernel": totals["moe_nf3_kernel"],
++                "moe_tier_sum": totals["moe_tier_sum"],
++                "moe_stack_other": totals["moe_stack"]
++                - sum(totals[name] for name in moe_kernel_phases)
++                - totals["tp_ar_moe"],
++                "tp_ar_moe": totals["tp_ar_moe"],
++            }
++            exclusive_sum = sum(exclusive.values())
++            unaccounted_ms = layer_total - exclusive_sum
++            unaccounted_pct = (
++                100.0 * unaccounted_ms / layer_total if layer_total else 100.0
++            )
++            negative_buckets = sum(
++                value / self.completed < -0.05 for value in exclusive.values()
++            )
++            common_required = (
++                "layer_total",
++                "mla_total",
++                "indexer",
++                "attention_path",
++                "sparse_attn",
++                "v_up_proj",
++                "o_proj_norm",
++                "moe_next_norm",
++                "moe_stack",
++            )
++            mode_required = (
++                ("moe_hybrid_kernel",)
++                if self.mode == "decode"
++                else ("moe_kept_kernel", "moe_nf3_kernel", "moe_tier_sum")
++            )
++            mode_forbidden = (
++                ("moe_kept_kernel", "moe_nf3_kernel", "moe_tier_sum")
++                if self.mode == "decode"
++                else ("moe_hybrid_kernel",)
++            )
++            phase_count_valid = all(
++                self.phase_counts[_PHASE_INDEX[name]] == self.target
++                for name in common_required + mode_required
++            ) and all(
++                self.phase_counts[_PHASE_INDEX[name]] == 0
++                for name in mode_forbidden
++            )
++            ledger_valid = (
++                self.depth == 0
++                and phase_count_valid
++                and negative_buckets == 0
++                and abs(unaccounted_pct) <= 2.0
++            )
++            attention_bad_layers = sum(
++                self.tp_attention_per_layer[index] != self.expected_tp_attention
++                for index in range(self.completed)
++            )
++            moe_bad_layers = sum(
++                self.tp_moe_per_layer[index] != self.expected_tp_moe
++                for index in range(self.completed)
++            )
++            ordinal_valid = attention_bad_layers == 0 and moe_bad_layers == 0
++            mean_layer_ms = layer_total / self.completed
++            baseline_error_pct = (
++                100.0 * abs(mean_layer_ms - self.baseline_ms) / self.baseline_ms
++                if self.baseline_ms > 0.0
++                else 0.0
++            )
++            baseline_valid = self.baseline_ms == 0.0 or baseline_error_pct <= 5.0
++            per_layer = {
++                name: value / self.completed for name, value in exclusive.items()
++            }
++            top = sorted(per_layer.items(), key=lambda item: item[1], reverse=True)[
++                : self.top_n
++            ]
++            exclusive_text = ",".join(
++                f"{name}:{value:.4f}" for name, value in per_layer.items()
++            )
++            top_text = ",".join(f"{name}:{value:.4f}" for name, value in top)
++            aux_text = ",".join(
++                f"{name}:{totals[name] / self.completed:.4f}"
++                for name in _AUX_PHASES
++            )
++            phase_counts_text = ",".join(
++                f"{name}:{self.phase_counts[_PHASE_INDEX[name]]}"
++                for name in common_required + mode_required + mode_forbidden
++            )
++            route = "hybrid_one_grid" if self.mode == "decode" else "split_tiers"
++            rank = 0
++            if torch.distributed.is_initialized():
++                rank = torch.distributed.get_rank()
++            logger.info(
++                "B12X_COMPUTE_PROF_V20 rank=%d mode=%s calls=%d rows=%d "
++                "route=%s mean_layer_ms=%.4f ledger_valid=%d ordinal_valid=%d "
++                "phase_count_valid=%d phase_counts=%s "
++                "baseline_ms=%.4f baseline_error_pct=%.2f baseline_valid=%d "
++                "unaccounted_ms=%.6f unaccounted_pct=%.4f negative_buckets=%d "
++                "tp_attention_bad_layers=%d tp_moe_bad_layers=%d "
++                "tp_attention_calls=%d tp_attention_bytes=%d "
++                "tp_moe_calls=%d tp_moe_bytes=%d context_bucket=%d "
++                "dcp_lse_bytes=%d dcp_rs_bytes=%d dcp_a2a_bytes=%d "
++                "top_exclusive_ms=%s "
++                "exclusive_ms=%s aux_overlap_ms=%s",
++                rank,
++                self.mode,
++                self.completed,
++                self.profile_rows,
++                route,
++                mean_layer_ms,
++                int(ledger_valid),
++                int(ordinal_valid),
++                int(phase_count_valid),
++                phase_counts_text,
++                self.baseline_ms,
++                baseline_error_pct,
++                int(baseline_valid),
++                unaccounted_ms,
++                unaccounted_pct,
++                negative_buckets,
++                attention_bad_layers,
++                moe_bad_layers,
++                self.tp_attention_calls,
++                self.tp_attention_bytes,
++                self.tp_moe_calls,
++                self.tp_moe_bytes,
++                self.context_bucket,
++                self.dcp_lse_bytes,
++                self.dcp_rs_bytes,
++                self.dcp_a2a_bytes,
++                top_text,
++                exclusive_text,
++                aux_text,
++            )
++            self.summarized = True
++            self.dead = True
++        except Exception as exc:
++            self._disarm("summarize_exception", exc)
++
++
++_PROFILER: _ComputePhaseProfiler | None = None
++_INIT_FAILED = False
++_NO_PROFILER_POLL_LOGGED = False
++
++
++def _mode() -> str:
++    return os.getenv("B12X_COMPUTE_PROF_MODE", "prefill").strip().lower()
++
++
++def compute_profiler_prepare() -> None:
++    """Allocate decode replay evidence outside CUDA graph capture.
++
++    This is an explicit worker lifecycle hook rather than lazy marker state:
++    CUDA capture records allocator initialization kernels instead of executing
++    them, which cannot establish the counter's live pre-replay value.
++    """
++
++    global _DECODE_REPLAY_COUNTER
++    if not COMPUTE_PROF_ENABLED or _mode() != "decode":
++        return
++    if _DECODE_REPLAY_COUNTER is not None:
++        return
++    if torch.cuda.is_current_stream_capturing():
++        raise RuntimeError(
++            "decode replay counter preparation must run before CUDA capture"
++        )
++    counter = torch.zeros((), dtype=torch.int32, device="cuda")
++    torch.cuda.synchronize()
++    initial = int(counter.item())
++    if initial != 0:
++        raise RuntimeError(
++            f"decode replay counter initialization returned {initial}, expected 0"
++        )
++    _DECODE_REPLAY_COUNTER = counter
++    logger.info(
++        "B12X_COMPUTE_PROF_V20 state=replay_counter_prepared initial=%d",
++        initial,
++    )
++
++
++def _validate_configuration() -> None:
++    if not COMPUTE_PROF_ENABLED:
++        return
++    mode = _mode()
++    rows = _nonnegative_int("B12X_COMPUTE_PROF_ROWS", 0)
++    if mode not in ("prefill", "decode"):
++        raise ValueError("B12X_COMPUTE_PROF_MODE must be prefill or decode")
++    if mode == "decode" and rows == 0:
++        raise ValueError(
++            "decode profiling requires B12X_COMPUTE_PROF_ROWS to select one "
++            "CUDA-graph capture size"
++        )
++    logger.info(
++        "B12X_COMPUTE_PROF_V20 state=configured mode=%s rows=%d calls=%d "
++        "num_layers=%d poll_tokens=%d",
++        mode,
++        rows,
++        _positive_int("B12X_COMPUTE_PROF_CALLS", 78),
++        _positive_int("B12X_COMPUTE_PROF_NUM_LAYERS", 78),
++        _nonnegative_int("B12X_COMPUTE_PROF_POLL_TOKENS", 1),
++    )
++
++
++_validate_configuration()
++
++
++def _can_initialize(layer_idx: int, rows: int) -> bool:
++    if not COMPUTE_PROF_ENABLED:
++        return False
++    mode = _mode()
++    if mode == "prefill":
++        if torch.cuda.is_current_stream_capturing():
++            return False
++        if os.getenv("B12X_VLLM_ENGINE_STARTED", "0") != "1":
++            return False
++    elif mode == "decode":
++        if not torch.cuda.is_current_stream_capturing():
++            return False
++        # V2 CudaGraphManager captures PIECEWISE descriptors before FULL.
++        # Both execute the same ROWS-shaped model markers, so a rows-only
++        # selector arms on the wrong graph. FULL capture deliberately calls
++        # its forward_fn with runtime mode NONE inside torch.cuda.graph();
++        # PIECEWISE capture exposes PIECEWISE. Require that exact distinction
++        # so the recorded events and replay counter belong to the graph that
++        # live uniform MTP decode dispatches.
++        if not is_forward_context_available():
++            return False
++        if get_forward_context().cudagraph_runtime_mode != CUDAGraphMode.NONE:
++            return False
++    else:
++        return False
++    first_layer = _nonnegative_int("B12X_COMPUTE_PROF_FIRST_LAYER", 0)
++    row_filter = _nonnegative_int("B12X_COMPUTE_PROF_ROWS", 0)
++    return layer_idx == first_layer and (row_filter == 0 or rows == row_filter)
++
++
++def _maybe_profiler(layer_idx: int, rows: int) -> _ComputePhaseProfiler | None:
++    global _INIT_FAILED, _PROFILER
++    if _PROFILER is not None:
++        return _PROFILER
++    if _INIT_FAILED or not _can_initialize(layer_idx, rows):
++        return None
++    try:
++        _PROFILER = _ComputePhaseProfiler(_mode())
++    except Exception as exc:
++        _INIT_FAILED = True
++        logger.info(
++            "B12X_COMPUTE_PROF_V20 state=init_failed layer=%d rows=%d error=%r",
++            layer_idx,
++            rows,
++            exc,
++        )
++        return None
++    if _mode() == "decode":
++        logger.info(
++            "B12X_COMPUTE_PROF_V20 state=capture_selected rows=%d "
++            "runtime_mode=%s",
++            rows,
++            get_forward_context().cudagraph_runtime_mode.name,
++        )
++    return _PROFILER
++
++
++def _phase_start_impl(dependency: torch.Tensor, phase_index: int) -> None:
++    del dependency
++    profiler = _PROFILER
++    if profiler is not None and 0 <= phase_index < len(_PHASES):
++        profiler.start(_PHASES[phase_index])
++
++
++def _phase_stop_impl(dependency: torch.Tensor, phase_index: int) -> None:
++    del dependency
++    profiler = _PROFILER
++    if profiler is not None and 0 <= phase_index < len(_PHASES):
++        profiler.stop(_PHASES[phase_index])
++
++
++def _layer_enter_impl(dependency: torch.Tensor, layer_idx: int) -> None:
++    rows = int(dependency.shape[0])
++    profiler = _maybe_profiler(layer_idx, rows)
++    if profiler is not None:
++        profiler.layer_enter(layer_idx, rows)
++
++
++def _o_proj_enter_impl(dependency: torch.Tensor) -> None:
++    del dependency
++    if _PROFILER is not None:
++        _PROFILER.o_proj_enter()
++
++
++def _after_attention_norm_impl(dependency: torch.Tensor, layer_idx: int) -> None:
++    del dependency
++    if _PROFILER is not None:
++        _PROFILER.after_attention_norm(layer_idx)
++
++
++def _model_finish_impl(dependency: torch.Tensor) -> None:
++    del dependency
++    if _PROFILER is not None:
++        _PROFILER.model_finish()
++
++
++def _marker_fake(*args, **kwargs) -> None:
++    del args, kwargs
++
++
++direct_register_custom_op(
++    op_name="compute_profiler_phase_start",
++    op_func=_phase_start_impl,
++    mutates_args=["dependency"],
++    fake_impl=_marker_fake,
++)
++direct_register_custom_op(
++    op_name="compute_profiler_phase_stop",
++    op_func=_phase_stop_impl,
++    mutates_args=["dependency"],
++    fake_impl=_marker_fake,
++)
++direct_register_custom_op(
++    op_name="compute_profiler_layer_enter",
++    op_func=_layer_enter_impl,
++    mutates_args=["dependency"],
++    fake_impl=_marker_fake,
++)
++direct_register_custom_op(
++    op_name="compute_profiler_o_proj_enter",
++    op_func=_o_proj_enter_impl,
++    mutates_args=["dependency"],
++    fake_impl=_marker_fake,
++)
++direct_register_custom_op(
++    op_name="compute_profiler_after_attention_norm",
++    op_func=_after_attention_norm_impl,
++    mutates_args=["dependency"],
++    fake_impl=_marker_fake,
++)
++direct_register_custom_op(
++    op_name="compute_profiler_model_finish",
++    op_func=_model_finish_impl,
++    mutates_args=["dependency"],
++    fake_impl=_marker_fake,
++)
++
++
++def compute_profiler_phase_start(dependency: torch.Tensor, phase: str) -> None:
++    torch.ops.vllm.compute_profiler_phase_start(dependency, _PHASE_INDEX[phase])
++
++
++def compute_profiler_phase_stop(dependency: torch.Tensor, phase: str) -> None:
++    torch.ops.vllm.compute_profiler_phase_stop(dependency, _PHASE_INDEX[phase])
++
++
++def compute_profiler_layer_enter(dependency: torch.Tensor, layer_idx: int) -> None:
++    torch.ops.vllm.compute_profiler_layer_enter(dependency, layer_idx)
++
++
++def compute_profiler_o_proj_enter(dependency: torch.Tensor) -> None:
++    torch.ops.vllm.compute_profiler_o_proj_enter(dependency)
++
++
++def compute_profiler_after_attention_norm(
++    dependency: torch.Tensor, layer_idx: int
++) -> None:
++    torch.ops.vllm.compute_profiler_after_attention_norm(dependency, layer_idx)
++
++
++def compute_profiler_model_finish(dependency: torch.Tensor) -> None:
++    torch.ops.vllm.compute_profiler_model_finish(dependency)
++
++
++# Runtime hooks below are called from opaque custom-op implementations. They do
++# not participate in Dynamo tracing and intentionally have no compiler-disable
++# decorator.
++def compute_profiler_runtime_start(phase: str) -> None:
++    if _PROFILER is not None:
++        _PROFILER.start(phase)
++
++
++def compute_profiler_runtime_stop(phase: str) -> None:
++    if _PROFILER is not None:
++        _PROFILER.stop(phase)
++
++
++def compute_profiler_attention_shape(rows: int, context: int) -> None:
++    if _PROFILER is not None:
++        _PROFILER.record_attention_shape(rows, context)
++
++
++def compute_profiler_dcp_lse(byte_count: int) -> None:
++    if _PROFILER is not None:
++        _PROFILER.record_dcp_lse(byte_count)
++
++
++def compute_profiler_dcp_rs(byte_count: int) -> None:
++    if _PROFILER is not None:
++        _PROFILER.record_dcp_rs(byte_count)
++
++
++def compute_profiler_dcp_a2a(byte_count: int) -> None:
++    if _PROFILER is not None:
++        _PROFILER.record_dcp_a2a(byte_count)
++
++
++def compute_profiler_tp_start(byte_count: int) -> str | None:
++    if _PROFILER is None:
++        return None
++    return _PROFILER.tp_start(byte_count)
++
++
++def compute_profiler_tp_stop(phase: str | None) -> None:
++    if _PROFILER is not None and phase is not None:
++        _PROFILER.stop(phase)
++
++
++def compute_profiler_poll(scheduled_tokens: int) -> None:
++    global _NO_PROFILER_POLL_LOGGED
++    profiler = _PROFILER
++    if (
++        profiler is None
++        and COMPUTE_PROF_ENABLED
++        and not _INIT_FAILED
++        and not _NO_PROFILER_POLL_LOGGED
++        and os.getenv("B12X_VLLM_ENGINE_STARTED", "0") == "1"
++    ):
++        logger.info(
++            "B12X_COMPUTE_PROF_V20 state=no_selected_capture "
++            "configured_rows=%d scheduled_tokens=%d",
++            _nonnegative_int("B12X_COMPUTE_PROF_ROWS", 0),
++            scheduled_tokens,
++        )
++        _NO_PROFILER_POLL_LOGGED = True
++        return
++    if profiler is not None and profiler.ready_for_poll(scheduled_tokens):
++        profiler.summarize()
+diff --git a/vllm/model_executor/layers/mla.py b/vllm/model_executor/layers/mla.py
+index 1d008699..bd4a2e59 100644
+--- a/vllm/model_executor/layers/mla.py
++++ b/vllm/model_executor/layers/mla.py
+@@ -14,6 +14,14 @@ from vllm.model_executor.custom_op import PluggableLayer
+ from vllm.model_executor.layers.attention import MLAAttention
+ from vllm.model_executor.layers.quantization import QuantizationConfig
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++if _COMPUTE_PROF_ENABLED:
++    from vllm.model_executor.layers.compute_phase_profiler import (
++        compute_profiler_o_proj_enter,
++        compute_profiler_phase_start,
++        compute_profiler_phase_stop,
++    )
++
+ _NVFP4_MLA_SCALES_ENV = "VLLM_NVFP4_MLA_SCALES_FILE"
+ _NVFP4_MLA_SCALES_FORMAT = "nvfp4_ds_mla_outer_scale_v1"
+ _NVFP4_MLA_NUM_LAYERS = 78
+@@ -323,16 +331,25 @@ class MultiHeadLatentAttentionWrapper(PluggableLayer):
+             )
+ 
+         if self.indexer and self.is_sparse and not self.skip_topk:
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_phase_start(hidden_states, "indexer")
+             self.indexer(hidden_states, q_c, positions, self.indexer_rope_emb)
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_phase_stop(hidden_states, "indexer")
+ 
+         if llama_4_scaling is not None:
+             q *= llama_4_scaling
+ 
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_phase_start(q, "attention_path")
+         attn_out = self.mla_attn(
+             q,
+             kv_c_for_cache,
+             k_pe,
+             output_shape=(hidden_states.shape[0], self.num_heads * self.v_head_dim),
+         )
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_phase_stop(attn_out, "attention_path")
++            compute_profiler_o_proj_enter(attn_out)
+ 
+         return self.o_proj(attn_out)[0]
+diff --git a/vllm/model_executor/layers/quantization/nvfp4_nf3_hybrid.py b/vllm/model_executor/layers/quantization/nvfp4_nf3_hybrid.py
+index 62625ed6..8a93b023 100644
+--- a/vllm/model_executor/layers/quantization/nvfp4_nf3_hybrid.py
++++ b/vllm/model_executor/layers/quantization/nvfp4_nf3_hybrid.py
+@@ -26,6 +26,7 @@ launch with an expert map.
+ """
+ 
+ import dataclasses
++import os
+ import re
+ from typing import TYPE_CHECKING, Any
+ 
+@@ -53,6 +54,13 @@ if TYPE_CHECKING:
+ 
+ logger = init_logger(__name__)
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++if _COMPUTE_PROF_ENABLED:
++    from vllm.model_executor.layers.compute_phase_profiler import (
++        compute_profiler_phase_start,
++        compute_profiler_phase_stop,
++    )
++
+ # Pinned CTA tiles (fc1_tile_k, fc1_tile_n, fc2_tile_k, fc2_tile_n): the NF3
+ # flat-span weight layout is packed for a SPECIFIC tile_n, but the kernel's
+ # auto tile selection is m-dependent (fc1_tile_n flips 128<->256 across m).
+@@ -1266,7 +1274,12 @@ class NvFp4Nf3HybridMoEMethod(FusedMoEMethodBase):
+                 and weights.numel() == m * _GRID188_TOPK
+             ):
+                 logger.info_once("nvfp4_nf3_hybrid: executing hybrid one-grid decode")
+-                return self._run_grid188(layer, x, weights, grid_ids)
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_phase_start(x, "moe_hybrid_kernel")
++                output = self._run_grid188(layer, x, weights, grid_ids)
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_phase_stop(output, "moe_hybrid_kernel")
++                return output
+         if state.num_nf3 == 0:
+             # Uniform-NVFP4 layer (e.g. MTP head): single-tier launch.
+             output = torch.empty((m, state.hidden_size), dtype=x.dtype, device=x.device)
+@@ -1280,7 +1293,12 @@ class NvFp4Nf3HybridMoEMethod(FusedMoEMethodBase):
+                 output,
+                 decode,
+             )
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_phase_start(x, "moe_kept_kernel")
+         out_kept = self._run_kept(layer, x, weights, topk_ids, decode)
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_phase_stop(out_kept, "moe_kept_kernel")
++            compute_profiler_phase_start(x, "moe_nf3_kernel")
+         out_nf3 = self._run_tier(
+             x,
+             weights,
+@@ -1291,7 +1309,13 @@ class NvFp4Nf3HybridMoEMethod(FusedMoEMethodBase):
+             runtime.out_nf3[:m],
+             decode,
+         )
+-        return out_kept + out_nf3
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_phase_stop(out_nf3, "moe_nf3_kernel")
++            compute_profiler_phase_start(out_kept, "moe_tier_sum")
++        output = out_kept + out_nf3
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_phase_stop(output, "moe_tier_sum")
++        return output
+ 
+ 
+ NvFp4Nf3HybridConfig.FusedMoEMethodCls = NvFp4Nf3HybridMoEMethod
+diff --git a/vllm/model_executor/models/deepseek_v2.py b/vllm/model_executor/models/deepseek_v2.py
+index 134500d1..68042e0f 100644
+--- a/vllm/model_executor/models/deepseek_v2.py
++++ b/vllm/model_executor/models/deepseek_v2.py
+@@ -24,6 +24,7 @@
+ # limitations under the License.
+ """Inference-only DeepseekV2/DeepseekV3 model."""
+ 
++import os
+ import typing
+ from collections.abc import Callable, Iterable
+ from itertools import islice
+@@ -101,6 +102,16 @@ from vllm.v1.attention.backends.mla.indexer import (
+ )
+ from vllm.v1.kv_cache_interface import KVCacheSpec, MLAAttentionSpec
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++if _COMPUTE_PROF_ENABLED:
++    from vllm.model_executor.layers.compute_phase_profiler import (
++        compute_profiler_after_attention_norm,
++        compute_profiler_layer_enter,
++        compute_profiler_model_finish,
++        compute_profiler_phase_start,
++        compute_profiler_phase_stop,
++    )
++
+ from .interfaces import (
+     MixtureOfExperts,
+     SupportsEagle,
+@@ -409,6 +420,8 @@ class DeepseekV2MoE(nn.Module):
+         if self.is_sequence_parallel and not already_sequence_parallel:
+             hidden_states = sequence_parallel_chunk(hidden_states)
+ 
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_phase_start(hidden_states, "moe_stack")
+         if self.experts.is_internal_router:
+             final_hidden_states = self.experts(
+                 hidden_states=hidden_states, router_logits=hidden_states
+@@ -418,6 +431,8 @@ class DeepseekV2MoE(nn.Module):
+             final_hidden_states = self.experts(
+                 hidden_states=hidden_states, router_logits=router_logits
+             )
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_phase_stop(final_hidden_states, "moe_stack")
+ 
+         if self.is_sequence_parallel and not already_sequence_parallel:
+             final_hidden_states = tensor_model_parallel_all_gather(
+@@ -1418,6 +1433,9 @@ class DeepseekV2DecoderLayer(nn.Module):
+         else:
+             hidden_states, residual = self.input_layernorm(hidden_states, residual)
+ 
++        if _COMPUTE_PROF_ENABLED and not self.use_mha:
++            compute_profiler_layer_enter(hidden_states, self.layer_idx)
++
+         if input_is_sequence_parallel:
+             hidden_states = tensor_model_parallel_all_gather(hidden_states, 0)
+             hidden_states = hidden_states[:full_num_tokens]
+@@ -1452,6 +1470,8 @@ class DeepseekV2DecoderLayer(nn.Module):
+ 
+         # Fully Connected
+         hidden_states, residual = self.post_attention_layernorm(hidden_states, residual)
++        if _COMPUTE_PROF_ENABLED and not self.use_mha:
++            compute_profiler_after_attention_norm(hidden_states, self.layer_idx)
+         if self.use_sequence_parallel_moe:
+             hidden_states = self.mlp(
+                 hidden_states,
+@@ -1642,6 +1662,8 @@ class DeepseekV2Model(nn.Module):
+             aux_hidden_states.append(hidden_states + residual)
+ 
+         hidden_states, _ = self.norm(hidden_states, residual)
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_model_finish(hidden_states)
+         if len(aux_hidden_states) > 0:
+             return hidden_states, aux_hidden_states
+         return hidden_states
+diff --git a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+index ff6a23aa..839d06b5 100644
+--- a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
++++ b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+@@ -62,6 +62,13 @@ from vllm.v1.attention.backends.utils import (
+ from vllm.v1.kv_cache_interface import AttentionSpec
+ from vllm.v1.worker.workspace import current_workspace_manager
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++if _COMPUTE_PROF_ENABLED:
++    from vllm.model_executor.layers.compute_phase_profiler import (
++        compute_profiler_runtime_start,
++        compute_profiler_runtime_stop,
++    )
++
+ if TYPE_CHECKING:
+     from vllm.model_executor.models.deepseek_v2 import Indexer
+ 
+@@ -1788,6 +1795,10 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+         else:
+             stream_ctx = torch.cuda.stream(torch.cuda.current_stream())
+         with stream_ctx:
++            pack_phase = "ckv_prefetch_pack" if stream is not None else "ckv_pack"
++            ag_phase = "ckv_prefetch_ag" if stream is not None else "ckv_ag"
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_runtime_start(pack_phase)
+             if local_tokens:
+                 ops.cp_gather_cache(
+                     src_cache=kv_cache,
+@@ -1798,6 +1809,8 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                 )
+             if local_tokens < padded_tokens:
+                 local_buffer[local_tokens:padded_tokens].zero_()
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_runtime_stop(pack_phase)
+ 
+             from vllm.distributed.parallel_state import (
+                 get_dcp_ckv_prefetch_group,
+@@ -1811,11 +1824,15 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+             dcp_group = (
+                 get_dcp_ckv_prefetch_group() if stream is not None else get_dcp_group()
+             )
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_runtime_start(ag_phase)
+             _dcp_all_gather_current_stream(
+                 dcp_group,
+                 local_buffer[:padded_tokens].view(-1),
+                 gathered_buffer[: self.dcp_world_size * padded_tokens].view(-1),
+             )
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_runtime_stop(ag_phase)
+         # Keep the cache geometry stable across requests. CuTe/B12X caches the
+         # compiled prefill launch, while ``padded_tokens`` grows with context;
+         # exposing a differently sized first dimension on every request can
+@@ -2121,6 +2138,8 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+         assert self.topk_indices_buffer is not None
+         topk_indices = self.topk_indices_buffer[:num_actual_toks]
+         per_token_cache = attn_metadata.cache_seq_lens_per_token[:num_actual_toks]
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_runtime_start("ckv_remap")
+         if use_ckv_gather:
+             assert attn_metadata.req_id_per_token is not None
+             assert attn_metadata.ckv_page_table_1 is not None
+@@ -2199,6 +2218,8 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+             # directly into the shared top-k buffer.
+             selected_indices = topk_indices
+             nsa_cache_seqlens = per_token_cache
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_runtime_stop("ckv_remap")
+ 
+         # KV cache -> paged rank-3 uint8. B12X unified SM120 kernels consume
+         # flat slot ids in selected_indices, but compute raw byte offsets as:
+@@ -2237,7 +2258,11 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                     B12xMLASparseImpl._all_layer_kv_caches.append(None)
+                 B12xMLASparseImpl._all_layer_kv_caches[layer_idx] = kv_cache
+             if B12xMLASparseImpl._shared_gather_event is not None:
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_start("ckv_wait")
+                 B12xMLASparseImpl._shared_gather_event.wait()
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_stop("ckv_wait")
+                 half_nbytes = (
+                     (self.dcp_world_size + 1)
+                     * self._ckv_local_capacity
+@@ -2254,9 +2279,13 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                 kv_cache = gathered_buffer[
+                     : self.dcp_world_size * self._ckv_local_capacity
+                 ].view(-1, self.block_size, self._kv_record_bytes)
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_start("ckv_stage")
+                 self._append_current_chunk_to_gathered(
+                     kv_cache, attn_metadata, layer, num_actual_toks
+                 )
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_stop("ckv_stage")
+             else:
+                 kv_cache = self._dcp_gather_ckv(kv_cache, attn_metadata, ckv_workspace)
+             logger.info_once(
+@@ -2315,6 +2344,8 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                 nsa_cache_seqlens_int32=nsa_cache_seqlens,
+             )
+             if self.need_to_return_lse_for_decode:
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_start("sparse_attn")
+                 out, lse = cast(
+                     tuple[torch.Tensor, torch.Tensor],
+                     self._sparse_mla_decode_forward(
+@@ -2328,6 +2359,8 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                         **kernel_format_kwargs,
+                     ),
+                 )
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_stop("sparse_attn")
+                 if self._pad_heads:
+                     assert dense_out_workspace is not None
+                     dense_out = dense_out_workspace[:num_actual_toks]
+@@ -2335,6 +2368,8 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                     out = dense_out
+                     lse = lse[:, : self._input_num_heads]
+                 return out, lse
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_runtime_start("sparse_attn")
+             out = cast(
+                 torch.Tensor,
+                 self._sparse_mla_decode_forward(
+@@ -2346,6 +2381,8 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                     **kernel_format_kwargs,
+                 ),
+             )
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_runtime_stop("sparse_attn")
+             if self._pad_heads:
+                 assert dense_out_workspace is not None
+                 dense_out = dense_out_workspace[:num_actual_toks]
+@@ -2379,6 +2416,8 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+             )
+             lse = None
+             if self.need_to_return_lse_for_decode and not use_ckv_gather:
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_start("sparse_attn")
+                 out, lse = cast(
+                     tuple[torch.Tensor, torch.Tensor],
+                     self._sparse_mla_extend_forward(
+@@ -2391,7 +2430,11 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                         **kernel_format_kwargs,
+                     ),
+                 )
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_stop("sparse_attn")
+             else:
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_start("sparse_attn")
+                 out = cast(
+                     torch.Tensor,
+                     self._sparse_mla_extend_forward(
+@@ -2402,6 +2445,8 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                         **kernel_format_kwargs,
+                     ),
+                 )
++                if _COMPUTE_PROF_ENABLED:
++                    compute_profiler_runtime_stop("sparse_attn")
+             if self._pad_heads and not use_ckv_gather:
+                 assert dense_out_workspace is not None
+                 dense_out = dense_out_workspace[:num_actual_toks]
+diff --git a/vllm/v1/attention/ops/common.py b/vllm/v1/attention/ops/common.py
+index 2096e52b..c2c2ab6e 100644
+--- a/vllm/v1/attention/ops/common.py
++++ b/vllm/v1/attention/ops/common.py
+@@ -1,5 +1,6 @@
+ # SPDX-License-Identifier: Apache-2.0
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++import os
+ from collections.abc import Callable
+ 
+ import torch
+@@ -8,6 +9,15 @@ from vllm.distributed.parallel_state import GroupCoordinator
+ from vllm.triton_utils import tl, triton
+ from vllm.utils.math_utils import next_power_of_2
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++if _COMPUTE_PROF_ENABLED:
++    from vllm.model_executor.layers.compute_phase_profiler import (
++        compute_profiler_dcp_lse,
++        compute_profiler_dcp_rs,
++        compute_profiler_runtime_start,
++        compute_profiler_runtime_stop,
++    )
++
+ 
+ @triton.jit
+ def _correct_attn_cp_out_kernel(
+@@ -211,9 +221,19 @@ def _cp_lse_common(
+         ctx = CPTritonContext()
+ 
+     cp_attn_lse = cp_attn_lse.contiguous()
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_start("dcp_lse_ag")
+     lses = cp_group.all_gather(cp_attn_lse, dim=0).reshape(
+         (cp_group.world_size,) + cp_attn_lse.shape
+     )
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_stop("dcp_lse_ag")
++        compute_profiler_dcp_lse(
++            cp_attn_lse.numel()
++            * cp_attn_lse.element_size()
++            * (cp_group.world_size - 1)
++        )
++        compute_profiler_runtime_start("dcp_lse_correct")
+     out, lse = correct_attn_out(
+         cp_attn_out,
+         lses,
+@@ -221,6 +241,8 @@ def _cp_lse_common(
+         ctx,
+         is_lse_base_on_e=is_lse_base_on_e,
+     )
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_stop("dcp_lse_correct")
+     return out, lse
+ 
+ 
+@@ -240,10 +262,15 @@ def cp_lse_ag_out_rs(
+     out, lse = _cp_lse_common(
+         cp_attn_out, cp_attn_lse, cp_group, ctx=ctx, is_lse_base_on_e=is_lse_base_on_e
+     )
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_dcp_rs(out.numel() * out.element_size())
++        compute_profiler_runtime_start("dcp_output_rs")
+     if head_major_output:
+         out = cp_group.reduce_scatter_head_major(out, dim=1)
+     else:
+         out = cp_group.reduce_scatter(out, dim=1)
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_stop("dcp_output_rs")
+ 
+     if return_lse:
+         cp_num_heads = lse.shape[1] // cp_group.world_size
+@@ -278,7 +305,12 @@ def cp_lse_ag_out_rs_into(
+     output = output_provider(out)
+     if not isinstance(output, torch.Tensor):
+         raise TypeError("DCP output provider must return a tensor")
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_dcp_rs(out.numel() * out.element_size())
++        compute_profiler_runtime_start("dcp_output_rs")
+     out = cp_group.reduce_scatter_into(out, output, dim=1)
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_stop("dcp_output_rs")
+ 
+     if return_lse:
+         cp_num_heads = lse.shape[1] // cp_group.world_size
+diff --git a/vllm/v1/attention/ops/dcp_alltoall.py b/vllm/v1/attention/ops/dcp_alltoall.py
+index e908a726..04811d0f 100644
+--- a/vllm/v1/attention/ops/dcp_alltoall.py
++++ b/vllm/v1/attention/ops/dcp_alltoall.py
+@@ -20,6 +20,7 @@ Reference: https://arxiv.org/abs/2507.07120
+ 
+ from __future__ import annotations
+ 
++import os
+ from contextlib import ExitStack, contextmanager
+ from functools import lru_cache
+ from typing import TYPE_CHECKING, Any
+@@ -32,6 +33,14 @@ from vllm.logger import init_logger
+ from vllm.triton_utils import tl, triton
+ from vllm.utils.multi_stream_utils import is_vllm_cudagraph_capture_active
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++if _COMPUTE_PROF_ENABLED:
++    from vllm.model_executor.layers.compute_phase_profiler import (
++        compute_profiler_dcp_a2a,
++        compute_profiler_runtime_start,
++        compute_profiler_runtime_stop,
++    )
++
+ if TYPE_CHECKING:
+     from vllm.distributed.parallel_state import GroupCoordinator
+     from vllm.v1.attention.ops.common import CPTritonContext
+@@ -308,12 +317,21 @@ def _try_b12x_dcp_lse_reduce(
+         dtype=cp_attn_out.dtype,
+     )
+     reduced = reduced_storage.transpose(0, 1)
+-    return pool.lse_reduce_scatter(
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_start("dcp_a2a")
++    result = pool.lse_reduce_scatter(
+         cp_attn_out,
+         cp_attn_lse,
+         out=reduced,
+         is_lse_base_on_e=is_lse_base_on_e,
+     )
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_stop("dcp_a2a")
++        compute_profiler_dcp_a2a(
++            cp_attn_out.numel() * cp_attn_out.element_size()
++            + cp_attn_lse.numel() * cp_attn_lse.element_size()
++        )
++    return result
+ 
+ 
+ def _try_b12x_dcp_all_gather_heads(
+@@ -976,6 +994,8 @@ def dcp_a2a_lse_reduce(
+         dtype=cp_attn_out.dtype,
+     )
+ 
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_start("dcp_a2a_pack")
+     _dcp_a2a_pack_send(
+         cp_attn_out,
+         cp_attn_lse,
+@@ -985,6 +1005,10 @@ def dcp_a2a_lse_reduce(
+         D,
+         lse_pack_dim,
+     )
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_stop("dcp_a2a_pack")
++        compute_profiler_dcp_a2a(send_buffer.numel() * send_buffer.element_size())
++        compute_profiler_runtime_start("dcp_a2a")
+ 
+     work = dist.all_to_all_single(
+         recv_buffer.view(-1),
+@@ -993,7 +1017,14 @@ def dcp_a2a_lse_reduce(
+         async_op=True,
+     )
+     work.wait()
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_stop("dcp_a2a")
+ 
+-    return _dcp_a2a_unpack_combine(
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_start("dcp_a2a_merge")
++    result = _dcp_a2a_unpack_combine(
+         recv_buffer, D, lse_pack_dim, return_lse, is_lse_base_on_e
+     )
++    if _COMPUTE_PROF_ENABLED:
++        compute_profiler_runtime_stop("dcp_a2a_merge")
++    return result
+diff --git a/vllm/v1/worker/gpu_worker.py b/vllm/v1/worker/gpu_worker.py
+index 448167fb..8d75b6ed 100644
+--- a/vllm/v1/worker/gpu_worker.py
++++ b/vllm/v1/worker/gpu_worker.py
+@@ -90,6 +90,13 @@ from ...model_executor.model_loader import TensorizerLoader
+ from .gpu.warmup import warmup_kernels
+ from .utils import request_memory
+ 
++_COMPUTE_PROF_ENABLED = os.getenv("B12X_COMPUTE_PROF", "0") == "1"
++if _COMPUTE_PROF_ENABLED:
++    from vllm.model_executor.layers.compute_phase_profiler import (
++        compute_profiler_poll,
++        compute_profiler_prepare,
++    )
++
+ logger = init_logger(__name__)
+ 
+ if TYPE_CHECKING:
+@@ -764,6 +771,9 @@ class Worker(WorkerBase):
+ 
+     @instrument(span_name="Warmup (GPU)")
+     def compile_or_warm_up_model(self) -> CompilationTimes:
++        if _COMPUTE_PROF_ENABLED:
++            compute_profiler_prepare()
++
+         warmup_sizes: list[int] = []
+ 
+         if self.vllm_config.compilation_config.mode == CompilationMode.VLLM_COMPILE:
+@@ -924,6 +934,8 @@ class Worker(WorkerBase):
+         # Keep vLLM's stable B12X diagnostics while notifying the renamed
+         # external package that post-start kernel compilation is unexpected.
+         os.environ["B12X_VLLM_ENGINE_STARTED"] = "1"
++        if _COMPUTE_PROF_ENABLED:
++            logger.info("B12X_COMPUTE_PROF_V20 state=engine_started")
+         os.environ["SPARKINFER_ENGINE_STARTED"] = "1"
+ 
+         activate_jit_monitor(
+@@ -1093,6 +1105,8 @@ class Worker(WorkerBase):
+                 and output is None
+             ):
+                 output = self.model_runner.pool()  # type: ignore
++            if _COMPUTE_PROF_ENABLED:
++                compute_profiler_poll(num_scheduled_tokens)
+             if isinstance(
+                 output, ModelRunnerOutput | AsyncModelRunnerOutput | NoneType
+             ):
+-- 
+2.50.1 (Apple Git-155)
+

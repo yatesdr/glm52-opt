@@ -1,0 +1,27 @@
+{
+  "device": "cuda:0",
+  "expect": "bug-absent",
+  "observed": "bug-absent",
+  "paged_tiled_topk": {
+    "compile_misses_after_narrow": 1,
+    "compile_misses_after_reuse": 1,
+    "cubin_reused": true,
+    "narrow_bad_rows": [],
+    "narrow_ok": true,
+    "shared_bad_rows": [],
+    "shared_ok": true,
+    "wide_bad_rows": [],
+    "wide_ok": true
+  },
+  "row_topk_gather": {
+    "compile_misses_after_narrow": 1,
+    "compile_misses_after_wide": 1,
+    "cubin_reused": true,
+    "narrow_bad_rows": [],
+    "narrow_ok": true,
+    "wide_bad_rows": [],
+    "wide_ok": true
+  },
+  "schema": "sparkinfer-runtime-stride-cross-width-v1",
+  "status": "PASS"
+}

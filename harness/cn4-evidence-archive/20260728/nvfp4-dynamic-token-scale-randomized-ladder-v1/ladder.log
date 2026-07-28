@@ -1,0 +1,20 @@
+[gate2] filler block = 56 tokens; results -> /home/derek/dynamic-scale-ladder-20260728/results
+[gate2] === 50k ===
+  built prompt: 49098 context tokens (target 50000), needle at ~40%
+  PASS ctx=49098 cached=0 out=92 37.57s answer='738216'
+[gate2] === 150k ===
+  built prompt: 147273 context tokens (target 150000), needle at ~40%
+  PASS ctx=147273 cached=0 out=78 119.8s answer='738216'
+[gate2] === 250k ===
+  built prompt: 245503 context tokens (target 250000), needle at ~40%
+  PASS ctx=245503 cached=0 out=92 215.08s answer='738216'
+[gate2] === 300k ===
+  built prompt: 294619 context tokens (target 300000), needle at ~40%
+  PASS ctx=294619 cached=0 out=82 267.1s answer='738216'
+[gate2] === 350k ===
+  built prompt: 343735 context tokens (target 350000), needle at ~40%
+  PASS ctx=343735 cached=0 out=92 322.44s answer='738216'
+[gate2] === 475k ===
+  built prompt: 466493 context tokens (target 475000), needle at ~40%
+  PASS ctx=466493 cached=0 out=79 472.62s answer='738216'
+[gate2] VERDICT: PASS

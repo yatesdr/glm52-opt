@@ -1,0 +1,240 @@
+From 2e852193a1ed1f1d47b3e6e20eb0a068797946f5 Mon Sep 17 00:00:00 2001
+From: derek <derek.yates@live.com>
+Date: Wed, 22 Jul 2026 20:54:40 -0400
+Subject: [PATCH] fix(moe): join shared experts before resident grids
+
+Queue shared-expert work before gate and router computation, then join its auxiliary stream immediately before routed-expert submission. This prevents resident-grid kernels from racing later auxiliary GEMMs for device admission while preserving overlap with routing.
+
+Assisted-by: OpenAI Codex
+
+Signed-off-by: Derek Yates <derek.yates@live.com>
+---
+ .../fused_moe/test_shared_experts_stream.py   | 87 +++++++++++++++++--
+ .../layers/fused_moe/runner/moe_runner.py     | 17 ++--
+ .../layers/fused_moe/runner/shared_experts.py | 26 +++---
+ 3 files changed, 104 insertions(+), 26 deletions(-)
+
+diff --git a/tests/model_executor/layers/fused_moe/test_shared_experts_stream.py b/tests/model_executor/layers/fused_moe/test_shared_experts_stream.py
+index c1c71c2f..8a3a4bf3 100644
+--- a/tests/model_executor/layers/fused_moe/test_shared_experts_stream.py
++++ b/tests/model_executor/layers/fused_moe/test_shared_experts_stream.py
+@@ -2,12 +2,17 @@
+ # SPDX-FileCopyrightText: Copyright contributors to the vLLM project
+ 
+ from contextlib import contextmanager
++from types import SimpleNamespace
+ from unittest.mock import Mock
+ 
+ import torch
+ 
+ import vllm.model_executor.layers.fused_moe.runner.shared_experts as shared_module
+-from vllm.model_executor.layers.fused_moe.runner.shared_experts import SharedExperts
++from vllm.model_executor.layers.fused_moe.runner.moe_runner import MoERunner
++from vllm.model_executor.layers.fused_moe.runner.shared_experts import (
++    SharedExperts,
++    SharedExpertsOrder,
++)
+ 
+ 
+ def test_aux_stream_output_lifetime_extends_to_consumer(monkeypatch) -> None:
+@@ -15,9 +20,36 @@ def test_aux_stream_output_lifetime_extends_to_consumer(monkeypatch) -> None:
+     aux_stream = Mock()
+     consumer_stream = Mock()
+     output = Mock()
++    shared_experts.enable_dbo = False
++    shared_experts._output = [output, None]
++    shared_experts._stream = aux_stream
++
++    monkeypatch.setattr(shared_module, "current_stream", lambda: consumer_stream)
++
++    shared_experts._join_aux_stream()
++
++    consumer_stream.wait_stream.assert_called_once_with(aux_stream)
++    output.record_stream.assert_called_once_with(consumer_stream)
++
++
++def test_aux_shared_experts_enqueue_then_join(monkeypatch) -> None:
++    shared_experts = object.__new__(SharedExperts)
++    events: list[str] = []
++    aux_stream = Mock()
++    consumer_stream = Mock()
++    output = Mock()
+     shared_experts_input = Mock()
++    shared_experts.enable_dbo = False
++    shared_experts._output = [None, None]
+     shared_experts._stream = aux_stream
+-    shared_experts._layer = Mock(return_value=output)
++    shared_experts._layer = Mock(
++        side_effect=lambda _input: events.append("shared") or output
++    )
++    shared_experts._determine_shared_experts_order = (
++        lambda _input: SharedExpertsOrder.MULTI_STREAM_OVERLAPPED
++    )
++    aux_stream.wait_stream.side_effect = lambda _stream: events.append("input-ready")
++    consumer_stream.wait_stream.side_effect = lambda _stream: events.append("join")
+ 
+     @contextmanager
+     def use_stream(stream):
+@@ -27,9 +59,52 @@ def test_aux_stream_output_lifetime_extends_to_consumer(monkeypatch) -> None:
+     monkeypatch.setattr(torch.cuda, "stream", use_stream)
+     monkeypatch.setattr(shared_module, "current_stream", lambda: consumer_stream)
+ 
+-    result = shared_experts._run_in_aux_stream(shared_experts_input)
++    shared_experts.maybe_sync_shared_experts_stream(shared_experts_input)
++    assert events == ["input-ready", "shared"]
++    consumer_stream.wait_stream.assert_not_called()
+ 
+-    assert result is output
+-    shared_experts._layer.assert_called_once_with(shared_experts_input)
+-    consumer_stream.wait_stream.assert_called_once_with(aux_stream)
++    shared_experts.forward(
++        shared_experts_input,
++        SharedExpertsOrder.MULTI_STREAM_OVERLAPPED,
++    )
++    assert events == ["input-ready", "shared", "join"]
+     output.record_stream.assert_called_once_with(consumer_stream)
++
++
++def test_aux_shared_experts_join_before_routed_experts() -> None:
++    runner = object.__new__(MoERunner)
++    events: list[object] = []
++    fused_out = object()
++    shared_out = object()
++    topk_weights = object()
++    topk_ids = object()
++
++    runner._maybe_apply_shared_experts = lambda _input, order: events.append(order)
++    runner.router = SimpleNamespace(
++        select_experts=lambda **_kwargs: (
++            events.append("router") or topk_weights,
++            topk_ids,
++        )
++    )
++    runner.routed_experts = SimpleNamespace(
++        quant_method=SimpleNamespace(
++            is_monolithic=False,
++            topk_indices_dtype=None,
++        ),
++        forward_modular=lambda **_kwargs: events.append("routed") or fused_out,
++    )
++    runner._shared_experts = SimpleNamespace(output=shared_out)
++
++    result = runner._apply_quant_method(
++        hidden_states=Mock(),
++        router_logits=Mock(),
++        shared_experts_input=Mock(),
++    )
++
++    assert events == [
++        SharedExpertsOrder.NO_OVERLAP,
++        "router",
++        SharedExpertsOrder.MULTI_STREAM_OVERLAPPED,
++        "routed",
++    ]
++    assert result == (shared_out, fused_out)
+diff --git a/vllm/model_executor/layers/fused_moe/runner/moe_runner.py b/vllm/model_executor/layers/fused_moe/runner/moe_runner.py
+index 2162eed1..cf79dcbc 100644
+--- a/vllm/model_executor/layers/fused_moe/runner/moe_runner.py
++++ b/vllm/model_executor/layers/fused_moe/runner/moe_runner.py
+@@ -600,6 +600,10 @@ class MoERunner(MoERunnerInterface):
+ 
+         if self.routed_experts.quant_method.is_monolithic:
+             # Monolithic kernels: pass router_logits to routed_experts
++            self._maybe_apply_shared_experts(
++                shared_experts_input,
++                SharedExpertsOrder.MULTI_STREAM_OVERLAPPED,
++            )
+             fused_out = self.routed_experts.forward_monolithic(
+                 x=hidden_states,
+                 router_logits=router_logits,
+@@ -614,6 +618,14 @@ class MoERunner(MoERunnerInterface):
+                 input_ids=input_ids,
+             )
+ 
++            # Join the already-enqueued shared-expert stream after routing but
++            # before routed experts. This preserves overlap with gate/router
++            # work while keeping resident-grid kernels mutually exclusive.
++            self._maybe_apply_shared_experts(
++                shared_experts_input,
++                SharedExpertsOrder.MULTI_STREAM_OVERLAPPED,
++            )
++
+             fused_out = self.routed_experts.forward_modular(
+                 x=hidden_states,
+                 topk_weights=topk_weights,
+@@ -622,11 +634,6 @@ class MoERunner(MoERunnerInterface):
+                 shared_experts_input=shared_experts_input,
+             )
+ 
+-        self._maybe_apply_shared_experts(
+-            shared_experts_input,
+-            SharedExpertsOrder.MULTI_STREAM_OVERLAPPED,
+-        )
+-
+         return (
+             self._shared_experts.output if self._shared_experts is not None else None,
+             fused_out,
+diff --git a/vllm/model_executor/layers/fused_moe/runner/shared_experts.py b/vllm/model_executor/layers/fused_moe/runner/shared_experts.py
+index 69b12540..994c3b6a 100644
+--- a/vllm/model_executor/layers/fused_moe/runner/shared_experts.py
++++ b/vllm/model_executor/layers/fused_moe/runner/shared_experts.py
+@@ -116,6 +116,7 @@ class SharedExperts(torch.nn.Module):
+ 
+         if experts_order == SharedExpertsOrder.MULTI_STREAM_OVERLAPPED:
+             assert self._stream is not None
++            assert self._output[self._output_idx] is None
+ 
+             # Record that the clone will be used by shared_experts_stream
+             # to avoid gc issue from deallocation of hidden_states_clone
+@@ -126,15 +127,15 @@ class SharedExperts(torch.nn.Module):
+             # run in parallel with router/gate.
+             self._stream.wait_stream(current_stream())
+ 
+-    def _run_in_aux_stream(
+-        self,
+-        shared_experts_input: torch.Tensor,
+-    ) -> torch.Tensor:
+-        # TODO: assert that maybe_sync_shared_experts_stream has been called.
++            # Submit before gate/router work. The consumer joins this stream
++            # immediately before routed-expert submission, so a resident-grid
++            # kernel can never race the shared-expert GEMMs for admission.
++            with torch.cuda.stream(self._stream):
++                self._output[self._output_idx] = self._layer(shared_experts_input)
+ 
+-        # Run shared experts in parallel on a separate stream.
+-        with torch.cuda.stream(self._stream):
+-            output = self._layer(shared_experts_input)
++    def _join_aux_stream(self) -> None:
++        output = self._output[self._output_idx]
++        assert output is not None
+         consumer_stream = current_stream()
+         consumer_stream.wait_stream(self._stream)
+ 
+@@ -144,8 +145,6 @@ class SharedExperts(torch.nn.Module):
+         # alive until the consumer has finished using it.
+         output.record_stream(consumer_stream)
+ 
+-        return output
+-
+     @property
+     def _output_idx(self) -> int:
+         return dbo_current_ubatch_id() if self.enable_dbo else 0
+@@ -167,13 +166,10 @@ class SharedExperts(torch.nn.Module):
+         if order != experts_order:
+             return None
+ 
+-        assert self._output[self._output_idx] is None
+-
+         if order == SharedExpertsOrder.MULTI_STREAM_OVERLAPPED:
+-            self._output[self._output_idx] = self._run_in_aux_stream(
+-                shared_experts_input
+-            )
++            self._join_aux_stream()
+         else:
++            assert self._output[self._output_idx] is None
+             self._output[self._output_idx] = self._layer(shared_experts_input)
+ 
+         assert self._output[self._output_idx] is not None
+-- 
+2.50.1 (Apple Git-155)
+

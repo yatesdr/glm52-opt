@@ -1,0 +1,123 @@
+{
+  "context_length": 2048,
+  "expected_runs": 3,
+  "invariants": {
+    "context_length": 2048,
+    "decode_context_parallel_size": 1,
+    "enforce_eager": true,
+    "gpu_memory_utilization": 0.9,
+    "image": "glm52-serve:v20-20260726-oldest-boundary-pr-candidate",
+    "image_id": "sha256:43e5a48781ee5cf40a92cc494749b21306b72280bd1a875721a45422323f2599",
+    "kv_cache_dtype": "nvfp4_ds_mla",
+    "kv_fp8_rope": true,
+    "max_num_batched_tokens": 512,
+    "model_dir": "/home/claude/LLM/GLM-5.2-hybrid",
+    "online_quantization": "nf3-mxfp8",
+    "quantization": "nvfp4_nf3_hybrid",
+    "reference_logits": "/home/derek/kld-pr84/reference-logits",
+    "reference_logits_sha256": "87f992a689c054a0548a4b3863da6c809f9239beacd5786d0401e45904fec063",
+    "runner_sha256": "d1dc1a63b9889e881f3bd899638d0ec65a1a1079132f6a207a600d9cba845405",
+    "tensor_parallel_size": 4,
+    "token_first16": [
+      284,
+      8396,
+      425,
+      10960,
+      465,
+      284,
+      14721,
+      8396,
+      425,
+      10960,
+      465,
+      374,
+      458,
+      6364,
+      4531,
+      1154
+    ],
+    "total_positions": 2047
+  },
+  "paired_delta_oldest_minus_exact": {
+    "mean": 0.0022037913111347673,
+    "percent_of_exact_mean": 1.3927158856739328,
+    "sd": 0.007654609099650967,
+    "values": [
+      -0.006634632916233868,
+      0.006554204069758596,
+      0.006691802779879574
+    ]
+  },
+  "reference_direction": "KL(BF16_reference || candidate)",
+  "root": "/home/derek/kld-pr84",
+  "rows": [
+    {
+      "max_kld": 0.16364348270672383,
+      "mean_kld": 0.1582369623125507,
+      "min_kld": 0.1553966405591734,
+      "policy": "exact",
+      "runs": 3,
+      "runs_detail": [
+        {
+          "elapsed_sec": 130.90913438796997,
+          "log_sha256": "962559e813f35b6148e9000090e92b47beb26588c2ab36f5eddff8708aef97b8",
+          "mean_kld": 0.16364348270672383,
+          "run": 1
+        },
+        {
+          "elapsed_sec": 132.1148886680603,
+          "log_sha256": "77a909bf4ab425ece2ea80a770e3879914fcb99b20489f129ffd18f85b02fc65",
+          "mean_kld": 0.1553966405591734,
+          "run": 2
+        },
+        {
+          "elapsed_sec": 132.0840060710907,
+          "log_sha256": "2f1e0df5fd66067aac470990d969ae0b3a7e376c0cd335c3044d892122c0d06d",
+          "mean_kld": 0.15567076367175486,
+          "run": 3
+        }
+      ],
+      "sd_kld": 0.0046841896790875475,
+      "values": [
+        0.16364348270672383,
+        0.1553966405591734,
+        0.15567076367175486
+      ]
+    },
+    {
+      "max_kld": 0.16236256645163444,
+      "mean_kld": 0.16044075362368546,
+      "min_kld": 0.15700884979048996,
+      "policy": "oldest_boundary",
+      "runs": 3,
+      "runs_detail": [
+        {
+          "elapsed_sec": 130.7778515815735,
+          "log_sha256": "756c715c84514fd7a5fe8cfbc30b8fa3e57ec6d15783d1c08e69bcbac8c22cbf",
+          "mean_kld": 0.15700884979048996,
+          "run": 1
+        },
+        {
+          "elapsed_sec": 131.01974153518677,
+          "log_sha256": "68c97248d9f75deda67c9993abbca6826338fd1ee55d8121671b4557f5b282c3",
+          "mean_kld": 0.161950844628932,
+          "run": 2
+        },
+        {
+          "elapsed_sec": 130.6305434703827,
+          "log_sha256": "a4a5c43195c2bc7a2cec89511603d365c8db97f1dbfdc7505e003ec3e02d4859",
+          "mean_kld": 0.16236256645163444,
+          "run": 3
+        }
+      ],
+      "sd_kld": 0.0029792367571324155,
+      "values": [
+        0.15700884979048996,
+        0.161950844628932,
+        0.16236256645163444
+      ]
+    }
+  ],
+  "selector_budget": 2048,
+  "selector_sensitive": false
+}

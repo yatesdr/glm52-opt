@@ -1,0 +1,96 @@
+# Pinned EXL3-TR3 v31 runtime plus the reviewed, self-describing NVFP4 MLA
+# cache record implementation. The EXL3 expert-weight path and dynamic KV
+# scaling are orthogonal: EXL3 changes routed expert weights; this overlay
+# changes only the existing 368-byte nvfp4_ds_mla cache record and readers.
+FROM verdictai/glm52-exl3-sparkinfer:v31-gg-v20-sic3828fd-vllm0c79e41-cu132-sm120a@sha256:0433ae94665b769b78dd301f952d907508a3ba80bce47a1630ec20ade8812dff
+
+LABEL org.opencontainers.image.title="GLM-5.2 EXL3-TR3 with dynamic NVFP4 MLA KV scaling" \
+      org.opencontainers.image.description="TR3 v31 plus SparkInfer #86 and vLLM #189, including immutable cache ABI/offload namespaces" \
+      ai.glm52.tr3.repository="brandonmmusic-max/glm52-exl3-sparkinfer@0f9b71d5049228589534614c6a15c139c8238959" \
+      ai.glm52.tr3.model="brandonmusic/GLM-5.2-EXL3-TR3-3.0bpw@9297b9f1d53af5c67cffa01e30cc071a1ff7144b" \
+      ai.glm52.tr3.base_image="sha256:0433ae94665b769b78dd301f952d907508a3ba80bce47a1630ec20ade8812dff" \
+      ai.glm52.tr3.vllm_integration="a247c7ac20cc2041954cd75d19844f5e600d154b" \
+      ai.glm52.tr3.vllm_dynamic_merge="42779a70eee6cafb2b2d3353620fafd2f13cfb5e" \
+      ai.glm52.tr3.vllm_bounded_fs="a1f5cc6cd0bcbcedfc607f98afbd8883ea3a3d5a" \
+      ai.glm52.tr3.sparkinfer_integration="669a12ddc7cf3021e91a25f398b1a883b703fd12" \
+      ai.glm52.tr3.sparkinfer_dynamic_merge="7ef6d26e"
+
+# vLLM #189, replayed cleanly on the exact EXL3 #139 head. envs.py contains
+# both sets of registrations; the remaining files do not overlap EXL3.
+COPY workspace/vllm-tr3-dynamic-integration/vllm/envs.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/envs.py
+COPY workspace/vllm-tr3-dynamic-integration/vllm/model_executor/layers/mla.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/mla.py
+COPY workspace/vllm-tr3-dynamic-integration/vllm/model_executor/layers/mla_cache_format.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/mla_cache_format.py
+COPY workspace/vllm-tr3-dynamic-integration/vllm/v1/attention/backends/mla/b12x_mla_sparse.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+COPY workspace/vllm-tr3-dynamic-integration/vllm/distributed/kv_transfer/kv_connector/v1/offloading/config.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/distributed/kv_transfer/kv_connector/v1/offloading/config.py
+COPY workspace/vllm-tr3-dynamic-integration/vllm/v1/kv_offload/config.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/config.py
+COPY workspace/vllm-tr3-dynamic-integration/vllm/v1/kv_offload/file_mapper.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/file_mapper.py
+COPY workspace/vllm-tr3-dynamic-integration/vllm/v1/kv_offload/tiering/fs/manager.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py
+
+# SparkInfer #86, replayed cleanly on EXL3 #49. #49 has no production-file
+# overlap with these MLA modules, and c3828fd changed none of them relative to
+# #86's base, so the EXL3 Trellis wheel remains intact.
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/api.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/api.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/decode_math.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/decode_math.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/io.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/io.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/io_mg.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/io_mg.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/kernel.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/kernel.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/kv_cache.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/kv_cache.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/prefill.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/prefill.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/prefill_mg.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/prefill_mg.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/smem.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/smem.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/smem_mg.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/smem_mg.py
+COPY workspace/b12x-tr3-dynamic-integration/sparkinfer/attention/_shared/mla/traits.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/traits.py
+
+# The parent image bakes a checkpoint-specific static scale file. Dynamic mode
+# is deliberately mutually exclusive with it, so clear the inherited default.
+ENV VLLM_NVFP4_MLA_SCALES_FILE="" \
+    VLLM_NVFP4_MLA_DYNAMIC_SCALE="1"
+
+RUN /opt/venv/bin/python -m py_compile \
+      /opt/venv/lib/python3.12/site-packages/vllm/envs.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/mla.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/mla_cache_format.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/distributed/kv_transfer/kv_connector/v1/offloading/config.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/config.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/file_mapper.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/api.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/decode_math.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/io.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/io_mg.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/kernel.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/kv_cache.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/prefill.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/prefill_mg.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/smem.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/smem_mg.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla/traits.py
+
+RUN /opt/venv/bin/python -c \
+      "from vllm import envs; assert envs.VLLM_PCIE_DMA_MIN_BYTES == '6MB'; assert envs.VLLM_DCP_REPLICATE_INDEXER_CACHE is False; assert envs.VLLM_DCP_INDEXER_SHARDS == 0; assert envs.VLLM_DCP_QUERY_SPLIT_MIN_CONTEXT_TOKENS == 0; assert envs.VLLM_NVFP4_MLA_DYNAMIC_SCALE is True; assert envs.VLLM_NVFP4_MLA_SCALES_FILE == ''"
+
+RUN /opt/venv/bin/python -c \
+      "import inspect; from sparkinfer.attention._shared.mla.kv_cache import concat_and_cache_nvfp4_mla_fp8_rope as w; from sparkinfer.attention._shared.mla.api import sparse_mla_decode_forward as d, sparse_mla_extend_forward as e; assert 'per_token_scale' in inspect.signature(w).parameters; assert 'latent_scale_per_token' in inspect.signature(d).parameters; assert 'latent_scale_per_token' in inspect.signature(e).parameters"
+
+RUN /opt/venv/bin/python -c \
+      "import inspect; from vllm.v1.kv_offload.tiering.fs.manager import FileSystemTierManager as m; assert 'max_cache_size_bytes' in inspect.signature(m).parameters"

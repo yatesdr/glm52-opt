@@ -1,0 +1,514 @@
+{
+  "absolute_position": 343726,
+  "batch_tokens": 2735,
+  "candidate": "segmented_failing",
+  "candidate_hit_reference_miss_layers": [],
+  "first_candidate_hit_reference_miss": null,
+  "first_reference_hit_candidate_miss": 38,
+  "first_set_divergence": 0,
+  "needle_window": [
+    137499,
+    137501
+  ],
+  "reference": "bounded_working",
+  "reference_hit_candidate_miss_layers": [
+    38,
+    42,
+    46,
+    50,
+    54,
+    58,
+    62,
+    66,
+    70
+  ],
+  "rows": [
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 620,
+      "bounded_working_quartiles": [
+        1422,
+        243,
+        147,
+        236
+      ],
+      "intersection_count": 1428,
+      "jaccard": 0.5352323838080959,
+      "layer": 0,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 620,
+      "segmented_failing_quartiles": [
+        1189,
+        255,
+        260,
+        344
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 1392,
+      "bounded_working_quartiles": [
+        17,
+        362,
+        799,
+        870
+      ],
+      "intersection_count": 656,
+      "jaccard": 0.19069767441860466,
+      "layer": 1,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1392,
+      "segmented_failing_quartiles": [
+        256,
+        296,
+        544,
+        952
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 639,
+      "bounded_working_quartiles": [
+        124,
+        202,
+        728,
+        994
+      ],
+      "intersection_count": 1409,
+      "jaccard": 0.5243766282098995,
+      "layer": 2,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 639,
+      "segmented_failing_quartiles": [
+        256,
+        256,
+        423,
+        1113
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 457,
+      "bounded_working_quartiles": [
+        348,
+        1103,
+        305,
+        292
+      ],
+      "intersection_count": 1591,
+      "jaccard": 0.6351297405189621,
+      "layer": 6,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 457,
+      "segmented_failing_quartiles": [
+        438,
+        1098,
+        256,
+        256
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 1165,
+      "bounded_working_quartiles": [
+        9,
+        270,
+        667,
+        1102
+      ],
+      "intersection_count": 883,
+      "jaccard": 0.2748210395269219,
+      "layer": 10,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1165,
+      "segmented_failing_quartiles": [
+        256,
+        680,
+        374,
+        738
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 1142,
+      "bounded_working_quartiles": [
+        22,
+        52,
+        985,
+        989
+      ],
+      "intersection_count": 906,
+      "jaccard": 0.284012539184953,
+      "layer": 14,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1142,
+      "segmented_failing_quartiles": [
+        256,
+        462,
+        568,
+        762
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 1354,
+      "bounded_working_quartiles": [
+        93,
+        69,
+        500,
+        1386
+      ],
+      "intersection_count": 694,
+      "jaccard": 0.2039976484420929,
+      "layer": 18,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1354,
+      "segmented_failing_quartiles": [
+        256,
+        625,
+        516,
+        651
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 1066,
+      "bounded_working_quartiles": [
+        78,
+        82,
+        281,
+        1607
+      ],
+      "intersection_count": 982,
+      "jaccard": 0.3153500321130379,
+      "layer": 22,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1066,
+      "segmented_failing_quartiles": [
+        256,
+        489,
+        256,
+        1047
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 1312,
+      "bounded_working_quartiles": [
+        52,
+        22,
+        270,
+        1704
+      ],
+      "intersection_count": 736,
+      "jaccard": 0.21904761904761905,
+      "layer": 26,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1312,
+      "segmented_failing_quartiles": [
+        256,
+        515,
+        360,
+        917
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 1021,
+      "bounded_working_quartiles": [
+        7,
+        75,
+        474,
+        1492
+      ],
+      "intersection_count": 1027,
+      "jaccard": 0.33463668947539915,
+      "layer": 30,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1021,
+      "segmented_failing_quartiles": [
+        256,
+        300,
+        426,
+        1066
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [],
+      "bounded_working_only_count": 1475,
+      "bounded_working_quartiles": [
+        225,
+        175,
+        270,
+        1378
+      ],
+      "intersection_count": 573,
+      "jaccard": 0.16264547260857223,
+      "layer": 34,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1475,
+      "segmented_failing_quartiles": [
+        256,
+        507,
+        256,
+        1029
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1417,
+      "bounded_working_quartiles": [
+        395,
+        154,
+        375,
+        1124
+      ],
+      "intersection_count": 631,
+      "jaccard": 0.1821067821067821,
+      "layer": 38,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1417,
+      "segmented_failing_quartiles": [
+        256,
+        568,
+        551,
+        673
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1628,
+      "bounded_working_quartiles": [
+        360,
+        531,
+        436,
+        721
+      ],
+      "intersection_count": 420,
+      "jaccard": 0.11425462459194777,
+      "layer": 42,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1628,
+      "segmented_failing_quartiles": [
+        256,
+        644,
+        447,
+        701
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1817,
+      "bounded_working_quartiles": [
+        361,
+        523,
+        469,
+        695
+      ],
+      "intersection_count": 231,
+      "jaccard": 0.05976714100905563,
+      "layer": 46,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1817,
+      "segmented_failing_quartiles": [
+        256,
+        660,
+        447,
+        685
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1771,
+      "bounded_working_quartiles": [
+        450,
+        548,
+        450,
+        600
+      ],
+      "intersection_count": 277,
+      "jaccard": 0.07253207645980624,
+      "layer": 50,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1771,
+      "segmented_failing_quartiles": [
+        256,
+        670,
+        489,
+        633
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1817,
+      "bounded_working_quartiles": [
+        512,
+        389,
+        348,
+        799
+      ],
+      "intersection_count": 231,
+      "jaccard": 0.05976714100905563,
+      "layer": 54,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1817,
+      "segmented_failing_quartiles": [
+        256,
+        646,
+        399,
+        747
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1864,
+      "bounded_working_quartiles": [
+        523,
+        707,
+        323,
+        495
+      ],
+      "intersection_count": 184,
+      "jaccard": 0.04703476482617587,
+      "layer": 58,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1864,
+      "segmented_failing_quartiles": [
+        256,
+        679,
+        471,
+        642
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1866,
+      "bounded_working_quartiles": [
+        582,
+        681,
+        335,
+        450
+      ],
+      "intersection_count": 182,
+      "jaccard": 0.04649974450689831,
+      "layer": 62,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1866,
+      "segmented_failing_quartiles": [
+        256,
+        604,
+        389,
+        799
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1880,
+      "bounded_working_quartiles": [
+        166,
+        296,
+        436,
+        1150
+      ],
+      "intersection_count": 168,
+      "jaccard": 0.04276985743380855,
+      "layer": 66,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1880,
+      "segmented_failing_quartiles": [
+        256,
+        574,
+        353,
+        865
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1852,
+      "bounded_working_quartiles": [
+        387,
+        319,
+        479,
+        863
+      ],
+      "intersection_count": 196,
+      "jaccard": 0.050256410256410255,
+      "layer": 70,
+      "segmented_failing_needle_hits": [],
+      "segmented_failing_only_count": 1852,
+      "segmented_failing_quartiles": [
+        256,
+        590,
+        401,
+        801
+      ]
+    },
+    {
+      "bounded_working_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "bounded_working_only_count": 1824,
+      "bounded_working_quartiles": [
+        515,
+        775,
+        508,
+        250
+      ],
+      "intersection_count": 224,
+      "jaccard": 0.05785123966942149,
+      "layer": 74,
+      "segmented_failing_needle_hits": [
+        137499,
+        137500,
+        137501
+      ],
+      "segmented_failing_only_count": 1824,
+      "segmented_failing_quartiles": [
+        256,
+        286,
+        796,
+        710
+      ]
+    }
+  ],
+  "schema": "v20-cross-layer-selection-comparison-v1",
+  "status": "PASS"
+}

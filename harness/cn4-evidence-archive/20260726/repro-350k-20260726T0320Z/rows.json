@@ -1,0 +1,21 @@
+[
+  {
+    "seed": 20260725,
+    "rep": 1,
+    "verdict": "ABSENT",
+    "cached_tokens": 0,
+    "finish_reason": "stop",
+    "usage": {
+      "prompt_tokens": 343727,
+      "total_tokens": 343746,
+      "completion_tokens": 19,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **7384**.",
+    "reasoning_chars": 0,
+    "secs": 474.9
+  }
+]

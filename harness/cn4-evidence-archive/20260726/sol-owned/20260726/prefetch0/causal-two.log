@@ -1,0 +1,14 @@
+[gate] image=sha256:2566f905f13252c514a0f96c177ba982bd16321943927966310bf8c7c92d94b7
+[gate] freeze=/home/derek/causal-gate-freeze-20260726  stock_image=glm52-serve:v20-5517197-pxb-20260725
+[gate] note=sole delta VLLM_B12X_MLA_CKV_PREFETCH_DEPTH=0
+
+pass-250k-ctl   EXACT           gate=PASS finish=stop out=4 prompt_tok=245497 cached=0 stock=EXACT 261s
+                content='738216'
+fail-350k-r1    ABSENT          gate=FAIL finish=stop out=43 prompt_tok=343727 cached=0 stock=ABSENT 396s
+                content='The maintenance ticket number for the Facility 27 compressor overhaul is **27**. \n\nFrom th'
+
+===== CAUSAL GATE SUMMARY =====
+  FAIL-role prompts recovered: 0/1
+  PASS control still passing:   True
+  VERDICT: REFUTED — at least one frozen stock-FAIL prompt did not recover
+CAUSAL_GATE_DONE

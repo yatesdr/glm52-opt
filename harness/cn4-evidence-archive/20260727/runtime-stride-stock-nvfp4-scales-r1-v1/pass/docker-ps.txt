@@ -1,0 +1,2 @@
+CONTAINER ID                                                       IMAGE                                                  COMMAND                                   CREATED          STATUS                    PORTS                    NAMES
+5e142a395c18b82ae7af765069873a1bfc956a62fb451aea4e007410c4291bc2   glm52-serve:v20-runtime-stride-stock-causal-20260727   "/usr/local/bin/serve-gilded-gnosis.sh"   19 minutes ago   Up 19 minutes (healthy)   0.0.0.0:5001->5001/tcp   glm52-v20-runtime-stride-stock-nvfp4-scales-r1-20260727

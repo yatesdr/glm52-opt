@@ -1,0 +1,131 @@
+{
+  "context_length": 2048,
+  "expected_runs": 3,
+  "invariants": {
+    "context_length": 2048,
+    "decode_context_parallel_size": 1,
+    "enforce_eager": true,
+    "gpu_memory_utilization": 0.9,
+    "image": "glm52-serve:v20-nvfp4-dynamic-token-scale-20260727",
+    "image_id": "sha256:db82fdcb5756d4a547853ba1330538bdd8a3dc0c6443c29bc49ba77b69b51cd1",
+    "kv_cache_dtype": "nvfp4_ds_mla",
+    "kv_fp8_rope": true,
+    "max_num_batched_tokens": 512,
+    "model_dir": "/home/claude/LLM/GLM-5.2-hybrid",
+    "online_quantization": "custom_quality_first_mxfp8",
+    "quantization": "nvfp4_nf3_hybrid",
+    "reference_logits": "/home/derek/kld-pr84/reference-logits",
+    "reference_logits_sha256": "87f992a689c054a0548a4b3863da6c809f9239beacd5786d0401e45904fec063",
+    "reference_manifest_sha256": "985120136741037918bcd4dc8da9813c1f6268b35a730302f99cf6b3eebb7606",
+    "runner_sha256": "d1dc1a63b9889e881f3bd899638d0ec65a1a1079132f6a207a600d9cba845405",
+    "selector_policy": "exact",
+    "tensor_parallel_size": 4,
+    "token_first16": [
+      284,
+      8396,
+      425,
+      10960,
+      465,
+      284,
+      14721,
+      8396,
+      425,
+      10960,
+      465,
+      374,
+      458,
+      6364,
+      4531,
+      1154
+    ],
+    "total_positions": 2047
+  },
+  "paired_delta_dynamic_minus_static": {
+    "mean": -0.0005225766837800849,
+    "percent_of_static_mean": -0.3906115979209235,
+    "sd": 0.0012482840477168154,
+    "values": [
+      -0.0013304442161822527,
+      0.0009151489383340261,
+      -0.0011524347734920282
+    ]
+  },
+  "reference_direction": "KL(BF16_reference || candidate)",
+  "root": "/home/derek/kld-quality-weight-dynamic-scale-20260728",
+  "rows": [
+    {
+      "max_kld": 0.13452094196399714,
+      "mean_kld": 0.13378422109368007,
+      "min_kld": 0.132325543286338,
+      "policy": "static_calibrated",
+      "runs": 3,
+      "runs_detail": [
+        {
+          "elapsed_sec": 130.9912886619568,
+          "log_sha256": "6cf23efd7295d92fc01c340aa453ba0bddcc48ddc62cf9c02b7e7526d1f9b296",
+          "mean_kld": 0.13452094196399714,
+          "run": 1,
+          "writer_compile_proof_sha256": "667933ff5918101c34ea48dd377b73c665a269c3f2b1643dac2746ca604aa00a"
+        },
+        {
+          "elapsed_sec": 131.57115721702576,
+          "log_sha256": "2928dc5e7e353aa101080e7bb1373d557f876a13f116cbc4ac9e7c8494aea6bc",
+          "mean_kld": 0.13450617803070508,
+          "run": 2,
+          "writer_compile_proof_sha256": "667933ff5918101c34ea48dd377b73c665a269c3f2b1643dac2746ca604aa00a"
+        },
+        {
+          "elapsed_sec": 130.99170064926147,
+          "log_sha256": "1e8c6c6b9e45807b37d40f1244289a0d815430f4979f30d3d825e884ca50c931",
+          "mean_kld": 0.132325543286338,
+          "run": 3,
+          "writer_compile_proof_sha256": "667933ff5918101c34ea48dd377b73c665a269c3f2b1643dac2746ca604aa00a"
+        }
+      ],
+      "sd_kld": 0.0012632736056198486,
+      "values": [
+        0.13452094196399714,
+        0.13450617803070508,
+        0.132325543286338
+      ]
+    },
+    {
+      "max_kld": 0.1354213269690391,
+      "mean_kld": 0.1332616444099,
+      "min_kld": 0.13117310851284597,
+      "policy": "dynamic_per_token",
+      "runs": 3,
+      "runs_detail": [
+        {
+          "elapsed_sec": 130.80279207229614,
+          "log_sha256": "25d6148b73afb88741ba0c2ec335c3b339c799cfac6c94ae729c27b18622131f",
+          "mean_kld": 0.13319049774781488,
+          "run": 1,
+          "writer_compile_proof_sha256": "0ba1f7ad6cde4b25e4ec4f53f27c9fa872c84478a99df94f02642186b84a484a"
+        },
+        {
+          "elapsed_sec": 131.0230872631073,
+          "log_sha256": "6481f50368e95d424eb7b8f7e0101d268207b55c0f10cea59ad0309900b8ec13",
+          "mean_kld": 0.1354213269690391,
+          "run": 2,
+          "writer_compile_proof_sha256": "0ba1f7ad6cde4b25e4ec4f53f27c9fa872c84478a99df94f02642186b84a484a"
+        },
+        {
+          "elapsed_sec": 130.40147709846497,
+          "log_sha256": "8c59471670c85a9bcb81bcb9e9002c507a9e37de6d08c8fdb2c98c07906ebe86",
+          "mean_kld": 0.13117310851284597,
+          "run": 3,
+          "writer_compile_proof_sha256": "0ba1f7ad6cde4b25e4ec4f53f27c9fa872c84478a99df94f02642186b84a484a"
+        }
+      ],
+      "sd_kld": 0.0021250026820052227,
+      "values": [
+        0.13319049774781488,
+        0.1354213269690391,
+        0.13117310851284597
+      ]
+    }
+  ],
+  "selector_budget": 2048,
+  "selector_sensitive": false
+}

@@ -1,0 +1,103 @@
+From ef7cae43b218cde857b24f4b90e0eca92bbf7198 Mon Sep 17 00:00:00 2001
+From: Martin Vit <martin@voipmonitor.org>
+Date: Mon, 20 Jul 2026 08:40:42 -0400
+Subject: [PATCH] fix(dcp): preallocate packed A2A graph buffers (#130)
+
+---
+ tests/distributed/test_dcp_a2a.py     | 36 +++++++++++++++++++++++++++
+ vllm/v1/attention/ops/dcp_alltoall.py | 15 ++++++++---
+ 2 files changed, 47 insertions(+), 4 deletions(-)
+
+diff --git a/tests/distributed/test_dcp_a2a.py b/tests/distributed/test_dcp_a2a.py
+index c001e212..2c2f4483 100644
+--- a/tests/distributed/test_dcp_a2a.py
++++ b/tests/distributed/test_dcp_a2a.py
+@@ -411,6 +411,39 @@ def test_packed_a2a_capture_buffers_stay_live_per_shape(
+     dcp_alltoall._DCP_A2A_GRAPH_BUFFERS.clear()
+ 
+ 
++def test_packed_a2a_prewarm_buffers_are_retained_before_cuda_capture(
++    monkeypatch: pytest.MonkeyPatch,
++):
++    from vllm.v1.attention.ops import dcp_alltoall
++
++    created: list[object] = []
++
++    def fake_empty(*args, **kwargs):
++        value = object()
++        created.append(value)
++        return value
++
++    dcp_alltoall._DCP_A2A_GRAPH_BUFFERS.clear()
++    monkeypatch.setattr(torch, "empty", fake_empty)
++    monkeypatch.setattr(torch.cuda, "is_current_stream_capturing", lambda: False)
++    monkeypatch.setattr(
++        dcp_alltoall, "is_vllm_cudagraph_capture_active", lambda: True
++    )
++    device = torch.device("cuda:0")
++
++    prewarm = dcp_alltoall._dcp_a2a_send_recv_buffers(
++        (3, 16, 11, 514), device, torch.bfloat16
++    )
++    capture = dcp_alltoall._dcp_a2a_send_recv_buffers(
++        (3, 16, 11, 514), device, torch.bfloat16
++    )
++
++    assert capture is prewarm
++    assert len(created) == 2
++    assert len(dcp_alltoall._DCP_A2A_GRAPH_BUFFERS) == 1
++    dcp_alltoall._DCP_A2A_GRAPH_BUFFERS.clear()
++
++
+ def test_packed_a2a_eager_buffers_are_not_retained(
+     monkeypatch: pytest.MonkeyPatch,
+ ):
+@@ -426,6 +459,9 @@ def test_packed_a2a_eager_buffers_are_not_retained(
+     dcp_alltoall._DCP_A2A_GRAPH_BUFFERS.clear()
+     monkeypatch.setattr(torch, "empty", fake_empty)
+     monkeypatch.setattr(torch.cuda, "is_current_stream_capturing", lambda: False)
++    monkeypatch.setattr(
++        dcp_alltoall, "is_vllm_cudagraph_capture_active", lambda: False
++    )
+     device = torch.device("cuda:0")
+ 
+     first = dcp_alltoall._dcp_a2a_send_recv_buffers(
+diff --git a/vllm/v1/attention/ops/dcp_alltoall.py b/vllm/v1/attention/ops/dcp_alltoall.py
+index f8d98603..cb1a1b7a 100644
+--- a/vllm/v1/attention/ops/dcp_alltoall.py
++++ b/vllm/v1/attention/ops/dcp_alltoall.py
+@@ -29,6 +29,7 @@ import torch.distributed as dist
+ import vllm.envs as envs
+ from vllm.logger import init_logger
+ from vllm.triton_utils import tl, triton
++from vllm.utils.multi_stream_utils import is_vllm_cudagraph_capture_active
+ 
+ if TYPE_CHECKING:
+     from vllm.distributed.parallel_state import GroupCoordinator
+@@ -538,13 +539,19 @@ def _dcp_a2a_send_recv_buffers(
+     # buffer address at capture, but a larger eager batch can grow that workspace
+     # and free the captured address. Eager calls therefore use ordinary temporary
+     # tensors, while captured calls retain fixed-size owners below.
+-    if device.type == "cuda" and torch.cuda.is_current_stream_capturing():
++    if device.type == "cuda" and (
++        is_vllm_cudagraph_capture_active()
++        or torch.cuda.is_current_stream_capturing()
++    ):
+         # FULL graphs share a global graph pool. Without a live Python owner,
+         # a larger descriptor's staging allocation can be recycled while a
+         # smaller descriptor is captured, leaving both NCCL graph nodes bound
+-        # to the same address. Keep one exact-shape pair alive per device so
+-        # descriptors cannot alias each other's A2A staging storage. Layers of
+-        # one graph may reuse the pair because all operations are stream-ordered.
++        # to the same address. The vLLM capture scope starts before each eager
++        # graph prewarm, so this also allocates the retained pair before CUDA
++        # capture begins instead of from the shared graph pool. Keep one
++        # exact-shape pair alive per device so descriptors cannot alias each
++        # other's A2A staging storage. Layers of one graph may reuse the pair
++        # because all operations are stream-ordered.
+         key = (shape, device, dtype)
+         buffers = _DCP_A2A_GRAPH_BUFFERS.get(key)
+         if buffers is None:
+-- 
+2.50.1 (Apple Git-155)
+

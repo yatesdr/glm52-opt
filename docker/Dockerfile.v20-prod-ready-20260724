@@ -1,0 +1,72 @@
+# syntax=docker/dockerfile:1
+#
+# Single-boot v20 production candidate.
+#
+# Build from the glm52-opt repository root so the byte-pinned vLLM and
+# SparkInfer worktrees below are available as COPY sources.
+
+ARG BASE_IMAGE=voipmonitor/vllm@sha256:adddafd2b1749729fdf2d2ca23818c7c39f2a95e6fb05edd98657251913b83f2
+FROM ${BASE_IMAGE} AS checked-base
+
+# Refuse to overlay a tag-drifted or otherwise mismatched image. These are the
+# exact Python bytes shipped with vLLM 992b874cf / SparkInfer a93df671.
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py | cut -d ' ' -f 1)" = "ffb5904cba86f5703e2dfb274690e9da3b0f35e6130ab4f6730c43a573601b3d" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/indexer.py | cut -d ' ' -f 1)" = "d419af9e1e84a1fa316246d0cb930f6559dcb5859a8e71bb54240dbf41fb0cde" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/attention/mla_attention.py | cut -d ' ' -f 1)" = "96a37e550aa64e8e2ce7f7761f55bbdafaa58b018ae0c49e53a6c37f5aa1f3e4" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backend.py | cut -d ' ' -f 1)" = "7560b2f6e0f71cb74cb609c1ab352660f9ebfafee4e756d1411bc1322a9d7353" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py | cut -d ' ' -f 1)" = "2d8cc87f11d12fa3e870c4dba3bd35d8c3378d3151d89fac0016c4c6aac63aa6" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/kernels/attention/b12x_mxfp8_bmm.py | cut -d ' ' -f 1)" = "98ccc2ed17c685618e692da62133abf0ea788f2cb07f20271ffeca24841d8a9b" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/model_runner.py | cut -d ' ' -f 1)" = "392c13256154b9ba66db732df5b8e2ea69dcfac65e5b603e06c4bd7330bc8d3e" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py | cut -d ' ' -f 1)" = "7dd57e51b096cc6b2bbb03ef96368223e5328881daec280883c8bd400153ade5" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py | cut -d ' ' -f 1)" = "57d5ec00c70e60024bd94bb6afbb9174144c9c07cf88e5568a996ab511bc24c5" \
+    && test -f /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so \
+    && grep -aFq "safe_mla_query_bmm" \
+      /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so
+
+FROM checked-base
+
+LABEL org.opencontainers.image.base.name="docker.io/voipmonitor/vllm"
+LABEL org.opencontainers.image.base.digest="sha256:adddafd2b1749729fdf2d2ca23818c7c39f2a95e6fb05edd98657251913b83f2"
+LABEL org.opencontainers.image.revision="e16288f5d006726b0492981d3db5627fc5d9f70e"
+LABEL io.yatesdr.vllm.base-revision="992b874cf7ae504616bbb1d2d4f7a7355be6972b"
+LABEL io.yatesdr.sparkinfer.base-revision="a93df671cc7b33734f499b57228e542c3d3c3697"
+LABEL io.yatesdr.sparkinfer.overlay-revision="d4969d993cdd16cc417056d471af42d10ac3fada"
+LABEL io.yatesdr.vllm.patchset="#165,native-mtp3-gate,#154,bf16-fp8-staged,#171,#168"
+LABEL io.yatesdr.sparkinfer.base-patchset="#76"
+LABEL io.yatesdr.sparkinfer.overlay-patchset="persistent-output-validation"
+
+COPY workspace/vllm-v20-staged-bf16-fp8-query/vllm/v1/kv_offload/tiering/fs/manager.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py
+COPY workspace/vllm-v20-staged-bf16-fp8-query/vllm/v1/attention/backends/mla/indexer.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/indexer.py
+COPY workspace/vllm-v20-staged-bf16-fp8-query/vllm/model_executor/layers/attention/mla_attention.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/attention/mla_attention.py
+COPY workspace/vllm-v20-staged-bf16-fp8-query/vllm/v1/attention/backend.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backend.py
+COPY workspace/vllm-v20-staged-bf16-fp8-query/vllm/v1/attention/backends/mla/b12x_mla_sparse.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+COPY workspace/vllm-v20-staged-bf16-fp8-query/vllm/model_executor/kernels/attention/b12x_mxfp8_bmm.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/model_executor/kernels/attention/b12x_mxfp8_bmm.py
+COPY workspace/vllm-v20-staged-bf16-fp8-query/vllm/v1/worker/gpu/model_runner.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/model_runner.py
+COPY workspace/sparkinfer-v20-current-recovery/sparkinfer/comm/pcie/pcie_dma.py \
+    /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py
+
+RUN /opt/venv/bin/python -m py_compile \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/indexer.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/attention/mla_attention.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backend.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/model_executor/kernels/attention/b12x_mxfp8_bmm.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/model_runner.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py | cut -d ' ' -f 1)" = "653edbf4b393e2acd6204bf4664c300eaee9e959656040864491c94548b4cc60" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/indexer.py | cut -d ' ' -f 1)" = "23ad50cb6017e54f1c9fee76b0d999e3544d584e9377fc776041bfa3d2d2b821" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/attention/mla_attention.py | cut -d ' ' -f 1)" = "e26e59551b392ed9ddb307276cebf9082eb5a3cb2d1e53c216ac15c7bd520a33" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backend.py | cut -d ' ' -f 1)" = "1c18cf73b5012ceea610b23e45fa18bbd3847a37523238861ee8fb1b77464304" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py | cut -d ' ' -f 1)" = "885401fc5dc10dcfa02fe6fc524763bb9a44150e4cf743c1e6f9a3460002da74" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/kernels/attention/b12x_mxfp8_bmm.py | cut -d ' ' -f 1)" = "d86b31543fa308b77bfff32b7a674646dcc2d250a7309ec6e5e621032deeb397" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/model_runner.py | cut -d ' ' -f 1)" = "85dedfb225b8e3f239f23590bb2143498f8b5bed453d4efcd83208d88e9c4647" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py | cut -d ' ' -f 1)" = "42ec698533d9404c20672d6b0800961cef1387833725b8762dd5469f78673ee3" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py | cut -d ' ' -f 1)" = "57d5ec00c70e60024bd94bb6afbb9174144c9c07cf88e5568a996ab511bc24c5"

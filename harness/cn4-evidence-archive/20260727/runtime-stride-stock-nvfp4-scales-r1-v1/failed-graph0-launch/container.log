@@ -1,0 +1,71 @@
+Process-group interfaces: GLOO_SOCKET_IFNAME=lo NCCL_SOCKET_IFNAME=lo
+GLM-5.2 DCP CKV prefetch topology: not-applicable
+GLM-5.2 PCIe calibration: skipped:explicit-compressed-dma cache=none DMA-min=6MB
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+(APIServer pid=1) INFO 07-27 21:52:37 [api_utils.py:345] 
+(APIServer pid=1) INFO 07-27 21:52:37 [api_utils.py:345]        █     █     █▄   ▄█
+(APIServer pid=1) INFO 07-27 21:52:37 [api_utils.py:345]  ▄▄ ▄█ █     █     █ ▀▄▀ █  version 0.11.2.dev280+gilded.gnosis.v20.vllm0c79e41.sic3828fd.fi801d57a.cu132.20260727
+(APIServer pid=1) INFO 07-27 21:52:37 [api_utils.py:345]   █▄█▀ █     █     █     █  model   /model
+(APIServer pid=1) INFO 07-27 21:52:37 [api_utils.py:345]    ▀▀  ▀▀▀▀▀ ▀▀▀▀▀ ▀     ▀
+(APIServer pid=1) INFO 07-27 21:52:37 [api_utils.py:345] 
+(APIServer pid=1) INFO 07-27 21:52:37 [api_utils.py:273] non-default args: {'model_tag': '/model', 'default_chat_template_kwargs': {'reasoning_effort': 'high'}, 'enable_auto_tool_choice': True, 'tool_call_parser': 'glm47', 'enable_prompt_tokens_details': True, 'enable_force_include_usage': True, 'host': '0.0.0.0', 'port': 5001, 'enable_request_id_headers': True, 'model': '/model', 'trust_remote_code': True, 'max_model_len': 360000, 'quantization': 'nvfp4_nf3_hybrid', 'quantization_config': QuantizationConfigArgs(linear=QuantSpec(weight=QuantKey(dtype=torch.float8_e4m3fn, scale=ScaleDesc(dtype=torch.uint8, static=False, group_shape=GroupShape(row=1, col=32)), scale2=None, symmetric=True), activation=None), moe=None, shared_experts=QuantSpec(weight=QuantKey(dtype=torch.float8_e4m3fn, scale=ScaleDesc(dtype=torch.uint8, static=False, group_shape=GroupShape(row=1, col=32)), scale2=None, symmetric=True), activation=None), ignore=['re:^model\\.layers\\.0\\.', 're:.*\\.self_attn\\.indexer\\.', 're:.*\\.mlp\\.gate$', 'model.layers.78.eh_proj', 'lm_head']), 'served_model_name': ['GLM-5.2'], 'hf_overrides': {'use_index_cache': True, 'index_topk_pattern': 'FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS'}, 'load_format': 'instanttensor', 'attention_backend': 'B12X_MLA_SPARSE', 'reasoning_parser': 'glm45', 'tensor_parallel_size': 4, 'decode_context_parallel_size': 4, 'dcp_comm_backend': 'a2a', 'gpu_memory_utilization': 0.95, 'kv_cache_dtype': 'nvfp4_ds_mla', 'enable_prefix_caching': False, 'max_num_batched_tokens': 3072, 'max_num_seqs': 1, 'enable_chunked_prefill': True, 'async_scheduling': True, 'max_cudagraph_capture_size': 0, 'enable_flashinfer_autotune': True, 'moe_backend': 'b12x', 'compilation_config': {'mode': None, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': [], 'ir_enable_torch_wrap': None, 'splitting_ops': None, 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': None, 'compile_ranges_endpoints': None, 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': None, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': None, 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': None, 'pass_config': {'fuse_allreduce_rms': True}, 'max_cudagraph_capture_size': None, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': None, 'static_all_moe_layers': []}}
+(APIServer pid=1) WARNING 07-27 21:52:37 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_PCIE_DMA_FP8
+(APIServer pid=1) WARNING 07-27 21:52:37 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_USE_B12X_PCIE_DMA
+(APIServer pid=1) WARNING 07-27 21:52:37 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_RTX6K_FUSED_ALLREDUCE_ADD
+(APIServer pid=1) WARNING 07-27 21:52:37 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_CACHE_DIR
+(APIServer pid=1) WARNING 07-27 21:52:37 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_CPP_AR_IGNORE_CUTOFF_MAX_ROWS
+(APIServer pid=1) WARNING 07-27 21:52:37 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_RTX6K_FUSED_ALLREDUCE_ADD_END_BARRIER
+(APIServer pid=1) WARNING 07-27 21:52:37 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_CPP_AR_1STAGE_NCCL_CUTOFF
+(APIServer pid=1) WARNING 07-27 21:52:37 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_NVFP4_MLA_SCALES_FILE
+(APIServer pid=1) INFO 07-27 21:52:53 [model.py:622] Resolved architecture: GlmMoeDsaForCausalLM
+(APIServer pid=1) INFO 07-27 21:52:53 [model.py:1790] Using max model len 360000
+(APIServer pid=1) INFO 07-27 21:52:56 [cache.py:286] Using nvfp4_ds_mla data type to store kv cache. It reduces the GPU memory footprint and boosts the performance. Meanwhile, it may cause accuracy drop without a proper scaling factor
+(APIServer pid=1) INFO 07-27 21:52:56 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=3072.
+(APIServer pid=1) WARNING 07-27 21:52:56 [modelopt.py:1114] Detected ModelOpt NVFP4 checkpoint (quant_algo=NVFP4). Please note that the format is experimental and could change in future.
+(APIServer pid=1) INFO 07-27 21:52:56 [vllm.py:1162] Asynchronous scheduling is enabled.
+(APIServer pid=1) INFO 07-27 21:52:56 [kernel.py:299] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['native'], fused_add_rms_norm=['native'])
+(APIServer pid=1) Traceback (most recent call last):
+(APIServer pid=1)   File "/opt/venv/bin/vllm", line 7, in <module>
+(APIServer pid=1)     sys.exit(main())
+(APIServer pid=1)              ^^^^^^
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/cli/main.py", line 95, in main
+(APIServer pid=1)     args.dispatch_function(args)
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/cli/serve.py", line 148, in cmd
+(APIServer pid=1)     uvloop.run(run_server(args))
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/uvloop/__init__.py", line 96, in run
+(APIServer pid=1)     return __asyncio.run(
+(APIServer pid=1)            ^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/asyncio/runners.py", line 194, in run
+(APIServer pid=1)     return runner.run(main)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/usr/lib/python3.12/asyncio/runners.py", line 118, in run
+(APIServer pid=1)     return self._loop.run_until_complete(task)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "uvloop/loop.pyx", line 1518, in uvloop.loop.Loop.run_until_complete
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/uvloop/__init__.py", line 48, in wrapper
+(APIServer pid=1)     return await main
+(APIServer pid=1)            ^^^^^^^^^^
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 759, in run_server
+(APIServer pid=1)     await run_server_worker(listen_address, sock, args, **uvicorn_kwargs)
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 773, in run_server_worker
+(APIServer pid=1)     async with build_async_engine_client(
+(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=1)     return await anext(self.gen)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 139, in build_async_engine_client
+(APIServer pid=1)     async with build_async_engine_client_from_engine_args(
+(APIServer pid=1)   File "/usr/lib/python3.12/contextlib.py", line 210, in __aenter__
+(APIServer pid=1)     return await anext(self.gen)
+(APIServer pid=1)            ^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/entrypoints/openai/api_server.py", line 163, in build_async_engine_client_from_engine_args
+(APIServer pid=1)     vllm_config = engine_args.create_engine_config(usage_context=usage_context)
+(APIServer pid=1)                   ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/vllm/engine/arg_utils.py", line 2384, in create_engine_config
+(APIServer pid=1)     config = VllmConfig(
+(APIServer pid=1)              ^^^^^^^^^^^
+(APIServer pid=1)   File "/opt/venv/lib/python3.12/site-packages/pydantic/_internal/_dataclasses.py", line 121, in __init__
+(APIServer pid=1)     s.__pydantic_validator__.validate_python(ArgsKwargs(args, kwargs), self_instance=s)
+(APIServer pid=1) pydantic_core._pydantic_core.ValidationError: 1 validation error for VllmConfig
+(APIServer pid=1)   Assertion failed, Maximum cudagraph size should be greater than or equal to 1 when using cuda graph. [type=assertion_error, input_value=ArgsKwargs((), {'model_co... 'shutdown_timeout': 0}), input_type=ArgsKwargs]
+(APIServer pid=1)     For further information visit https://errors.pydantic.dev/2.13/v/assertion_error

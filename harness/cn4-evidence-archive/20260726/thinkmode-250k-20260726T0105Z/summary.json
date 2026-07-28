@@ -1,0 +1,83 @@
+{
+  "ctx": 245491,
+  "depth": 250000,
+  "seed": 20260725,
+  "rows": [
+    {
+      "variant": "chat-default",
+      "verdict": "REASONING_ONLY",
+      "finish_reason": "stop",
+      "think_closed": false,
+      "cached_tokens": 0,
+      "usage": {
+        "prompt_tokens": 245503,
+        "total_tokens": 245507,
+        "completion_tokens": 4,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "",
+      "reasoning": "738216",
+      "secs": 313.8
+    },
+    {
+      "variant": "chat-nothink",
+      "verdict": "EXACT",
+      "finish_reason": "stop",
+      "think_closed": false,
+      "cached_tokens": 0,
+      "usage": {
+        "prompt_tokens": 245497,
+        "total_tokens": 245501,
+        "completion_tokens": 4,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "738216",
+      "reasoning": "",
+      "secs": 315.3
+    },
+    {
+      "variant": "chat-thinkfls",
+      "verdict": "IN_CONTENT",
+      "finish_reason": "stop",
+      "think_closed": false,
+      "cached_tokens": 244992,
+      "usage": {
+        "prompt_tokens": 245503,
+        "total_tokens": 245521,
+        "completion_tokens": 18,
+        "prompt_tokens_details": {
+          "cached_tokens": 244992,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "The maintenance ticket number for the Facility 27 compressor overhaul is 738216.",
+      "reasoning": "",
+      "secs": 2.2
+    },
+    {
+      "variant": "raw",
+      "verdict": "ABSENT",
+      "finish_reason": "length",
+      "think_closed": false,
+      "cached_tokens": 67584,
+      "usage": {
+        "prompt_tokens": 245491,
+        "total_tokens": 247491,
+        "completion_tokens": 2000,
+        "prompt_tokens_details": {
+          "cached_tokens": 67584,
+          "multimodal_tokens": null
+        }
+      },
+      "content": " No explanation. No yapping. No preface. No thinking out loud. No preamble. No intro. No outro. No wrap-up. No conclusion. No summary. No recap. No restatement. No acknowledgment. No greeting. No sign-off. No pleasantries. No filler. No fluff. No padding. No redundancy. No repetition. No duplication. No reiteration. No restating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing. No echoing. No mirroring. No reflecting. No summarizing. No recapping. No restating. No reiterating. No rephrasing. No paraphrasing",
+      "reasoning": "",
+      "secs": 265.3
+    }
+  ]
+}

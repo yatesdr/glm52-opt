@@ -1,0 +1,173 @@
+# GLM-5.2 MXFP8-NVFP4-NF3 Hybrid — TP4/DCP4 best config on the STOCK v19 image.
+#
+# Runs on the stock Discord image (no custom pull) by calling `vllm serve` directly,
+# same pattern as Lavd's compose — so none of our wrapper-script patches are needed.
+#
+# Node: 4x RTX PRO 6000 (96 GB). Deploy: edit the two /model + cache volume paths, then
+#   docker compose -f GLM-5.2-hybrid-TP4.yaml up -d
+#
+# Two knobs are under active tuning (see inline NOTEs): the fp8 PCIe-DMA mode and the DCP
+# comm backend. Values below are our current-best; the rest is validated (full ladder,
+# conc 1-16 + 55k prefill + needle@50k/@350k, 0 errors, 0 restarts).
+services:
+  g52h:
+    image: sha256:6d32a0c3a64962078c74c86485da1090c9f01b287c70009e4761359ed063c338  # tag gilded-gnosis-v19-int8-block-patched; digest-pinned, reverify after ghcr push
+    pull_policy: missing
+    container_name: glm52-cn4-v20
+    restart: unless-stopped
+    healthcheck:
+      # exec form (no shell) — urlopen raises non-zero on non-200/timeout => unhealthy
+      test: ["CMD", "/opt/venv/bin/python", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 2600s   # ~43 min: clears worst-case cold boot (weights+compile+offload) so autoheal never kills a slow-but-healthy boot
+    labels:
+      - autoheal=true
+    ports:
+      - "0.0.0.0:5001:5001"
+    gpus: all
+    shm_size: "32g"   # vestigial under ipc:host below; offload uses host /dev/shm (100G, 64G tier fits)
+    ipc: "host"           # shares host /dev/shm — the 64 GB offload mmap lives there (see entrypoint cleanup)
+    ulimits:
+      memlock: -1
+      nofile: 1048576
+    environment:
+      # --- process / topology (single host) ---
+      - CUDA_VISIBLE_DEVICES=0,1,2,3
+      - CUDA_DEVICE_MAX_CONNECTIONS=32
+      - CUTE_DSL_ARCH=sm_120a
+      - TORCH_CUDA_ARCH_LIST=12.0a
+      - OMP_NUM_THREADS=16
+      - GLOO_SOCKET_IFNAME=lo
+      - NCCL_SOCKET_IFNAME=lo
+      - NCCL_IB_DISABLE=1
+      - NCCL_P2P_LEVEL=SYS
+      - NCCL_PROTO=LL,LL128,Simple
+      - VLLM_WORKER_MULTIPROC_METHOD=spawn
+      - SAFETENSORS_FAST_GPU=1
+      - LD_PRELOAD=/opt/libnccl-local-inference.so.2.30.4
+      - VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+      - XDG_CACHE_HOME=/cache/jit
+      - TRITON_CACHE_DIR=/cache/jit/triton
+      # --- REQUIRED for the KV offload tier: offload is incompatible with expandable_segments:True ---
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:False
+      # --- our checkpoint-specific knobs (the ones that differ from a plain b12x run) ---
+      - KV_FP8_ROPE=1                 # 368 B compact KV record — required to fit 480k
+      - NF3_GRID188=1
+      - VLLM_NF3_GRID188_DECODE=1     # v18 faster nf3 decode
+      # --- b12x feature set ---
+      - VLLM_USE_B12X_FP8_GEMM=1
+      - VLLM_USE_B12X_MOE=1
+      - VLLM_USE_B12X_SPARSE_INDEXER=1
+      - VLLM_USE_B12X_WO_PROJECTION=1
+      - VLLM_USE_B12X_MHC=1
+      - VLLM_USE_B12X_DCP_A2A=1
+      - VLLM_USE_B12X_PCIE_DMA=1
+      - VLLM_USE_V2_MODEL_RUNNER=1
+      - VLLM_USE_AOT_COMPILE=1
+      - VLLM_USE_MEGA_AOT_ARTIFACT=1
+      - VLLM_USE_FLASHINFER_SAMPLER=1
+      - VLLM_USE_BREAKABLE_CUDAGRAPH=0
+      - B12X_W4A16_TC_DECODE=1
+      - B12X_W4A8_TINY_DECODE=1
+      - B12X_MLA_SM120_UNIFIED=1
+      - B12X_DENSE_SPLITK_TURBO=1
+      - B12X_MOE_FORCE_A16=1          # expert activation path only; NVFP4/NF3 weights untouched
+      - B12X_MOE_FORCE_A8=0
+      # --- DCP4 collective / prefill workspace ---
+      - VLLM_DCP_GLOBAL_TOPK=1
+      - VLLM_DCP_SHARD_DRAFT=1
+      - VLLM_DCP_QUERY_SPLIT=0
+      - VLLM_DCP_A2A_MAX_TOKENS=64
+      - VLLM_DCP_A2A_LARGE_BACKEND=ag_rs
+      - VLLM_DCP_PROJECT_BEFORE_MERGE=1                      # dcp4 prefill workspace (needs batched=3072)
+      - VLLM_DCP_PROJECT_BEFORE_MERGE_MIN_PREFILL_TOKENS=1024
+      - VLLM_B12X_MLA_DCP_GATHER_IN_WORKSPACE=1
+      - VLLM_B12X_MLA_CKV_GATHER=1
+      # --- PCIe all-reduce + fp8 DMA ---
+      - VLLM_ENABLE_PCIE_ALLREDUCE=1
+      - VLLM_PCIE_ALLREDUCE_BACKEND=b12x
+      - VLLM_PCIE_ONESHOT_ALLREDUCE_MAX_SIZE=64KB
+      - VLLM_PCIE_ONESHOT_FUSED_ADD_RMS_NORM_MAX_SIZE=84KB   # pairs with fuse_allreduce_rms
+      # PCIe all-reduce TP wire mode. i8_ring = block-INT8 ring (PR #46 + PR #44 rank-consistency,
+      # baked into the image): recovers ~1,640 tok/s prefill AND passes needle retrieval at full
+      # depth 50k-475k, unlike E4M3 ag/ring which corrupt deep retrieval. Validated prod choice.
+      # NOTE: VLLM_DISABLE_SHARED_EXPERTS_STREAM dropped (cost ~11% decode). The rare v19 async
+      # cuBLAS concurrency hazard (Sol) is instead covered by the autoheal watchdog (~90s
+      # recovery); the full PR#132/#47 fix lands in v20.
+      - VLLM_PCIE_DMA_FP8=i8_ring
+      - B12X_PCIE_DMA_FP8=i8_ring
+      - TORCH_EXTENSIONS_DIR=/cache/int8ext_baked_a826ef58   # fresh dir forces clean recompile of the baked .cu (a826ef58)
+      # --- memory profiler (helps the 480k GMU headroom estimate) ---
+      - VLLM_MEMORY_PROFILE_INCLUDE_ATTN=1
+      - VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1
+      - VLLM_DISABLED_KERNELS=MarlinFP8ScaledMMLinearKernel
+    volumes:
+      - /home/claude/LLM/GLM-5.2-hybrid:/model:ro
+      - /home/claude/glm52-cn4-v20/cache:/cache:rw             # <-- EDIT: writable JIT/AOT cache dir
+      - /home/claude/glm52-cn4-v20/cache:/root/.cache:rw
+    entrypoint:
+      - /bin/sh
+      - -c
+      # clear stale offload mmaps from prior containers (ipc:host shares /dev/shm) so the 64 GB
+      # offload region can allocate; without this a crowded /dev/shm crashes offload init.
+      - 'rm -f /dev/shm/vllm_offload_*.mmap 2>/dev/null || true; exec vllm serve "$@"'
+      - --
+    command:
+      - /model
+      - --served-model-name=GLM-5.2
+      - --host=0.0.0.0
+      - --port=5001
+      - --trust-remote-code
+      - --tensor-parallel-size=4
+      - --decode-context-parallel-size=4
+      # NOTE (tuning): a2a is validated; ag_rs is the Discord decode tip we're testing next.
+      - --dcp-comm-backend=a2a
+      - --dcp-kv-cache-interleave-size=1
+      - --kv-cache-dtype=nvfp4_ds_mla
+      - --attention-backend=B12X_MLA_SPARSE
+      - --moe-backend=b12x
+      - --quantization=nvfp4_nf3_hybrid
+      - '--quantization-config={"linear":{"weight":"mxfp8"},"shared_experts":{"weight":"mxfp8"},"ignore":["re:^model\\.layers\\.0\\.","re:.*\\.self_attn\\.indexer\\.","re:.*\\.mlp\\.gate$","model.layers.78.eh_proj","lm_head"]}'
+      - --load-format=safetensors
+      - -cc.pass_config.fuse_allreduce_rms=True
+      # Diagnostic resource fit: preserve the documented stable ceiling with
+      # offload while the trace op adds CUDA-graph state. This changes KV pool
+      # capacity only; it does not change model arithmetic.
+      - --gpu-memory-utilization=0.970
+      - --max-model-len=480000
+      - --max-num-seqs=16
+      - --max-num-batched-tokens=3072
+      - --max-cudagraph-capture-size=64
+      - --async-scheduling
+      - --enable-chunked-prefill
+      - --enable-prefix-caching
+      - --enable-flashinfer-autotune
+      - --enable-auto-tool-choice
+      - --tool-call-parser=glm47
+      - --reasoning-parser=glm45
+      - '--default-chat-template-kwargs={"reasoning_effort":"high"}'
+      - --enable-prompt-tokens-details
+      - --enable-force-include-usage
+      - --enable-request-id-headers
+      - '--hf-overrides={"use_index_cache":true,"index_topk_pattern":"FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS"}'
+      - '--speculative-config={"model":"/model","method":"mtp","num_speculative_tokens":3,"moe_backend":"b12x","draft_sample_method":"probabilistic"}'
+      # KV offload: GPU hot tier + 64 GB DRAM warm tier (extends prefix caching). Remove this line
+      # for GPU-only (then you can raise --gpu-memory-utilization).
+      - '--kv-transfer-config={"kv_connector":"OffloadingConnector","kv_role":"kv_both","kv_connector_extra_config":{"spec_name":"TieringOffloadingSpec","cpu_bytes_to_use":64000000000,"secondary_tiers":[]}}'
+
+  # Watchdog: restarts glm52-prod if its healthcheck reports unhealthy (covers a wedged
+  # engine that restart:unless-stopped misses). Needs the docker socket. Delete this whole
+  # service if you do not want socket access in your deployment.
+  autoheal:
+    image: willfarrell/autoheal@sha256:31f580ef0279eaced5b38d631b08c474d70d8403c1c2fdd6ddcf2e879d5f3f7c
+    container_name: glm52-autoheal
+    restart: unless-stopped
+    network_mode: none
+    environment:
+      - AUTOHEAL_CONTAINER_LABEL=autoheal
+      - AUTOHEAL_INTERVAL=30
+      - AUTOHEAL_START_PERIOD=120
+    volumes:
+      - /var/run/docker.sock:/var/run/docker.sock

@@ -1,0 +1,25 @@
+{
+  "pass": false,
+  "results": [
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 22017,
+          "score": 5.2987470626831055
+        }
+      ],
+      "intersection": 2047,
+      "rank": 0,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 70092,
+          "score": 5.371701240539551
+        }
+      ],
+      "set_exact": false
+    }
+  ],
+  "schema": "v20-indexer-replay-repeatability-v1"
+}

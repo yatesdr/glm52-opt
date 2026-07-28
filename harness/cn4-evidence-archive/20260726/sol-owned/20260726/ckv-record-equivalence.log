@@ -1,0 +1,98 @@
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+W0726 06:52:17.030000 1 torch/distributed/run.py:862] 
+W0726 06:52:17.030000 1 torch/distributed/run.py:862] *****************************************
+W0726 06:52:17.030000 1 torch/distributed/run.py:862] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0726 06:52:17.030000 1 torch/distributed/run.py:862] *****************************************
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/proof/v20_ckv_prefetch_record_equivalence_probe.py", line 373, in <module>
+[rank1]:     raise SystemExit(main())
+[rank1]:                      ^^^^^^
+[rank1]:   File "/proof/v20_ckv_prefetch_record_equivalence_probe.py", line 309, in main
+[rank1]:     from b12x.attention.mla.kv_cache import (
+[rank1]: ModuleNotFoundError: No module named 'b12x'
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/proof/v20_ckv_prefetch_record_equivalence_probe.py", line 373, in <module>
+[rank0]:     raise SystemExit(main())
+[rank0]:                      ^^^^^^
+[rank0]:   File "/proof/v20_ckv_prefetch_record_equivalence_probe.py", line 309, in main
+[rank0]:     from b12x.attention.mla.kv_cache import (
+[rank0]: ModuleNotFoundError: No module named 'b12x'
+[rank3]: Traceback (most recent call last):
+[rank3]:   File "/proof/v20_ckv_prefetch_record_equivalence_probe.py", line 373, in <module>
+[rank3]:     raise SystemExit(main())
+[rank3]:                      ^^^^^^
+[rank3]:   File "/proof/v20_ckv_prefetch_record_equivalence_probe.py", line 309, in main
+[rank3]:     from b12x.attention.mla.kv_cache import (
+[rank3]: ModuleNotFoundError: No module named 'b12x'
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "/proof/v20_ckv_prefetch_record_equivalence_probe.py", line 373, in <module>
+[rank2]:     raise SystemExit(main())
+[rank2]:                      ^^^^^^
+[rank2]:   File "/proof/v20_ckv_prefetch_record_equivalence_probe.py", line 309, in main
+[rank2]:     from b12x.attention.mla.kv_cache import (
+[rank2]: ModuleNotFoundError: No module named 'b12x'
+W0726 06:52:22.050000 1 torch/distributed/elastic/multiprocessing/api.py:1014] Sending process 101 closing signal SIGTERM
+W0726 06:52:22.051000 1 torch/distributed/elastic/multiprocessing/api.py:1014] Sending process 102 closing signal SIGTERM
+W0726 06:52:22.051000 1 torch/distributed/elastic/multiprocessing/api.py:1014] Sending process 103 closing signal SIGTERM
+E0726 06:52:22.130000 1 torch/distributed/elastic/multiprocessing/api.py:988] failed (exitcode: 1) local_rank: 0 (pid: 100) of binary: /opt/venv/bin/python
+Traceback (most recent call last):
+  File "/opt/venv/bin/torchrun", line 7, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 367, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/run.py", line 1016, in main
+    run(args)
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/run.py", line 1007, in run
+    elastic_launch(
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 191, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 371, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/proof/v20_ckv_prefetch_record_equivalence_probe.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-07-26_06:52:22
+  host      : cn4
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 101) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[2]:
+  time      : 2026-07-26_06:52:22
+  host      : cn4
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 102) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[3]:
+  time      : 2026-07-26_06:52:22
+  host      : cn4
+  rank      : 3 (local_rank: 3)
+  exitcode  : 1 (pid: 103) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-07-26_06:52:22
+  host      : cn4
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 100) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

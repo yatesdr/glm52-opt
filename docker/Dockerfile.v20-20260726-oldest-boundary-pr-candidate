@@ -1,0 +1,28 @@
+ARG BASE_IMAGE=voipmonitor/vllm@sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0
+FROM ${BASE_IMAGE}
+
+ARG BASE_TOPK_SHA256=57d5ec00c70e60024bd94bb6afbb9174144c9c07cf88e5568a996ab511bc24c5
+ARG FIXED_TOPK_SHA256=b15bab73f1fcd6434f712f6fc99ec5369104969cb9157ae473926bf40d72e23b
+
+COPY workspace/sparkinfer-longctx-oldest-pr/sparkinfer/attention/nsa_indexer/tiled_topk.py \
+    /tmp/v20-oldest-boundary/tiled_topk.py
+
+RUN set -eu; \
+    target=/opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py; \
+    staged=/tmp/v20-oldest-boundary/tiled_topk.py; \
+    test "$(sha256sum "${target}" | cut -d' ' -f1)" = "${BASE_TOPK_SHA256}"; \
+    test "$(sha256sum "${staged}" | cut -d' ' -f1)" = "${FIXED_TOPK_SHA256}"; \
+    install -m 0644 "${staged}" "${target}"; \
+    /opt/venv/bin/python -m py_compile "${target}"; \
+    /opt/venv/bin/python -c \
+      "from sparkinfer.attention.nsa_indexer.tiled_topk import _resolve_selection_policy as r; assert r(None) == 'exact'; assert r(' oldest_boundary ') == 'oldest_boundary'"; \
+    test "$(sha256sum "${target}" | cut -d' ' -f1)" = "${FIXED_TOPK_SHA256}"; \
+    rm -rf /tmp/v20-oldest-boundary
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 oldest-boundary PR candidate" \
+      local-inference.base.digest="sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0" \
+      local-inference.vllm.base_commit="0c79e41db41f250ccdfc4be92d171960a5787f73" \
+      local-inference.sparkinfer.base_commit="e603f74bb67d0fce547336f1fb73c3c23e8f1887" \
+      local-inference.sparkinfer.selector_commit="1a71afe0" \
+      local-inference.sparkinfer.selector.policy="oldest_boundary" \
+      local-inference.diagnostics="none"

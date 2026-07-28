@@ -1,0 +1,338 @@
+From 7562bb27e861de559f589cab7a81dab9d9936420 Mon Sep 17 00:00:00 2001
+From: derek <derek.yates@live.com>
+Date: Wed, 22 Jul 2026 22:25:23 -0400
+Subject: [PATCH] fix(mla): restore safe query BMM layouts
+
+---
+ tests/v1/attention/test_mla_backends.py       | 213 ++++++++++++++++++
+ .../layers/attention/mla_attention.py         |  21 +-
+ .../attention/backends/mla/b12x_mla_sparse.py |  10 +
+ 3 files changed, 242 insertions(+), 2 deletions(-)
+
+diff --git a/tests/v1/attention/test_mla_backends.py b/tests/v1/attention/test_mla_backends.py
+index 79e7ca13..488c91e4 100644
+--- a/tests/v1/attention/test_mla_backends.py
++++ b/tests/v1/attention/test_mla_backends.py
+@@ -139,6 +139,29 @@ def test_mla_absorbed_weight_preallocation_reuses_compatible_storage():
+     assert pre_w_uk_t is None
+ 
+ 
++@pytest.mark.cpu_test
++def test_mla_absorbed_weight_preallocation_replaces_strided_storage():
++    layer = SimpleNamespace(
++        kv_lora_rank=2,
++        num_heads=2,
++        qk_nope_head_dim=3,
++        v_head_dim=4,
++        kv_b_proj=torch.nn.Module(),
++        W_UV=torch.empty((2, 4, 2), dtype=torch.float32).transpose(1, 2),
++        W_UK_T=torch.empty((2, 2, 3), dtype=torch.float32).transpose(1, 2),
++        force_contiguous_mla_bmm_weight=True,
++    )
++    assert not layer.W_UV.is_contiguous()
++    assert not layer.W_UK_T.is_contiguous()
++
++    pre_w_uv, pre_w_uk_t = mla_attention_module._preallocate_absorbed_mla_weights(
++        layer, torch.float32
++    )
++
++    assert pre_w_uv is not None and pre_w_uv.is_contiguous()
++    assert pre_w_uk_t is not None and pre_w_uk_t.is_contiguous()
++
++
+ @pytest.mark.parametrize(
+     ("cache_dtype", "expected_quant_mode"),
+     [
+@@ -163,6 +186,79 @@ def test_mla_kv_cache_spec_uses_layer_cache_dtype(
+         assert spec.page_size_bytes == 64 * 656
+ 
+ 
++@pytest.mark.cpu_test
++def test_mla_init_propagates_query_bmm_contiguity_contract(monkeypatch):
++    class FakeImpl:
++        is_sparse = True
++        supports_mha_prefill = False
++
++        def __init__(self, **kwargs):
++            self.force_contiguous_mla_bmm_input = True
++            self.force_contiguous_mla_bmm_weight = True
++
++    class FakeBackend:
++        @staticmethod
++        def is_mla():
++            return True
++
++        @staticmethod
++        def get_name():
++            return "TEST_MLA"
++
++        @staticmethod
++        def get_impl_cls():
++            return FakeImpl
++
++    config = SimpleNamespace(
++        compilation_config=SimpleNamespace(
++            static_forward_context={}, cudagraph_capture_sizes=[]
++        ),
++        attention_config=SimpleNamespace(mla_prefill_backend=None),
++        parallel_config=SimpleNamespace(
++            decode_context_parallel_size=1,
++            dcp_comm_backend="a2a",
++        ),
++        scheduler_config=SimpleNamespace(max_num_batched_tokens=128),
++    )
++    monkeypatch.setattr(
++        mla_attention_module, "get_current_vllm_config", lambda: config
++    )
++    monkeypatch.setattr(
++        mla_attention_module, "get_current_vllm_config_or_none", lambda: config
++    )
++    monkeypatch.setattr(mla_attention_module, "_init_kv_cache_quant", lambda *a: None)
++    monkeypatch.setattr(
++        mla_attention_module,
++        "get_mla_prefill_backend",
++        lambda _: (_ for _ in ()).throw(ValueError),
++    )
++    monkeypatch.setattr(mla_attention_module, "_DecodeConcatQuantFP8", lambda **_: None)
++    monkeypatch.setattr(mla_attention_module, "QuantFP8", lambda **_: None)
++    monkeypatch.setattr(
++        mla_attention_module.rocm_aiter_ops, "is_fp8bmm_enabled", lambda: False
++    )
++    monkeypatch.setattr(
++        mla_attention_module.rocm_aiter_ops, "is_fp4bmm_enabled", lambda: False
++    )
++
++    layer = MLAAttention(
++        num_heads=8,
++        scale=1.0,
++        qk_nope_head_dim=4,
++        qk_rope_head_dim=2,
++        v_head_dim=3,
++        q_lora_rank=None,
++        kv_lora_rank=4,
++        kv_b_proj=SimpleNamespace(),
++        prefix="test",
++        attn_backend=FakeBackend,
++        use_sparse=True,
++    )
++
++    assert layer.force_contiguous_mla_bmm_input
++    assert layer.force_contiguous_mla_bmm_weight
++
++
+ # Remove sm100 backends from the list if not using sm100
+ if not torch.cuda.is_available() or torch.cuda.get_device_properties(0).major < 10:
+     BACKENDS_TO_TEST.remove(AttentionBackendEnum.CUTLASS_MLA)
+@@ -224,6 +320,48 @@ def test_mla_post_load_preserves_runtime_weight_addresses(monkeypatch):
+     torch.testing.assert_close(layer.W_UK_T, old_w_uk_t + 100)
+ 
+ 
++@pytest.mark.cpu_test
++def test_mla_post_load_replaces_strided_absorbed_weights(monkeypatch):
++    layer = MLAAttention.__new__(MLAAttention)
++    torch.nn.Module.__init__(layer)
++    layer.kv_lora_rank = 2
++    layer.num_heads = 2
++    layer.qk_nope_head_dim = 3
++    layer.v_head_dim = 4
++    layer.kv_b_proj = torch.nn.Module()
++    layer.kv_b_proj.weight = torch.nn.Parameter(
++        torch.arange(28.0, dtype=torch.float32).reshape(14, 2)
++    )
++    layer.kv_b_proj.quant_method = None
++    layer.is_aiter_triton_fp4_bmm_enabled = False
++    layer.is_aiter_triton_fp8_bmm_enabled = False
++    layer.force_contiguous_mla_bmm_weight = True
++    layer.quant_config = None
++    layer.layer_name = "test"
++    layer.W_UV = torch.nn.Parameter(
++        torch.empty((2, 4, 2), dtype=torch.float32).transpose(1, 2)
++    )
++    layer.W_UK_T = torch.nn.Parameter(
++        torch.empty((2, 2, 3), dtype=torch.float32).transpose(1, 2)
++    )
++    old_w_uv_ptr = layer.W_UV.data_ptr()
++    old_w_uk_t_ptr = layer.W_UK_T.data_ptr()
++    assert not layer.W_UV.is_contiguous()
++    assert not layer.W_UK_T.is_contiguous()
++
++    monkeypatch.setattr(
++        mla_attention_module, "set_default_quant_scales", lambda *_, **__: None
++    )
++
++    with torch.no_grad():
++        layer.process_weights_after_loading(torch.float32)
++
++    assert layer.W_UV.is_contiguous()
++    assert layer.W_UK_T.is_contiguous()
++    assert layer.W_UV.data_ptr() != old_w_uv_ptr
++    assert layer.W_UK_T.data_ptr() != old_w_uk_t_ptr
++
++
+ def _make_b12x_absorb_bmm_layer() -> MLAAttention:
+     layer = MLAAttention.__new__(MLAAttention)
+     torch.nn.Module.__init__(layer)
+@@ -778,6 +916,81 @@ def test_sparse_mla_profile_skips_dense_prefill_workspace(monkeypatch):
+     assert torch.equal(output, torch.zeros_like(output))
+ 
+ 
++@pytest.mark.cpu_test
++def test_mla_query_absorb_materializes_bmm_input(monkeypatch):
++    class FakeSparseImpl(SparseMLACommonImpl):
++        supports_quant_query_input = False
++
++        def __init__(self):
++            self.dcp_world_size = 1
++
++        def forward_mqa(self, q, kv_cache, attn_metadata, layer):
++            assert isinstance(q, tuple)
++            out = torch.ones(
++                (q[0].shape[0], q[0].shape[1], layer.kv_lora_rank),
++                dtype=q[0].dtype,
++            )
++            return out, None
++
++    layer = object.__new__(MLAAttention)
++    layer.impl = FakeSparseImpl()
++    layer.kv_cache_dtype = "auto"
++    layer.num_heads = 2
++    layer.qk_nope_head_dim = 4
++    layer.qk_rope_head_dim = 2
++    layer.kv_lora_rank = 3
++    layer.v_head_dim = 3
++    layer.q_pad_num_heads = None
++    layer.force_contiguous_mla_bmm_input = True
++    layer.is_aiter_triton_fp4_bmm_enabled = False
++    layer.is_aiter_triton_fp8_bmm_enabled = False
++    layer.W_UK_T = torch.ones((2, 4, 3), dtype=torch.bfloat16)
++
++    def fake_v_up_proj(x, out):
++        out.copy_(x.reshape(out.shape))
++
++    layer._v_up_proj = fake_v_up_proj
++
++    real_bmm = torch.bmm
++    seen_input_layouts = []
++
++    def checked_bmm(input_tensor, mat2, *, out=None):
++        if mat2 is layer.W_UK_T:
++            seen_input_layouts.append(input_tensor.is_contiguous())
++        return real_bmm(input_tensor, mat2, out=out)
++
++    monkeypatch.setattr(torch, "bmm", checked_bmm)
++
++    num_tokens = 3
++    q = torch.ones((num_tokens, 2, 6), dtype=torch.bfloat16)
++    q_nope, _ = q.split((4, 2), dim=-1)
++    assert not q_nope.transpose(0, 1).is_contiguous()
++    kv_c = torch.empty((num_tokens, 3), dtype=torch.bfloat16)
++    k_pe = torch.empty((num_tokens, 1, 2), dtype=torch.bfloat16)
++    kv_cache = torch.empty((0,), dtype=torch.uint8)
++    output = torch.empty((num_tokens, 6), dtype=torch.bfloat16)
++    attn_metadata = SimpleNamespace(
++        num_actual_tokens=num_tokens,
++        num_decodes=num_tokens,
++        num_prefills=0,
++        num_decode_tokens=num_tokens,
++        max_query_len=1,
++    )
++
++    result = MLAAttention.forward_impl(
++        layer,
++        q,
++        kv_c,
++        k_pe,
++        kv_cache,
++        attn_metadata,
++        output,
++    )
++
++    assert result is output
++    assert seen_input_layouts == [True]
++
++
+ def test_fp8_dcp_sparse_mla_uses_lse_gather_path(monkeypatch):
+     from vllm.model_executor.layers.attention import mla_attention
+ 
+diff --git a/vllm/model_executor/layers/attention/mla_attention.py b/vllm/model_executor/layers/attention/mla_attention.py
+index a6f59676..a1fe082b 100644
+--- a/vllm/model_executor/layers/attention/mla_attention.py
++++ b/vllm/model_executor/layers/attention/mla_attention.py
+@@ -373,6 +373,10 @@ def _preallocate_absorbed_mla_weights(
+             and weight.shape == shape
+             and weight.dtype == act_dtype
+             and weight.device == device
++            and (
++                not getattr(layer, "force_contiguous_mla_bmm_weight", False)
++                or weight.is_contiguous()
++            )
+         )
+ 
+     pre_w_uv = (
+@@ -699,6 +703,12 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+             **extra_impl_args,
+         )
+         self.q_pad_num_heads = getattr(self.impl, "q_pad_num_heads", None)
++        self.force_contiguous_mla_bmm_input = getattr(
++            self.impl, "force_contiguous_mla_bmm_input", False
++        )
++        self.force_contiguous_mla_bmm_weight = getattr(
++            self.impl, "force_contiguous_mla_bmm_weight", False
++        )
+         self.use_direct_call = not current_platform.opaque_attention_op()
+ 
+         vllm_config = get_current_vllm_config()
+@@ -1189,6 +1199,9 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+                 else:
+                     _, _, L = self.W_UK_T.shape
+ 
++                if self.force_contiguous_mla_bmm_input:
++                    mqa_q_nope = mqa_q_nope.contiguous()
++
+                 if self.q_pad_num_heads is not None:
+                     mqa_ql_nope = mqa_q_nope.new_empty((self.q_pad_num_heads, B, L))
+                     mqa_ql_nope.resize_((N, B, L))
+@@ -1727,13 +1740,17 @@ class MLAAttention(nn.Module, AttentionLayerBase):
+             if pre_w_uv is not None:
+                 pre_w_uv.copy_(w_uv)
+                 w_uv = pre_w_uv
+-            replace_parameter(self, "W_UV", w_uv, prefer_copy=True)
++            replace_parameter(
++                self, "W_UV", w_uv, prefer_copy=pre_w_uv is None
++            )
+             # Convert from (L, N, P) to (N, P, L)
+             w_uk_t = W_UK.permute(1, 2, 0)
+             if pre_w_uk_t is not None:
+                 pre_w_uk_t.copy_(w_uk_t)
+                 w_uk_t = pre_w_uk_t
+-            replace_parameter(self, "W_UK_T", w_uk_t, prefer_copy=True)
++            replace_parameter(
++                self, "W_UK_T", w_uk_t, prefer_copy=pre_w_uk_t is None
++            )
+ 
+         # If we should not load quant weights, we initialize the scales to 1.0
+         # as the default value. See [Note: Register q/k/v/prob scales in state dict]
+diff --git a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+index 2e5cea89..a41bec56 100644
+--- a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
++++ b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+@@ -992,6 +992,16 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+         self.v_head_dim: int = mla_args.get("v_head_dim", 512)
+         # GLM_NSA contract: q_head_dim = kv_lora_rank (512) + qk_rope (64) = 576.
+         self.q_head_dim = self.kv_lora_rank + self.qk_rope_head_dim
++        # Query absorption splits Q and transposes it to head-major order,
++        # producing a non-contiguous view. Some cuBLAS BMM algorithms read a
++        # complete tile beyond that view's logical row bounds. B12X buffers can
++        # be tightly mapped, so materialize the query operand and keep the
++        # absorbed weights contiguous before entering torch.bmm.
++        #
++        # DCP attention outputs are already kept head-major for the V-up BMM;
++        # this contract is specifically for the independent query-absorb BMM.
++        self.force_contiguous_mla_bmm_input = True
++        self.force_contiguous_mla_bmm_weight = True
+         # The indexer carries the shared buffer for normal layers and tests;
+         # the explicitly-passed buffer covers backbone skip layers, whose
+         # indexer is not constructed (see deepseek_v2.py).
+-- 
+2.50.1 (Apple Git-155)
+

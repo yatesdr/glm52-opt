@@ -1,0 +1,54 @@
+# syntax=docker/dockerfile:1
+#
+# Clean v20 production source on the latest audited vLLM/SparkInfer heads.
+# Build from the glm52-opt repository root.
+
+ARG BASE_IMAGE=voipmonitor/vllm@sha256:adddafd2b1749729fdf2d2ca23818c7c39f2a95e6fb05edd98657251913b83f2
+FROM ${BASE_IMAGE} AS checked-base
+
+# Fail before overlaying anything if the published 992b874/a93df671 base
+# drifted. The stable extension is intentionally retained from this image:
+# every source delta packaged below is Python/Triton-only.
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py | cut -d ' ' -f 1)" = "ffb5904cba86f5703e2dfb274690e9da3b0f35e6130ab4f6730c43a573601b3d" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/attention/mla_attention.py | cut -d ' ' -f 1)" = "96a37e550aa64e8e2ce7f7761f55bbdafaa58b018ae0c49e53a6c37f5aa1f3e4" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py | cut -d ' ' -f 1)" = "2d8cc87f11d12fa3e870c4dba3bd35d8c3378d3151d89fac0016c4c6aac63aa6" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py | cut -d ' ' -f 1)" = "7dd57e51b096cc6b2bbb03ef96368223e5328881daec280883c8bd400153ade5" \
+    && test -f /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so \
+    && grep -aFq "safe_mla_query_bmm" \
+      /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so
+
+FROM checked-base
+
+LABEL org.opencontainers.image.base.name="docker.io/voipmonitor/vllm"
+LABEL org.opencontainers.image.base.digest="sha256:adddafd2b1749729fdf2d2ca23818c7c39f2a95e6fb05edd98657251913b83f2"
+LABEL org.opencontainers.image.revision="625ac3b75bf26741b4d8de06a46ec803a8a80f23"
+LABEL io.yatesdr.vllm.container-base-revision="992b874cf7ae504616bbb1d2d4f7a7355be6972b"
+LABEL io.yatesdr.vllm.upstream-head="89b4a98d1ffebb2dda1e1ac5e55238e3a9cfbd58"
+LABEL io.yatesdr.vllm.integration-revision="625ac3b75bf26741b4d8de06a46ec803a8a80f23"
+LABEL io.yatesdr.vllm.patchset="#165,native-mtp3-gate,#154,bf16-fp8-staged,#171,#168"
+LABEL io.yatesdr.sparkinfer.container-base-revision="a93df671cc7b33734f499b57228e542c3d3c3697"
+LABEL io.yatesdr.sparkinfer.upstream-head="c39b8062ba450c030e669d898a026d10980c9470"
+LABEL io.yatesdr.sparkinfer.integration-revision="d4969d993cdd16cc417056d471af42d10ac3fada"
+LABEL io.yatesdr.sparkinfer.patchset="master,#76-output-storage-validation"
+LABEL io.yatesdr.diagnostics="none"
+
+# The complete tracked runtime packages are copied because the published
+# binary image predates both selected source heads. The source range is
+# Python/Triton-only, so the pinned stable extension remains ABI-compatible.
+COPY workspace/vllm-v20-prod-integration-head/vllm/ \
+    /opt/venv/lib/python3.12/site-packages/vllm/
+COPY workspace/sparkinfer-v20-current-recovery/sparkinfer/ \
+    /opt/venv/lib/python3.12/site-packages/sparkinfer/
+COPY patches/v20-prod-head/manifests/vllm-production.sha256 \
+    /tmp/vllm-production.sha256
+COPY patches/v20-prod-head/manifests/sparkinfer-production.sha256 \
+    /tmp/sparkinfer-production.sha256
+
+RUN test "$(sha256sum /tmp/vllm-production.sha256 | cut -d ' ' -f 1)" = "107e471dd587b0eb916598af3a1cd51b8d315393863f3f1410cdca67b48a25fb" \
+    && test "$(sha256sum /tmp/sparkinfer-production.sha256 | cut -d ' ' -f 1)" = "cf7e42e38bc21cb52e87a177b9109e8ab75ec6158990b271b4dc5a6f18400a43" \
+    && cd /opt/venv/lib/python3.12/site-packages \
+    && sha256sum -c /tmp/vllm-production.sha256 \
+    && sha256sum -c /tmp/sparkinfer-production.sha256 \
+    && test ! -e vllm/model_executor/layers/compute_phase_profiler.py \
+    && /opt/venv/bin/python -m compileall -q vllm sparkinfer \
+    && grep -aFq "safe_mla_query_bmm" vllm/_C_stable_libtorch.abi3.so

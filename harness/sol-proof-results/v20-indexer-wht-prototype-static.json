@@ -1,0 +1,15 @@
+{
+  "checks": {
+    "conditioning_before_fp8_quantization": true,
+    "disabled_by_default": true,
+    "fused_q_disabled_when_conditioned": true,
+    "hadacore_return_consumed": true,
+    "post_rope_full_vector_order": true,
+    "q_and_k_conditioned": true,
+    "server_config_field": true
+  },
+  "config_sha256": "d1b0e7bd2af0a542af97d5c1c32dfa41062d0cc4de14cf4c64547e8db03f88db",
+  "model_sha256": "b3a050caffdf06e21d8430966df31374781b7b7bdb8416251f53277778346add",
+  "schema": "v20-indexer-wht-prototype-static-proof-v1",
+  "verdict": "PASS"
+}

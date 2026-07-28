@@ -1,0 +1,35 @@
+--- a/usr/local/bin/serve-glm52-v16.sh
++++ b/usr/local/bin/serve-glm52-v16.sh
+@@ -318,6 +318,15 @@
+   kv_transfer_args=(--kv-transfer-config "${KV_TRANSFER_CONFIG_JSON}")
+ fi
+ 
++kv_cache_memory_args=()
++if [[ -n "${KV_CACHE_MEMORY_BYTES:-}" ]]; then
++  [[ "${KV_CACHE_MEMORY_BYTES}" =~ ^[1-9][0-9]*$ ]] || \
++    die "KV_CACHE_MEMORY_BYTES must be a positive integer number of bytes"
++  kv_cache_memory_args=(
++    --kv-cache-memory-bytes "${KV_CACHE_MEMORY_BYTES}"
++  )
++fi
++
+ cmd=(vllm serve "${MODEL}" \
+   "${revision_args[@]}" \
+   --served-model-name "${SERVED_MODEL_NAME}" \
+@@ -338,6 +347,7 @@
+   --load-format "${LOAD_FORMAT}" \
+   -cc.pass_config.fuse_allreduce_rms=True \
+   --gpu-memory-utilization "${GPU_MEMORY_UTILIZATION}" \
++  "${kv_cache_memory_args[@]}" \
+   --max-model-len "${MAX_MODEL_LEN}" \
+   --max-num-seqs "${MAX_NUM_SEQS}" \
+   --max-num-batched-tokens "${MAX_BATCHED_TOKENS}" \
+@@ -359,6 +369,7 @@
+   "${spec_arg[@]}")
+ 
+ if [[ "${DRY_RUN:-0}" == "1" ]]; then
++  printf 'KV_CACHE_MEMORY_BYTES=%q\n' "${KV_CACHE_MEMORY_BYTES:-}"
+   printf 'KV_TRANSFER_CONFIG_JSON=%q\n' "${KV_TRANSFER_CONFIG_JSON:-}"
+   printf 'CUDA_VISIBLE_DEVICES=%q\n' "${CUDA_VISIBLE_DEVICES}"
+   printf 'B12X_MOE_FORCE_A8=%q\n' "${B12X_MOE_FORCE_A8}"
+

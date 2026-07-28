@@ -1,0 +1,354 @@
+{
+  "absolute_position": 343726,
+  "batch_tokens": 2735,
+  "expected_layers": [
+    0,
+    1,
+    2,
+    6,
+    10,
+    14,
+    18,
+    22,
+    26,
+    30,
+    34,
+    38,
+    42,
+    46,
+    50,
+    54,
+    58,
+    62,
+    66,
+    70,
+    74
+  ],
+  "first_layer_with_needle_window_hit": 42,
+  "last_layer_with_needle_window_hit": 74,
+  "layers_with_needle_window_hits": [
+    42,
+    46,
+    50,
+    54,
+    58,
+    62,
+    70,
+    74
+  ],
+  "needle_window": [
+    137472,
+    137520
+  ],
+  "observed_layers": [
+    0,
+    1,
+    2,
+    6,
+    10,
+    14,
+    18,
+    22,
+    26,
+    30,
+    34,
+    38,
+    42,
+    46,
+    50,
+    54,
+    58,
+    62,
+    66,
+    70,
+    74
+  ],
+  "rows": [
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 0,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "44daa6e1b7bf5b40254680c68b66caa18ac7748a0f5607f8da742f3ee2c4ad3e",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 1,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "91a3d1e033fe7625824b87fef36d05cac4437e64fa950c234f1c3a2f3c147e8b",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 2,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "560d85d0c3dc01fbf29980b1d100da4111ac6c3b1b3240921f1d4efcb90f66e5",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 6,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "65574ac7fb8070dce463c38f3bbade1b92e2690322ed353604225b9bbcdf80ff",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 10,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "8b0bb7110e8486450ea40cfb8cc0a9325219a335e0ab38d3c0f9a96ec7cb0f41",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 14,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "15c7efd4c186456bf99dfe422cc315cf0ae1b0993a73ecc7726a9c9ec6380346",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 18,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "d29e5ffc8676b72bec59c1c430741c4b8ffbb54bb3c4736198d8a85337420a3f",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 22,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "6f11613ba514025f880386ffdf4b2d318aee57c4791fcd35da0a68bb32a28cc6",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 26,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "87545ddf77862fba38f57e9fb43c94a8cbedfae84a7c4aa78a566733978032ed",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 30,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "29ec546cadf7457ce3f917a4230f4a76ebffc0f02a763838a2defdada3eb0572",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 34,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "04fed670019765a9e17bc9c58b924e162525b7efd6fc6f7eea886ed6ca5480bf",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 38,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "369e99e7600dee2a2ca7cb3a1d5fc21046131ce064d4c58c3a662e0648000ac4",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 42,
+      "needle_window_hit_count": 1,
+      "needle_window_hits": [
+        137485
+      ],
+      "selected_row": 2734,
+      "sha256": "8d56808a085b5a593111944695c89481e8bcb9e0f7d221962b5e360f8e746728",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 46,
+      "needle_window_hit_count": 1,
+      "needle_window_hits": [
+        137485
+      ],
+      "selected_row": 2734,
+      "sha256": "7d6500db86aa7c9add71fc69f07f72642bc817a6c65a44faf9a545a748fc925b",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 50,
+      "needle_window_hit_count": 1,
+      "needle_window_hits": [
+        137485
+      ],
+      "selected_row": 2734,
+      "sha256": "c2af9dfbcde6de92bb5132a63fe13128b75ffe846d9cfe38bdf519999cd2c039",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 54,
+      "needle_window_hit_count": 1,
+      "needle_window_hits": [
+        137485
+      ],
+      "selected_row": 2734,
+      "sha256": "ab1e33b7cf4cd4c65483de69440a08a1f502f72611aaf82c3aad7ce3d5bb7430",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 58,
+      "needle_window_hit_count": 1,
+      "needle_window_hits": [
+        137485
+      ],
+      "selected_row": 2734,
+      "sha256": "1b0bc4732f4a074267e5cac06c0ee4cda1a123c8c48b2e6fd7b4796bc9360716",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 62,
+      "needle_window_hit_count": 3,
+      "needle_window_hits": [
+        137485,
+        137488,
+        137492
+      ],
+      "selected_row": 2734,
+      "sha256": "2ebf83aa557ad7f74f71420de0ec6eae65a5b3c0fac2e9728b82103ddce4e6f2",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 66,
+      "needle_window_hit_count": 0,
+      "needle_window_hits": [],
+      "selected_row": 2734,
+      "sha256": "b34a600d35c56069823f1edaee1e5c6f031e46f0741612a026afdd38e51e2a75",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 70,
+      "needle_window_hit_count": 1,
+      "needle_window_hits": [
+        137485
+      ],
+      "selected_row": 2734,
+      "sha256": "cb96bee89e12175014f52c2cb57ff86be0e2a5a7ed0bb6b35518468cec37c8ce",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    },
+    {
+      "absolute_position": 343726,
+      "batch_tokens": 2735,
+      "buffer_rows": 3072,
+      "layer": 74,
+      "needle_window_hit_count": 14,
+      "needle_window_hits": [
+        137483,
+        137484,
+        137486,
+        137488,
+        137489,
+        137492,
+        137494,
+        137497,
+        137498,
+        137499,
+        137500,
+        137501,
+        137502,
+        137503
+      ],
+      "selected_row": 2734,
+      "sha256": "aaee671ee544250c4479631c5a87a37f94849fff9411d0d8275cc1fc3a3bedb3",
+      "topk_entries": 2048,
+      "unique_valid_entries": 2048
+    }
+  ],
+  "schema": "v20-indexer-cross-layer-selection-report-v1",
+  "status": "PASS",
+  "trace_dir": "/trace"
+}

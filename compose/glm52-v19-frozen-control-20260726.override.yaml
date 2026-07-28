@@ -1,0 +1,13 @@
+# Same-runtime control for the frozen v20 long-retrieval failure.
+#
+# Apply over the CN4 glm52-cn4-v20.yaml qualification compose.  This changes
+# only the image identity and operational container policy; the mounted NF3
+# checkpoint, NVFP4 MLA cache, FP8 RoPE, TP4/DCP4/MTP3 geometry, and low-level
+# runtime flags remain those used by the historical v19 qualification.
+services:
+  g52h:
+    image: sha256:ca8481687f7169adf177f02df83c06259af0941e9a1de8695b5a4e60d745463a
+    container_name: glm52-v19-frozen-control
+    restart: "no"
+    labels:
+      autoheal: "false"

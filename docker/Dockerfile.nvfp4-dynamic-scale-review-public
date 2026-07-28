@@ -1,0 +1,120 @@
+# GLM-5.2 v20 + dynamic per-token NVFP4 MLA KV scaling — public review build.
+#
+# Self-contained: overlays the exact change set from the public PR branches
+# onto the pinned runtime-stride RC base. Every overlaid file is verified
+# against the SHA-256 recorded in the gate-tested image
+# (ghcr.io/yatesdr/glm52-serve@sha256:db82fdcb5756d4a547853ba1330538bdd8a3
+#  dc0c6443c29bc49ba77b69b51cd1); a successful build reproduces that
+# image's Python content exactly.
+#
+# PRs: local-inference-lab/sparkinfer#86, local-inference-lab/vllm#189.
+# Runtime enablement (see companion compose): KV_FP8_ROPE=1,
+# VLLM_NVFP4_MLA_DYNAMIC_SCALE=1, kv-cache-dtype nvfp4_ds_mla, fresh cache.
+
+FROM voipmonitor/vllm@sha256:131481b0f12c455a8fbad72c5909eb3a2c3accd96815743fdcfa134396e548c0
+
+USER root
+
+# Pinned source commits (rebased PR heads; file contents bit-identical to
+# the validated pre-rebase commits — verified via the hash checks below).
+ARG B12X_COMMIT=7f3d2708
+ARG VLLM_COMMIT=ae541fcd
+ARG B12X_RAW=https://raw.githubusercontent.com/yatesdr/b12x
+ARG VLLM_RAW=https://raw.githubusercontent.com/yatesdr/vllm-opt
+ARG SI=/opt/venv/lib/python3.12/site-packages/sparkinfer/attention/_shared/mla
+ARG VL=/opt/venv/lib/python3.12/site-packages/vllm
+
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/api.py          ${SI}/api.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/decode_math.py  ${SI}/decode_math.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/io.py           ${SI}/io.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/io_mg.py        ${SI}/io_mg.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/kernel.py       ${SI}/kernel.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/kv_cache.py     ${SI}/kv_cache.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/prefill.py      ${SI}/prefill.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/prefill_mg.py   ${SI}/prefill_mg.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/smem.py         ${SI}/smem.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/smem_mg.py      ${SI}/smem_mg.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/sparkinfer/attention/_shared/mla/traits.py       ${SI}/traits.py
+ADD ${VLLM_RAW}/${VLLM_COMMIT}/vllm/model_executor/layers/mla.py                ${VL}/model_executor/layers/mla.py
+ADD ${VLLM_RAW}/${VLLM_COMMIT}/vllm/v1/attention/backends/mla/b12x_mla_sparse.py ${VL}/v1/attention/backends/mla/b12x_mla_sparse.py
+ADD ${B12X_RAW}/${B12X_COMMIT}/tests/attention/test_mla_kv_cache_per_token_scale.py /opt/nvfp4-dynamic-tests/test_mla_kv_cache_per_token_scale.py
+
+# Identity gate: the overlay must equal the gate-tested content exactly.
+RUN set -eu; \
+    printf '%s  %s\n' \
+      49d5ab254ca7b793b5b2ac7bad274ed8942e8d53a5842ae7fefe8bd12e476b3c ${SI}/api.py \
+      3fd8876a4a76879190e18d0ea0504fcae8fa7ab61daea6e353f2426c293afc34 ${SI}/decode_math.py \
+      cc1854fdfeeda6d929621a8f5df64e047461dc275171d9bc943571aa9db45210 ${SI}/io.py \
+      74d74228cd4334c506965d704b1f60bf69ca0500daa81c01406928e3501b713c ${SI}/io_mg.py \
+      aa63ecd42eff848fd5b0aea55620214f176196c3b0e7cf35a486b7a1e53a8824 ${SI}/kernel.py \
+      c2f5fd9a4f335927a77287183f29edd9788cf3eba1badb7d0a2b4f1e66d10dd3 ${SI}/kv_cache.py \
+      11edf37df66ff57106802463db1f8a62a887c916153e6979c2cad15f620181a7 ${SI}/prefill.py \
+      3912846316e45807c7547aa63ab15301e9ce2460c7e64189f9af198d78ce1c2c ${SI}/prefill_mg.py \
+      c9d255c891c1912421dedeed77a9d7401d574d9734024f2a4896145c33818717 ${SI}/smem.py \
+      c50fe413c5cfbca9c352e3d61eb3342624bfa59692b6ec59dd39e0c7cf059cca ${SI}/smem_mg.py \
+      df197f9a5c5be2e9d004e9526b0e8f2f33e25ed869221181dbd7254356bab2a0 ${SI}/traits.py \
+      be83d0f99246324aa60004fc0b32b2aeb31462da05eeb6103b3b07e5a9507f95 ${VL}/model_executor/layers/mla.py \
+      f60c3079d6f7bff55c5a5bba4e74762206f87d8164df769ac5bfd746f2b5ad00 ${VL}/v1/attention/backends/mla/b12x_mla_sparse.py \
+      995fd533cb4933dc7f7ff90abf568f34794aa05db30a97a23ac881f083f70d89 /opt/nvfp4-dynamic-tests/test_mla_kv_cache_per_token_scale.py \
+      | sha256sum -c -; \
+    /opt/venv/bin/python -m py_compile \
+      ${SI}/api.py ${SI}/decode_math.py ${SI}/io.py ${SI}/io_mg.py \
+      ${SI}/kernel.py ${SI}/kv_cache.py ${SI}/prefill.py ${SI}/prefill_mg.py \
+      ${SI}/smem.py ${SI}/smem_mg.py ${SI}/traits.py \
+      ${VL}/model_executor/layers/mla.py \
+      ${VL}/v1/attention/backends/mla/b12x_mla_sparse.py \
+      /opt/nvfp4-dynamic-tests/test_mla_kv_cache_per_token_scale.py; \
+    grep -q 'VLLM_NVFP4_MLA_DYNAMIC_SCALE' ${VL}/v1/attention/backends/mla/b12x_mla_sparse.py; \
+    grep -q 'per_token_scale=True' ${VL}/v1/attention/backends/mla/b12x_mla_sparse.py; \
+    grep -q 'latent_scale_per_token' ${SI}/kernel.py; \
+    grep -q '_LATENT_SCALE_OFFSET = _PAD_OFFSET' ${SI}/kv_cache.py
+
+# Best-known-solution defaults. Both are runtime-overridable; the mode is
+# server-static and requires a fresh cache namespace on first boot.
+ENV KV_FP8_ROPE=1
+ENV VLLM_NVFP4_MLA_DYNAMIC_SCALE=1
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 NVFP4 dynamic per-token MLA scale (public review build)"
+LABEL org.opencontainers.image.description="Runtime-stride RC + self-describing per-token NVFP4 KV outer scales (sparkinfer#86 + vllm#189); reproduces ghcr.io/yatesdr/glm52-serve@sha256:db82fdcb... Python content"
+LABEL local.glm52.base.image.digest="sha256:131481b0f12c455a8fbad72c5909eb3a2c3accd96815743fdcfa134396e548c0"
+LABEL local.glm52.dynamic.sparkinfer.commit="${B12X_COMMIT}"
+LABEL local.glm52.dynamic.vllm.commit="${VLLM_COMMIT}"
+LABEL local.glm52.nvfp4.dynamic.record="368B; fp32 s_t at bytes [292,296)"
+
+# ---------------------------------------------------------------------------
+# v2 additions (2026-07-28): comm auto-calibration + quality-first MXFP8
+# membership defaults. Pinned to yatesdr/b12x branch calibration-tools
+# @ ffdabd2dacb827044cd53ca4ad3fe43db231e910; SHA-verified below.
+# ---------------------------------------------------------------------------
+ARG CAL_COMMIT=ffdabd2dacb827044cd53ca4ad3fe43db231e910
+ADD https://raw.githubusercontent.com/yatesdr/b12x/${CAL_COMMIT}/derive_nccl_p2p_level.py /usr/local/bin/derive_nccl_p2p_level.py
+ADD https://raw.githubusercontent.com/yatesdr/b12x/${CAL_COMMIT}/nccl_p2p_probe.py       /usr/local/bin/nccl_p2p_probe.py
+ADD https://raw.githubusercontent.com/yatesdr/b12x/${CAL_COMMIT}/serve-with-autocal.sh   /usr/local/bin/serve-with-autocal.sh
+
+RUN set -eu; \
+    printf '%s  %s\n' \
+      8f317442446ad03da4da9005ef45791d0c64af3cd54198548fac6b75dad8ce0e /usr/local/bin/derive_nccl_p2p_level.py \
+      bb1b67b156fe6bb5d456cadaf7e266b61487a57d252c2321609278479b77c1e2 /usr/local/bin/nccl_p2p_probe.py \
+      4e940f6a5eb94c0912605fcf03d61091ddc4dec267f02da798fb53b9ee81ee0b /usr/local/bin/serve-with-autocal.sh \
+      | sha256sum -c -; \
+    chmod +x /usr/local/bin/serve-with-autocal.sh; \
+    /opt/venv/bin/python3 -m py_compile \
+      /usr/local/bin/derive_nccl_p2p_level.py /usr/local/bin/nccl_p2p_probe.py; \
+    /opt/venv/bin/python3 /usr/local/bin/derive_nccl_p2p_level.py --self-test; \
+    bash -n /usr/local/bin/serve-with-autocal.sh
+
+# Topology auto-calibration default (explicit values always win; probe ->
+# static -> NCCL defaults). Wire-protocol auto tokens (F8_DMA=auto/i8_auto/
+# mx_auto) are documented and land with the SparkInfer #81 probe extension.
+ENV NCCL_P2P_LEVEL=auto
+
+# Quality-first online-MXFP8 weight membership (arm-D KLD evidence
+# 0.1332616 n=3; decomposition arm C pending — review preview). Unset or
+# override to return to stock weight quantization.
+ENV ONLINE_QUANT=custom
+ENV QUANTIZATION_CONFIG_JSON='{"linear":{"weight":"mxfp8"},"ignore":["re:.*\\.fused_qkv_a_proj$","re:.*\\.q_a_proj$","re:.*kv_a_proj_with_mqa","re:.*\\.mlp\\.gate$","model.layers.78.eh_proj","lm_head"]}'
+
+ENTRYPOINT ["/usr/local/bin/serve-with-autocal.sh"]
+
+LABEL local.glm52.autocal="NCCL_P2P_LEVEL=auto: measured probe -> static topo (PXB-capped) -> NCCL defaults"
+LABEL local.glm52.mxq="quality-first online-MXFP8 membership default; arm C + retrieval smoke pending"

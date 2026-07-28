@@ -1,0 +1,68 @@
+name: glm52-v20-20260726-oldest-boundary-pr-candidate
+
+services:
+  glm52-v20-candidate:
+    container_name: glm52-v20-20260726-oldest-boundary-pr-candidate
+    image: glm52-serve:v20-20260726-oldest-boundary-pr-candidate
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]
+    restart: "no"
+    labels:
+      autoheal: "false"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    ports:
+      - "0.0.0.0:5001:5001"
+    ipc: host
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      TP: "4"
+      DCP: "4"
+      MTP: "3"
+      DCP_PREFILL_WORKSPACE: auto
+      PCIE_CALIBRATION: force
+      MAX_MODEL_LEN: "480000"
+      MAX_NUM_SEQS: "16"
+      MAX_BATCHED_TOKENS: "3072"
+      GRAPH: "64"
+      KV_FP8_ROPE: "1"
+      # v20's reusable CUDA-graph pool now charges the complete graph
+      # high-water mark. The boot log computes 0.9848 as the equivalent
+      # posture for the former 0.974 setting; this is not a selector change.
+      GPU_MEMORY_UTILIZATION: "0.9848"
+      NCCL_P2P_LEVEL: PXB
+      F8_DMA: i8_ring
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+      SPARKINFER_NSA_TOPK_SELECTION_POLICY: oldest_boundary
+    volumes:
+      - /home/claude/LLM/GLM-5.2-hybrid:/model:ro
+      - /home/derek/glm52-v20-oldest-boundary-current-cache:/cache:rw
+      - /home/derek/glm52-v20-oldest-boundary-current-cache:/root/.cache:rw
+      - /nvme-kv:/nvme-kv:rw
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.253.32.0/24

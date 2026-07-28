@@ -1,0 +1,19 @@
+=== identity before ===
+running=true restarts=0 started=2026-07-25T13:48:13.965085908Z
+=== prefill cold 8000 ===
+RESULT label=v20-fa71a0c1 prompt_tokens=7917 prefill_time_s=5.61 server_prefill_tok_s=1411 wall_s=5.74 wall_tok_s=1376
+=== prefill cold 55000 ===
+RESULT label=v20-fa71a0c1 prompt_tokens=54206 prefill_time_s=44.29 server_prefill_tok_s=1224 wall_s=44.49 wall_tok_s=1218
+=== decode ctx0 C1,C4,C8,C16 ===
+{"aggregate_tok_s": 61.51, "all_finalized": true, "client_completion_tokens": 256, "concurrency": 1, "effective_peak_concurrency": 1, "elapsed_s": 4.162, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 61.51, "mtp_acceptance": 0.5842, "mtp_accepted_tokens": 163, "mtp_draft_tokens": 279, "output_tokens_requested_each": 256, "requests_ok": 1, "server_generation_tokens": 256}
+{"aggregate_tok_s": 99.93, "all_finalized": true, "client_completion_tokens": 1024, "concurrency": 4, "effective_peak_concurrency": 4, "elapsed_s": 10.247, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 25.71, "mtp_acceptance": 0.5478, "mtp_accepted_tokens": 636, "mtp_draft_tokens": 1161, "output_tokens_requested_each": 256, "requests_ok": 4, "server_generation_tokens": 1024}
+{"aggregate_tok_s": 136.07, "all_finalized": true, "client_completion_tokens": 2048, "concurrency": 8, "effective_peak_concurrency": 8, "elapsed_s": 15.051, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 17.67, "mtp_acceptance": 0.5748, "mtp_accepted_tokens": 1295, "mtp_draft_tokens": 2253, "output_tokens_requested_each": 256, "requests_ok": 8, "server_generation_tokens": 2048}
+{"aggregate_tok_s": 167.92, "all_finalized": true, "client_completion_tokens": 4096, "concurrency": 16, "effective_peak_concurrency": 16, "elapsed_s": 24.392, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 10.98, "mtp_acceptance": 0.5643, "mtp_accepted_tokens": 2575, "mtp_draft_tokens": 4563, "output_tokens_requested_each": 256, "requests_ok": 16, "server_generation_tokens": 4096}
+=== decode ctx16000 C1,C4,C8,C16 ===
+{"aggregate_tok_s": 16.59, "all_finalized": true, "client_completion_tokens": 256, "concurrency": 1, "effective_peak_concurrency": 1, "elapsed_s": 15.43, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 16.59, "mtp_acceptance": 0.5065, "mtp_accepted_tokens": 155, "mtp_draft_tokens": 306, "output_tokens_requested_each": 256, "requests_ok": 1, "server_generation_tokens": 256}
+{"aggregate_tok_s": 86.06, "all_finalized": true, "client_completion_tokens": 1024, "concurrency": 4, "effective_peak_concurrency": 4, "elapsed_s": 11.898, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 21.89, "mtp_acceptance": 0.4992, "mtp_accepted_tokens": 614, "mtp_draft_tokens": 1230, "output_tokens_requested_each": 256, "requests_ok": 4, "server_generation_tokens": 1024}
+{"aggregate_tok_s": 114.15, "all_finalized": true, "client_completion_tokens": 2048, "concurrency": 8, "effective_peak_concurrency": 8, "elapsed_s": 17.942, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 15.08, "mtp_acceptance": 0.6305, "mtp_accepted_tokens": 1341, "mtp_draft_tokens": 2127, "output_tokens_requested_each": 256, "requests_ok": 8, "server_generation_tokens": 2048}
+{"aggregate_tok_s": 134.25, "all_finalized": true, "client_completion_tokens": 4096, "concurrency": 16, "effective_peak_concurrency": 16, "elapsed_s": 30.511, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 9.11, "mtp_acceptance": 0.6131, "mtp_accepted_tokens": 2654, "mtp_draft_tokens": 4329, "output_tokens_requested_each": 256, "requests_ok": 16, "server_generation_tokens": 4096}
+=== identity after ===
+running=true restarts=0 started=2026-07-25T13:48:13.965085908Z
+=== SUITE COMPLETE ===

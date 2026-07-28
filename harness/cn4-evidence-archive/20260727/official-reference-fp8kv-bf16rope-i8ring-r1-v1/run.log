@@ -1,0 +1,12 @@
+[gate] image=sha256:899e64cc6098407d1e41bca8db53f70ea60f31009b812872e4690540798ded1a
+[gate] freeze=harness/cn4-evidence-archive/20260726/sol-owned/causal-gate-freeze-20260726  stock_image=glm52-serve:v20-5517197-pxb-20260725
+[gate] note=Official scorer held constant; fp8_ds_mla 656B/BF16 RoPE; i8_ring block-INT8 DCP wire; MTP0/eager/no-prefix
+
+fail-350k-r1    EXACT           gate=PASS finish=stop out=4 prompt_tok=343727 cached=0 stock=ABSENT 689s
+                content='738216'
+
+===== CAUSAL GATE SUMMARY =====
+  FAIL-role prompts recovered: 1/1
+  PASS control still passing:   None
+  VERDICT: CONFIRMED — every frozen stock-FAIL prompt recovered
+CAUSAL_GATE_DONE

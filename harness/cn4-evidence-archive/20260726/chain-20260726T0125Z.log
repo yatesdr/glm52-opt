@@ -1,0 +1,23 @@
+[chain] start 2026-07-26T01:23:34Z pid=341655
+##### NO-THINK CONSISTENCY LADDER 350k/450k x3, matched thinking control #####
+350k rep1 nothink  ABSENT          finish=stop out=138 ctx=343721 content='The maintenance ticket number for the Fa' 475s
+350k rep1 thinking ABSENT          finish=stop out=121 ctx=343721 content='' 476s
+350k rep2 nothink  ABSENT          finish=stop out=23 ctx=343721 content='The maintenance ticket number for the Fa' 474s
+350k rep2 thinking ABSENT          finish=stop out=20 ctx=343721 content='' 475s
+350k rep3 nothink  ABSENT          finish=stop out=26 ctx=343721 content='The maintenance ticket number for the Fa' 475s
+350k rep3 thinking ABSENT          finish=stop out=19 ctx=343721 content='' 475s
+450k rep1 nothink  IN_CONTENT      finish=stop out=19 ctx=441952 content='The maintenance ticket number for the Fa' 647s
+450k rep1 thinking EXACT           finish=stop out=34 ctx=441952 content='738216' 647s
+450k rep2 nothink  IN_CONTENT      finish=stop out=19 ctx=441949 content='The maintenance ticket number for the Fa' 647s
+450k rep2 thinking ABSENT          finish=stop out=148 ctx=441949 content="I'm sorry, but there is no maintenance t" 649s
+450k rep3 nothink  IN_CONTENT      finish=stop out=19 ctx=441951 content='The maintenance ticket number for the Fa' 647s
+450k rep3 thinking REASONING_ONLY  finish=stop out=18 ctx=441951 content='' 647s
+
+===== CONSISTENCY SUMMARY =====
+  350k nothink  0/3 EXACT   ['ABSENT', 'ABSENT', 'ABSENT']
+  350k thinking 0/3 EXACT   ['ABSENT', 'ABSENT', 'ABSENT']
+  450k nothink  0/3 EXACT   ['IN_CONTENT', 'IN_CONTENT', 'IN_CONTENT']
+  450k thinking 1/3 EXACT   ['EXACT', 'ABSENT', 'REASONING_ONLY']
+NOTHINK_CONSISTENCY_DONE
+[chain] consistency exit=0
+CHAIN_DONE 2026-07-26T03:15:56Z

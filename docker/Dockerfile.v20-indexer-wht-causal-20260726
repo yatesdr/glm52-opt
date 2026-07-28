@@ -1,0 +1,52 @@
+ARG BASE_IMAGE=voipmonitor/vllm@sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0
+FROM ${BASE_IMAGE}
+
+ARG BASE_ATTENTION_SHA256=c08f6b5b1916cf355fa33ae7a3407be7b84e14c24796820908a72109395a04ca
+ARG BASE_DEEPSEEK_SHA256=180622452fad2500db4b57cdac3a961c13518aa5a1962c7ff4dd2cc634fa44c3
+ARG WHT_ATTENTION_SHA256=d1b0e7bd2af0a542af97d5c1c32dfa41062d0cc4de14cf4c64547e8db03f88db
+ARG WHT_DEEPSEEK_SHA256=b3a050caffdf06e21d8430966df31374781b7b7bdb8416251f53277778346add
+ARG CONFIG_TEST_SHA256=f70840d5ebe4dc3264162d2fe8fb890d0a108e2e71aeb648ba75f1f2ba34170f
+
+COPY workspace/vllm-v20-indexer-wht-prototype/vllm/config/attention.py \
+    /tmp/indexer-wht/vllm/config/attention.py
+COPY workspace/vllm-v20-indexer-wht-prototype/vllm/model_executor/models/deepseek_v2.py \
+    /tmp/indexer-wht/vllm/model_executor/models/deepseek_v2.py
+COPY workspace/vllm-v20-indexer-wht-prototype/tests/config/test_attention_config.py \
+    /tmp/indexer-wht/tests/test_attention_config.py
+
+RUN set -eu; \
+    src_root=/opt/vllm/vllm; \
+    installed_root=/opt/venv/lib/python3.12/site-packages/vllm; \
+    attention=/tmp/indexer-wht/vllm/config/attention.py; \
+    deepseek=/tmp/indexer-wht/vllm/model_executor/models/deepseek_v2.py; \
+    config_test=/tmp/indexer-wht/tests/test_attention_config.py; \
+    test "$(sha256sum "${src_root}/config/attention.py" | cut -d' ' -f1)" = "${BASE_ATTENTION_SHA256}"; \
+    test "$(sha256sum "${installed_root}/config/attention.py" | cut -d' ' -f1)" = "${BASE_ATTENTION_SHA256}"; \
+    test "$(sha256sum "${src_root}/model_executor/models/deepseek_v2.py" | cut -d' ' -f1)" = "${BASE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${installed_root}/model_executor/models/deepseek_v2.py" | cut -d' ' -f1)" = "${BASE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${attention}" | cut -d' ' -f1)" = "${WHT_ATTENTION_SHA256}"; \
+    test "$(sha256sum "${deepseek}" | cut -d' ' -f1)" = "${WHT_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${config_test}" | cut -d' ' -f1)" = "${CONFIG_TEST_SHA256}"; \
+    install -m 0644 "${attention}" "${src_root}/config/attention.py"; \
+    install -m 0644 "${attention}" "${installed_root}/config/attention.py"; \
+    install -m 0644 "${deepseek}" "${src_root}/model_executor/models/deepseek_v2.py"; \
+    install -m 0644 "${deepseek}" "${installed_root}/model_executor/models/deepseek_v2.py"; \
+    /opt/venv/bin/python -m py_compile \
+      "${src_root}/config/attention.py" \
+      "${installed_root}/config/attention.py" \
+      "${src_root}/model_executor/models/deepseek_v2.py" \
+      "${installed_root}/model_executor/models/deepseek_v2.py" \
+      "${config_test}"; \
+    test "$(sha256sum "${src_root}/config/attention.py" | cut -d' ' -f1)" = "${WHT_ATTENTION_SHA256}"; \
+    test "$(sha256sum "${installed_root}/config/attention.py" | cut -d' ' -f1)" = "${WHT_ATTENTION_SHA256}"; \
+    test "$(sha256sum "${src_root}/model_executor/models/deepseek_v2.py" | cut -d' ' -f1)" = "${WHT_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${installed_root}/model_executor/models/deepseek_v2.py" | cut -d' ' -f1)" = "${WHT_DEEPSEEK_SHA256}"; \
+    strings "${installed_root}/_C_stable_libtorch.abi3.so" | grep -q hadacore_transform; \
+    rm -rf /tmp/indexer-wht
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 post-RoPE WHT causal prototype" \
+      local-inference.base.digest="sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0" \
+      local-inference.vllm.base_commit="0c79e41db41f250ccdfc4be92d171960a5787f73" \
+      local-inference.vllm.prototype_commit="ea5cb33c5" \
+      local-inference.experiment="post-RoPE WHT-128 before FP8 indexer quantization" \
+      local-inference.production="false"

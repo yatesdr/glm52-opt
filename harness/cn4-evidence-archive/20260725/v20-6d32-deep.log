@@ -1,0 +1,1 @@
+# server=http://localhost:5001 model=GLM-5.2 filler=56 tok/block position=40% max_tokens=3000 runtag=6d32-deep

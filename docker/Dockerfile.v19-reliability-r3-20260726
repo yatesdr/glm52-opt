@@ -1,0 +1,122 @@
+# syntax=docker/dockerfile:1
+#
+# GLM-5.2 v19 production reliability candidate, revision 3 — 2026-07-26
+#
+# GOAL: keep the shared-experts aux stream ON (it is worth ~11% decode) and make it
+# memory-safe, rather than gating it off.
+#
+# Contents:
+#   vLLM (6 files, pure Python)
+#     b3ea2e8f  #136  honor force_contiguous_mla_bmm_{input,weight,output}
+#                     — fixes the OOB strided cuBLAS BMM at mla_attention.py:1476
+#     a8b59fbe  #132  workspace lanes — MTP draft stops aliasing the target's workspace
+#     ef7cae43  #130  preallocate packed DCP A2A graph buffers
+#
+#   b12x (1 file, pure Python; kernel is CuTe-DSL JIT-compiled at runtime)
+#     cooperative=True on the two W4A16 launches whose kernels use the software
+#     all-CTA grid barrier (_grid_barrier): W4A16FusedMoeKernel and
+#     W4A16FusedMoeHybridKernel.
+#
+# WHY the b12x change is the right fix rather than disabling the stream:
+#   _grid_barrier is a spin-wait sense-reversal barrier over grid_x CTAs. A normal
+#   launch can admit only part of the grid while shared-expert GEMMs occupy the
+#   remaining SMs; the admitted CTAs then spin forever on a peer that will never be
+#   scheduled. grid_x is ALREADY sized <= sms*blocks_per_sm (_fused_grid_x docstring:
+#   "staying <= the cap so the cooperative barrier never deadlocks"), so the code
+#   already assumes co-residency — it just never asked CUDA to guarantee it.
+#   cooperative=True makes that contract explicit and costs nothing when the grid
+#   already fits.
+#
+#   Precedent in-tree: b12x/moe/fused/dynamic.py already passes cooperative=True at
+#   its resident-grid launch, with the same reasoning in its comment. The Grid188 /
+#   unified path was fixed; the w4a16 path — which is what prod runs under
+#   B12X_MOE_FORCE_A16=1 — was not.
+#
+# NOT included: the v20 capability gate (93735960 + e5b6cabb). That disables the
+# overlap instead of fixing it, and for this deployment it is equivalent to setting
+# VLLM_DISABLE_SHARED_EXPERTS_STREAM=1, which needs no image change at all.
+#
+# KNOWN REMAINING GAP: b12x/moe/fused/micro.py also has a _resident_grid_barrier and
+# a non-cooperative launch. It is the native-NVFP4 micro-decode path, which requires
+# quant_mode in {nvfp4, w4a8_nvfp4}; prod runs B12X_MOE_FORCE_A16=1 -> w4a16, so it
+# is not reachable in this configuration. Fix it before changing FORCE_A16.
+
+ARG BASE=ghcr.io/yatesdr/glm52-serve@sha256:ca8481687f7169adf177f02df83c06259af0941e9a1de8695b5a4e60d745463a
+FROM ${BASE}
+
+ENV VLLM_SP=/opt/venv/lib/python3.12/site-packages
+
+# --- Gate 1: refuse anything but the expected v19 base ------------------------
+RUN set -eu; \
+    v="$(/opt/venv/bin/python -c 'import importlib.metadata as m; print(m.version("vllm"))')"; \
+    b="$(/opt/venv/bin/python -c 'import importlib.metadata as m; print(m.version("b12x"))')"; \
+    echo "base vllm: $v"; echo "base b12x: $b"; \
+    case "$v" in *gilded.gnosis.v19.vllm7ea567a.b12x4cfa530*) ;; \
+      *) echo "REFUSING: unexpected base vllm: $v" >&2; exit 1 ;; esac; \
+    [ "$b" = "0.30.2" ] || { echo "REFUSING: unexpected b12x: $b" >&2; exit 1; }
+
+COPY overlay/vllm/ ${VLLM_SP}/vllm/
+COPY overlay/b12x/ ${VLLM_SP}/b12x/
+
+# --- Gate 2: invalidate stale bytecode, recompile under the image's py3.12 ----
+RUN set -eu; cd "${VLLM_SP}"; \
+    for f in \
+      vllm/model_executor/layers/attention/mla_attention.py \
+      vllm/v1/attention/ops/dcp_alltoall.py \
+      vllm/v1/worker/gpu/model_runner.py \
+      vllm/v1/worker/gpu/warmup.py \
+      vllm/v1/worker/gpu_worker.py \
+      vllm/v1/worker/workspace.py \
+      vllm/v1/attention/backend.py \
+      vllm/v1/attention/backends/mla/b12x_mla_sparse.py \
+      b12x/moe/fused/w4a16/kernel.py \
+    ; do \
+      rm -f "$(dirname "$f")/__pycache__/$(basename "$f" .py)."*.pyc; \
+      /opt/venv/bin/python -m py_compile "$f" || { echo "COMPILE FAILED: $f" >&2; exit 1; }; \
+    done; echo "all 9 overlay files compiled"
+
+# --- Gate 3: assert every fix is present and nothing forbidden crept in -------
+RUN set -eu; cd "${VLLM_SP}"; \
+    check() { grep -q "$2" "$1" || { echo "MISSING: $2 in $1" >&2; exit 1; }; echo "  ok: $1 <- $2"; }; \
+    check vllm/model_executor/layers/attention/mla_attention.py force_contiguous_mla_bmm_output ; \
+    check vllm/model_executor/layers/attention/mla_attention.py force_contiguous_mla_bmm_weight ; \
+    check vllm/v1/worker/workspace.py use_workspace_lane ; \
+    check vllm/v1/worker/gpu_worker.py num_workspace_lanes ; \
+    check vllm/v1/worker/gpu/model_runner.py use_workspace_lane ; \
+    check vllm/v1/worker/gpu/warmup.py use_workspace_lane ; \
+    check vllm/v1/attention/ops/dcp_alltoall.py is_vllm_cudagraph_capture_active ; \
+    echo "verifying #154 kv_b_proj release backport:"; \
+    check vllm/model_executor/layers/attention/mla_attention.py _release_b12x_mxfp8_kv_b_proj ; \
+    check vllm/model_executor/layers/attention/mla_attention.py _materialize_kv_b_proj_weight ; \
+    check vllm/v1/attention/backend.py can_release_kv_b_proj_after_loading ; \
+    check vllm/v1/attention/backends/mla/b12x_mla_sparse.py 'can_release_kv_b_proj_after_loading: bool = True' ; \
+    grep -q 'cannot release kv_b_proj while MHA prefill' vllm/model_executor/layers/attention/mla_attention.py \
+      || { echo "MHA-prefill safety guard missing" >&2; exit 1; }; \
+    echo "  ok: MHA-prefill safety guard present"; \
+    grep -q 'supports_mha_prefill' vllm/model_executor/layers/attention/mla_attention.py \
+      || { echo "supports_mha_prefill override missing - prefill_backend may not be None" >&2; exit 1; }; \
+    echo "  ok: supports_mha_prefill override intact (forces prefill_backend=None for B12X)"; \
+    echo "verifying cooperative launches:"; \
+    n="$(grep -c 'cooperative=True' b12x/moe/fused/w4a16/kernel.py)"; \
+    [ "$n" = "2" ] || { echo "expected 2 cooperative launches in w4a16, got $n" >&2; exit 1; }; \
+    echo "  ok: w4a16 has 2 cooperative launches"; \
+    grep -q 'cooperative=True' b12x/moe/fused/dynamic.py \
+      || { echo "dynamic.py lost its pre-existing cooperative launch" >&2; exit 1; }; \
+    echo "  ok: dynamic.py cooperative launch still present (pre-existing)"; \
+    echo "verifying the aux-stream gate was NOT introduced:"; \
+    if grep -rn 'supports_shared_experts_aux_stream' vllm/ ; then \
+      echo "REFUSING: the capability gate is present; this build must keep overlap ON" >&2; exit 1; \
+    fi; \
+    echo "  ok: shared-experts overlap left enabled"; \
+    grep -q 'VLLM_DISABLE_SHARED_EXPERTS_STREAM' vllm/envs.py \
+      || { echo "runtime toggle missing from envs.py" >&2; exit 1; }; \
+    echo "  ok: VLLM_DISABLE_SHARED_EXPERTS_STREAM still available as a runtime fallback"
+
+LABEL org.opencontainers.image.title="GLM-5.2 v19 prod reliability candidate r2" \
+      org.opencontainers.image.created="2026-07-26" \
+      org.opencontainers.image.base.digest="sha256:ca8481687f7169adf177f02df83c06259af0941e9a1de8695b5a4e60d745463a" \
+      io.glm52.backport.tier="1r3" \
+      io.glm52.backport.vllm="b3ea2e8f,a8b59fbe,ef7cae43,85b1ffd8(#154 hand-port)" \
+      io.glm52.backport.b12x="w4a16 cooperative grid (2 launches)" \
+      io.glm52.sharedexperts="overlap ENABLED (made safe, not disabled)" \
+      io.glm52.backport.doc="v19-reliability-backport-20260726.md"

@@ -1,0 +1,67 @@
+{
+  "checks": {
+    "cold": true,
+    "content_exact": false,
+    "finish_reason_stop": false,
+    "prompt_is_micro_sized": true
+  },
+  "content": "",
+  "elapsed_s": 22.818,
+  "finish_reason": "length",
+  "prompt_tokens_preflight": 499,
+  "reasoning": "1.  **Analyze the Request:**\n    *   Input: A highly repetitive text block about a maintenance planning team reviewing various factors, repeated 12",
+  "reasoning_content": "",
+  "response": {
+    "choices": [
+      {
+        "finish_reason": "length",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": null,
+          "audio": null,
+          "content": null,
+          "function_call": null,
+          "reasoning": "1.  **Analyze the Request:**\n    *   Input: A highly repetitive text block about a maintenance planning team reviewing various factors, repeated 12",
+          "refusal": null,
+          "role": "assistant"
+        },
+        "routed_experts": null,
+        "stop_reason": null,
+        "token_ids": null
+      }
+    ],
+    "created": 1785173891,
+    "ec_transfer_params": null,
+    "id": "chatcmpl-b2218d4ab1865259",
+    "kv_transfer_params": null,
+    "metrics": null,
+    "model": "GLM-5.2",
+    "object": "chat.completion",
+    "prompt_logprobs": null,
+    "prompt_text": null,
+    "prompt_token_ids": null,
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm0c79e41.sic3828fd.fi801d57a.cu132.20260727-tp4-67960576",
+    "usage": {
+      "completion_tokens": 32,
+      "prompt_tokens": 511,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      },
+      "total_tokens": 543
+    }
+  },
+  "schema": "v20-reference-live-micro-smoke-v1",
+  "status": "FAIL",
+  "usage": {
+    "completion_tokens": 32,
+    "prompt_tokens": 511,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    },
+    "total_tokens": 543
+  }
+}

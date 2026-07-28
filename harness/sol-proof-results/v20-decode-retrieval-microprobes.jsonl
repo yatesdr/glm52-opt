@@ -1,0 +1,24 @@
+Traceback (most recent call last):
+  File "/proof/v20_decode_retrieval_microprobes.py", line 651, in <module>
+    raise SystemExit(main())
+                     ^^^^^^
+  File "/proof/v20_decode_retrieval_microprobes.py", line 598, in main
+    fused_results, fused_timing_results = run_fused_query_probe(
+                                          ^^^^^^^^^^^^^^^^^^^^^^
+  File "/proof/v20_decode_retrieval_microprobes.py", line 207, in run_fused_query_probe
+    concat_quant = _DecodeConcatQuantFP8(
+                   ^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/quantization/input_quant_fp8.py", line 61, in __init__
+    super().__init__(compile_native=compile_native)
+  File "/opt/venv/lib/python3.12/site-packages/vllm/model_executor/custom_op.py", line 133, in __init__
+    self._forward_method = self.dispatch_forward(compile_native=compile_native)
+                           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/vllm/model_executor/custom_op.py", line 177, in dispatch_forward
+    compilation_config = get_cached_compilation_config()
+                         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/vllm/config/vllm.py", line 2415, in get_cached_compilation_config
+    return get_current_vllm_config().compilation_config
+           ^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/vllm/config/vllm.py", line 2420, in get_current_vllm_config
+    raise AssertionError(
+AssertionError: Current vLLM config is not set. This typically means get_current_vllm_config() was called outside of a set_current_vllm_config() context, or a CustomOp was instantiated at module import time or model forward time when config is not set. For tests that directly test custom ops/modules, use the 'default_vllm_config' pytest fixture from tests/conftest.py.

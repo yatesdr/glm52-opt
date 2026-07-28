@@ -1,0 +1,41 @@
+ARG BASE_IMAGE=voipmonitor/vllm@sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0
+FROM ${BASE_IMAGE}
+
+ARG BASE_DEEPSEEK_SHA256=180622452fad2500db4b57cdac3a961c13518aa5a1962c7ff4dd2cc634fa44c3
+ARG TRACE_DEEPSEEK_SHA256=3fcaf4b99445e37d1a376494551ca78813ad85c020930daf7ee125c840e261ac
+ARG RAW_REFERENCE_PROOF_SHA256=4735b3ea8a13e28fd3046dd8f8cf4eb1e8ebbd968ba17c2ddc94478c5b005d46
+ARG TRANSFORMERS_REFERENCE_SHA256=adb8317a21716b01273046e46c807f14f0dbaf035af59b60d52bd6bc3007cf72
+
+COPY workspace/vllm-v20-official-scorer-trace/vllm/model_executor/models/deepseek_v2.py \
+    /tmp/indexer-official-reference/deepseek_v2.py
+COPY harness/v20_glm_official_scorer_raw_production_topk_proof.py \
+    /tmp/indexer-official-reference/v20_glm_official_scorer_raw_production_topk_proof.py
+
+RUN set -eu; \
+    src=/opt/vllm/vllm/model_executor/models/deepseek_v2.py; \
+    installed=/opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py; \
+    trace=/tmp/indexer-official-reference/deepseek_v2.py; \
+    proof=/tmp/indexer-official-reference/v20_glm_official_scorer_raw_production_topk_proof.py; \
+    reference=/opt/venv/lib/python3.12/site-packages/transformers/models/glm_moe_dsa/modeling_glm_moe_dsa.py; \
+    test "$(sha256sum "${src}" | cut -d' ' -f1)" = "${BASE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${installed}" | cut -d' ' -f1)" = "${BASE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${trace}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${proof}" | cut -d' ' -f1)" = "${RAW_REFERENCE_PROOF_SHA256}"; \
+    test "$(sha256sum "${reference}" | cut -d' ' -f1)" = "${TRANSFORMERS_REFERENCE_SHA256}"; \
+    install -m 0644 "${trace}" "${src}"; \
+    install -m 0644 "${trace}" "${installed}"; \
+    install -d -m 0755 /opt/indexer-proofs; \
+    install -m 0644 "${proof}" /opt/indexer-proofs/; \
+    /opt/venv/bin/python -m py_compile \
+      "${src}" \
+      "${installed}" \
+      /opt/indexer-proofs/v20_glm_official_scorer_raw_production_topk_proof.py; \
+    test "$(sha256sum "${src}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_SHA256}"; \
+    test "$(sha256sum "${installed}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_SHA256}"; \
+    rm -rf /tmp/indexer-official-reference
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 official indexer scorer diagnostic" \
+      local-inference.base.digest="sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0" \
+      local-inference.vllm.base_commit="0c79e41db41f250ccdfc4be92d171960a5787f73" \
+      local-inference.diagnostic="raw official GLM indexer scorer and production top-k replay" \
+      local-inference.production="false"

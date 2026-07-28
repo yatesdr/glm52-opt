@@ -1,0 +1,1518 @@
+{
+  "claim_boundary": "operator policy reconstruction on preserved layer-0 rows; end-to-end long-context retrieval requires a causal model boot",
+  "results": [
+    {
+      "captured_positions": {
+        "count": 2048,
+        "first_half": 1676,
+        "last_quarter": 127,
+        "max": 82742,
+        "median": 18446.5,
+        "min": 0
+      },
+      "captured_vs_exact": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1878,
+        "jaccard": 0.8467087466185753,
+        "set_exact": false,
+        "union": 2218
+      },
+      "fingerprints": {
+        "captured_indices": "66f184914f0572dcb4a36852b1dcdf907d1f73a16d61538aa25d8e658580492f",
+        "scores": "38eaca29f82a647877223c66f2a70fa8bc83850b28de80e76bf1115cb3359d8f"
+      },
+      "policies": {
+        "oldest_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 2048,
+            "last_quarter": 0,
+            "max": 18998,
+            "median": 9688.5,
+            "min": 14
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1964,
+            "last_quarter": 61,
+            "max": 82742,
+            "median": 9853.5,
+            "min": 0
+          },
+          "strictly_higher_count": 189,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4506,
+          "threshold_bucket_needed": 1859,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1167,
+            "jaccard": 0.398429498122226,
+            "set_exact": false,
+            "union": 2929
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1079,
+            "jaccard": 0.35764003977461056,
+            "set_exact": false,
+            "union": 3017
+          }
+        },
+        "oldest_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3497,
+            "last_quarter": 147,
+            "max": 70202,
+            "median": 19002.0,
+            "min": 14
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1672,
+            "last_quarter": 132,
+            "max": 82742,
+            "median": 18452.0,
+            "min": 0
+          },
+          "strictly_higher_count": 189,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4506,
+          "threshold_bucket_needed": 1859,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2038,
+            "jaccard": 0.9902818270165209,
+            "set_exact": false,
+            "union": 2058
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1883,
+            "jaccard": 0.850881156800723,
+            "set_exact": false,
+            "union": 2213
+          }
+        },
+        "oldest_8192": {
+          "candidate_pool_count": 4506,
+          "candidate_pool_positions": {
+            "count": 4506,
+            "first_half": 3497,
+            "last_quarter": 557,
+            "max": 85819,
+            "median": 20206.5,
+            "min": 14
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1525,
+            "last_quarter": 292,
+            "max": 84667,
+            "median": 19800.5,
+            "min": 0
+          },
+          "strictly_higher_count": 189,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4506,
+          "threshold_bucket_needed": 1859,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1878,
+            "jaccard": 0.8467087466185753,
+            "set_exact": false,
+            "union": 2218
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        },
+        "oldest_stratified_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 1751,
+            "last_quarter": 164,
+            "max": 85767,
+            "median": 9693.5,
+            "min": 14
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1697,
+            "last_quarter": 215,
+            "max": 85767,
+            "median": 10315.0,
+            "min": 0
+          },
+          "strictly_higher_count": 189,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4506,
+          "threshold_bucket_needed": 1859,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1089,
+            "jaccard": 0.3621549717326239,
+            "set_exact": false,
+            "union": 3007
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1059,
+            "jaccard": 0.34869937438261445,
+            "set_exact": false,
+            "union": 3037
+          }
+        },
+        "oldest_stratified_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3255,
+            "last_quarter": 464,
+            "max": 85819,
+            "median": 19002.0,
+            "min": 14
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1576,
+            "last_quarter": 270,
+            "max": 84557,
+            "median": 18474.5,
+            "min": 0
+          },
+          "strictly_higher_count": 189,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4506,
+          "threshold_bucket_needed": 1859,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1892,
+            "jaccard": 0.8584392014519057,
+            "set_exact": false,
+            "union": 2204
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1883,
+            "jaccard": 0.850881156800723,
+            "set_exact": false,
+            "union": 2213
+          }
+        },
+        "oldest_stratified_8192": {
+          "candidate_pool_count": 4506,
+          "candidate_pool_positions": {
+            "count": 4506,
+            "first_half": 3497,
+            "last_quarter": 557,
+            "max": 85819,
+            "median": 20206.5,
+            "min": 14
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1525,
+            "last_quarter": 292,
+            "max": 84667,
+            "median": 19800.5,
+            "min": 0
+          },
+          "strictly_higher_count": 189,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4506,
+          "threshold_bucket_needed": 1859,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1878,
+            "jaccard": 0.8467087466185753,
+            "set_exact": false,
+            "union": 2218
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        },
+        "stratified_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 1589,
+            "last_quarter": 253,
+            "max": 85767,
+            "median": 20209.0,
+            "min": 21
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1549,
+            "last_quarter": 294,
+            "max": 85767,
+            "median": 20231.0,
+            "min": 0
+          },
+          "strictly_higher_count": 189,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4506,
+          "threshold_bucket_needed": 1859,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1060,
+            "jaccard": 0.34914361001317523,
+            "set_exact": false,
+            "union": 3036
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1055,
+            "jaccard": 0.34692535350213743,
+            "set_exact": false,
+            "union": 3041
+          }
+        },
+        "stratified_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3179,
+            "last_quarter": 506,
+            "max": 85819,
+            "median": 20206.5,
+            "min": 14
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1532,
+            "last_quarter": 293,
+            "max": 85324,
+            "median": 19803.5,
+            "min": 0
+          },
+          "strictly_higher_count": 189,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4506,
+          "threshold_bucket_needed": 1859,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1867,
+            "jaccard": 0.8375953342305967,
+            "set_exact": false,
+            "union": 2229
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1861,
+            "jaccard": 0.8326621923937361,
+            "set_exact": false,
+            "union": 2235
+          }
+        },
+        "stratified_8192": {
+          "candidate_pool_count": 4506,
+          "candidate_pool_positions": {
+            "count": 4506,
+            "first_half": 3497,
+            "last_quarter": 557,
+            "max": 85819,
+            "median": 20206.5,
+            "min": 14
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1525,
+            "last_quarter": 292,
+            "max": 84667,
+            "median": 19800.5,
+            "min": 0
+          },
+          "strictly_higher_count": 189,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4506,
+          "threshold_bucket_needed": 1859,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1878,
+            "jaccard": 0.8467087466185753,
+            "set_exact": false,
+            "union": 2218
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        }
+      },
+      "rank": 0,
+      "seq_len": 85932,
+      "trace": "/traces/tp0/layer00-indexer-local.pt"
+    },
+    {
+      "captured_positions": {
+        "count": 2048,
+        "first_half": 1682,
+        "last_quarter": 136,
+        "max": 82728,
+        "median": 18383.0,
+        "min": 0
+      },
+      "captured_vs_exact": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1891,
+        "jaccard": 0.8575963718820862,
+        "set_exact": false,
+        "union": 2205
+      },
+      "fingerprints": {
+        "captured_indices": "f14675055758bed8a70c19c591f893d3cf588f050b0ef2fcf01a505ab7c3d49f",
+        "scores": "7fd2d721d3fa468aa58994dadfa48d48f5da4d388f15ba4dcedd17aaa4dfbc08"
+      },
+      "policies": {
+        "oldest_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 2048,
+            "last_quarter": 0,
+            "max": 18965,
+            "median": 9693.0,
+            "min": 1
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1959,
+            "last_quarter": 60,
+            "max": 82728,
+            "median": 9895.0,
+            "min": 0
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4481,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1180,
+            "jaccard": 0.4046639231824417,
+            "set_exact": false,
+            "union": 2916
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1121,
+            "jaccard": 0.3768067226890756,
+            "set_exact": false,
+            "union": 2975
+          }
+        },
+        "oldest_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3480,
+            "last_quarter": 159,
+            "max": 73200,
+            "median": 18965.5,
+            "min": 1
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1677,
+            "last_quarter": 142,
+            "max": 82728,
+            "median": 18397.0,
+            "min": 0
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4481,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2039,
+            "jaccard": 0.9912493923189111,
+            "set_exact": false,
+            "union": 2057
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1895,
+            "jaccard": 0.8609722853248524,
+            "set_exact": false,
+            "union": 2201
+          }
+        },
+        "oldest_8192": {
+          "candidate_pool_count": 4481,
+          "candidate_pool_positions": {
+            "count": 4481,
+            "first_half": 3480,
+            "last_quarter": 544,
+            "max": 85915,
+            "median": 20169.0,
+            "min": 1
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1548,
+            "last_quarter": 288,
+            "max": 84653,
+            "median": 19390.5,
+            "min": 0
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4481,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1891,
+            "jaccard": 0.8575963718820862,
+            "set_exact": false,
+            "union": 2205
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        },
+        "oldest_stratified_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 1751,
+            "last_quarter": 161,
+            "max": 85805,
+            "median": 9697.0,
+            "min": 1
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1697,
+            "last_quarter": 206,
+            "max": 85805,
+            "median": 10278.0,
+            "min": 0
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4481,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1089,
+            "jaccard": 0.3621549717326239,
+            "set_exact": false,
+            "union": 3007
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1066,
+            "jaccard": 0.35181518151815183,
+            "set_exact": false,
+            "union": 3030
+          }
+        },
+        "oldest_stratified_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3253,
+            "last_quarter": 458,
+            "max": 85915,
+            "median": 18965.5,
+            "min": 1
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1579,
+            "last_quarter": 266,
+            "max": 84818,
+            "median": 18419.5,
+            "min": 0
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4481,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1906,
+            "jaccard": 0.8703196347031964,
+            "set_exact": false,
+            "union": 2190
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1905,
+            "jaccard": 0.8694659972615244,
+            "set_exact": false,
+            "union": 2191
+          }
+        },
+        "oldest_stratified_8192": {
+          "candidate_pool_count": 4481,
+          "candidate_pool_positions": {
+            "count": 4481,
+            "first_half": 3480,
+            "last_quarter": 544,
+            "max": 85915,
+            "median": 20169.0,
+            "min": 1
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1548,
+            "last_quarter": 288,
+            "max": 84653,
+            "median": 19390.5,
+            "min": 0
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4481,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1891,
+            "jaccard": 0.8575963718820862,
+            "set_exact": false,
+            "union": 2205
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        },
+        "stratified_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 1591,
+            "last_quarter": 249,
+            "max": 85805,
+            "median": 20166.5,
+            "min": 15
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1542,
+            "last_quarter": 288,
+            "max": 85805,
+            "median": 20307.0,
+            "min": 0
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4481,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1026,
+            "jaccard": 0.33420195439739414,
+            "set_exact": false,
+            "union": 3070
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1033,
+            "jaccard": 0.33725106105125696,
+            "set_exact": false,
+            "union": 3063
+          }
+        },
+        "stratified_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3181,
+            "last_quarter": 497,
+            "max": 85915,
+            "median": 20166.5,
+            "min": 1
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1548,
+            "last_quarter": 284,
+            "max": 84818,
+            "median": 19605.5,
+            "min": 0
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4481,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1876,
+            "jaccard": 0.8450450450450451,
+            "set_exact": false,
+            "union": 2220
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1874,
+            "jaccard": 0.8433843384338434,
+            "set_exact": false,
+            "union": 2222
+          }
+        },
+        "stratified_8192": {
+          "candidate_pool_count": 4481,
+          "candidate_pool_positions": {
+            "count": 4481,
+            "first_half": 3480,
+            "last_quarter": 544,
+            "max": 85915,
+            "median": 20169.0,
+            "min": 1
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1548,
+            "last_quarter": 288,
+            "max": 84653,
+            "median": 19390.5,
+            "min": 0
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4481,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1891,
+            "jaccard": 0.8575963718820862,
+            "set_exact": false,
+            "union": 2205
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        }
+      },
+      "rank": 1,
+      "seq_len": 85932,
+      "trace": "/traces/tp1/layer00-indexer-local.pt"
+    },
+    {
+      "captured_positions": {
+        "count": 2048,
+        "first_half": 1693,
+        "last_quarter": 125,
+        "max": 82329,
+        "median": 18308.5,
+        "min": 10
+      },
+      "captured_vs_exact": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1877,
+        "jaccard": 0.8458765209553853,
+        "set_exact": false,
+        "union": 2219
+      },
+      "fingerprints": {
+        "captured_indices": "5eb6a48fb88f2e7e7556e771ab782918ce6198cae9ed948a5cff4009fffff5f5",
+        "scores": "864146074891c2d21a9985b35c714b684b4e95332cc033f1427cb2065a172e5d"
+      },
+      "policies": {
+        "oldest_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 2048,
+            "last_quarter": 0,
+            "max": 18630,
+            "median": 9132.0,
+            "min": 3
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1958,
+            "last_quarter": 59,
+            "max": 82329,
+            "median": 9763.0,
+            "min": 3
+          },
+          "strictly_higher_count": 200,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4537,
+          "threshold_bucket_needed": 1848,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1173,
+            "jaccard": 0.4013000342114266,
+            "set_exact": false,
+            "union": 2923
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1079,
+            "jaccard": 0.35764003977461056,
+            "set_exact": false,
+            "union": 3017
+          }
+        },
+        "oldest_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3538,
+            "last_quarter": 117,
+            "max": 68469,
+            "median": 18632.0,
+            "min": 3
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1704,
+            "last_quarter": 113,
+            "max": 82329,
+            "median": 18287.5,
+            "min": 10
+          },
+          "strictly_higher_count": 200,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4537,
+          "threshold_bucket_needed": 1848,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2018,
+            "jaccard": 0.971126082771896,
+            "set_exact": false,
+            "union": 2078
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1868,
+            "jaccard": 0.8384201077199281,
+            "set_exact": false,
+            "union": 2228
+          }
+        },
+        "oldest_8192": {
+          "candidate_pool_count": 4537,
+          "candidate_pool_positions": {
+            "count": 4537,
+            "first_half": 3538,
+            "last_quarter": 558,
+            "max": 85904,
+            "median": 20035.0,
+            "min": 3
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1543,
+            "last_quarter": 292,
+            "max": 85791,
+            "median": 19720.5,
+            "min": 10
+          },
+          "strictly_higher_count": 200,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4537,
+          "threshold_bucket_needed": 1848,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1877,
+            "jaccard": 0.8458765209553853,
+            "set_exact": false,
+            "union": 2219
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        },
+        "oldest_stratified_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 1757,
+            "last_quarter": 163,
+            "max": 85791,
+            "median": 9136.0,
+            "min": 3
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1699,
+            "last_quarter": 202,
+            "max": 85791,
+            "median": 10370.5,
+            "min": 3
+          },
+          "strictly_higher_count": 200,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4537,
+          "threshold_bucket_needed": 1848,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1103,
+            "jaccard": 0.36852656197794853,
+            "set_exact": false,
+            "union": 2993
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1065,
+            "jaccard": 0.35136918508742987,
+            "set_exact": false,
+            "union": 3031
+          }
+        },
+        "oldest_stratified_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3274,
+            "last_quarter": 459,
+            "max": 85904,
+            "median": 18632.0,
+            "min": 3
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1581,
+            "last_quarter": 271,
+            "max": 85791,
+            "median": 18304.0,
+            "min": 10
+          },
+          "strictly_higher_count": 200,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4537,
+          "threshold_bucket_needed": 1848,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1887,
+            "jaccard": 0.854232684472612,
+            "set_exact": false,
+            "union": 2209
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1879,
+            "jaccard": 0.8475417230491655,
+            "set_exact": false,
+            "union": 2217
+          }
+        },
+        "oldest_stratified_8192": {
+          "candidate_pool_count": 4537,
+          "candidate_pool_positions": {
+            "count": 4537,
+            "first_half": 3538,
+            "last_quarter": 558,
+            "max": 85904,
+            "median": 20035.0,
+            "min": 3
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1543,
+            "last_quarter": 292,
+            "max": 85791,
+            "median": 19720.5,
+            "min": 10
+          },
+          "strictly_higher_count": 200,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4537,
+          "threshold_bucket_needed": 1848,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1877,
+            "jaccard": 0.8458765209553853,
+            "set_exact": false,
+            "union": 2219
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        },
+        "stratified_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 1597,
+            "last_quarter": 252,
+            "max": 85791,
+            "median": 20030.5,
+            "min": 5
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1547,
+            "last_quarter": 284,
+            "max": 85791,
+            "median": 20112.5,
+            "min": 9
+          },
+          "strictly_higher_count": 200,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4537,
+          "threshold_bucket_needed": 1848,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1050,
+            "jaccard": 0.3447143795141169,
+            "set_exact": false,
+            "union": 3046
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1048,
+            "jaccard": 0.3438320209973753,
+            "set_exact": false,
+            "union": 3048
+          }
+        },
+        "stratified_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3194,
+            "last_quarter": 504,
+            "max": 85904,
+            "median": 20030.5,
+            "min": 3
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1548,
+            "last_quarter": 291,
+            "max": 85791,
+            "median": 19748.5,
+            "min": 10
+          },
+          "strictly_higher_count": 200,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4537,
+          "threshold_bucket_needed": 1848,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1875,
+            "jaccard": 0.8442143178748311,
+            "set_exact": false,
+            "union": 2221
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1886,
+            "jaccard": 0.853393665158371,
+            "set_exact": false,
+            "union": 2210
+          }
+        },
+        "stratified_8192": {
+          "candidate_pool_count": 4537,
+          "candidate_pool_positions": {
+            "count": 4537,
+            "first_half": 3538,
+            "last_quarter": 558,
+            "max": 85904,
+            "median": 20035.0,
+            "min": 3
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1543,
+            "last_quarter": 292,
+            "max": 85791,
+            "median": 19720.5,
+            "min": 10
+          },
+          "strictly_higher_count": 200,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4537,
+          "threshold_bucket_needed": 1848,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1877,
+            "jaccard": 0.8458765209553853,
+            "set_exact": false,
+            "union": 2219
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        }
+      },
+      "rank": 2,
+      "seq_len": 85932,
+      "trace": "/traces/tp2/layer00-indexer-local.pt"
+    },
+    {
+      "captured_positions": {
+        "count": 2048,
+        "first_half": 1685,
+        "last_quarter": 133,
+        "max": 82755,
+        "median": 18321.0,
+        "min": 11
+      },
+      "captured_vs_exact": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1886,
+        "jaccard": 0.853393665158371,
+        "set_exact": false,
+        "union": 2210
+      },
+      "fingerprints": {
+        "captured_indices": "b1669a11c2e69a0b3a5d7c349eb8ef6939f09e948090fff3f38fe97333aab124",
+        "scores": "e1b27ab2c6e98c49d0347b5d3530a29ccae51099f42425d5326f510e7f063770"
+      },
+      "policies": {
+        "oldest_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 2048,
+            "last_quarter": 0,
+            "max": 19064,
+            "median": 9601.0,
+            "min": 4
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1967,
+            "last_quarter": 58,
+            "max": 82755,
+            "median": 9829.5,
+            "min": 4
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4483,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1186,
+            "jaccard": 0.40756013745704467,
+            "set_exact": false,
+            "union": 2910
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1108,
+            "jaccard": 0.3708165997322624,
+            "set_exact": false,
+            "union": 2988
+          }
+        },
+        "oldest_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3490,
+            "last_quarter": 170,
+            "max": 73570,
+            "median": 19064.5,
+            "min": 4
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1682,
+            "last_quarter": 136,
+            "max": 82755,
+            "median": 18346.0,
+            "min": 11
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4483,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2041,
+            "jaccard": 0.9931873479318735,
+            "set_exact": false,
+            "union": 2055
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1888,
+            "jaccard": 0.855072463768116,
+            "set_exact": false,
+            "union": 2208
+          }
+        },
+        "oldest_8192": {
+          "candidate_pool_count": 4483,
+          "candidate_pool_positions": {
+            "count": 4483,
+            "first_half": 3490,
+            "last_quarter": 557,
+            "max": 85887,
+            "median": 20164.0,
+            "min": 4
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1543,
+            "last_quarter": 292,
+            "max": 84680,
+            "median": 19463.0,
+            "min": 11
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4483,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1886,
+            "jaccard": 0.853393665158371,
+            "set_exact": false,
+            "union": 2210
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        },
+        "oldest_stratified_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 1754,
+            "last_quarter": 165,
+            "max": 85777,
+            "median": 9605.0,
+            "min": 4
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1704,
+            "last_quarter": 206,
+            "max": 85777,
+            "median": 10201.5,
+            "min": 4
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4483,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1106,
+            "jaccard": 0.36989966555183945,
+            "set_exact": false,
+            "union": 2990
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1076,
+            "jaccard": 0.3562913907284768,
+            "set_exact": false,
+            "union": 3020
+          }
+        },
+        "oldest_stratified_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3261,
+            "last_quarter": 468,
+            "max": 85887,
+            "median": 19064.5,
+            "min": 4
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1582,
+            "last_quarter": 271,
+            "max": 85392,
+            "median": 18446.5,
+            "min": 11
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4483,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1899,
+            "jaccard": 0.8643604915794265,
+            "set_exact": false,
+            "union": 2197
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1916,
+            "jaccard": 0.8788990825688073,
+            "set_exact": false,
+            "union": 2180
+          }
+        },
+        "oldest_stratified_8192": {
+          "candidate_pool_count": 4483,
+          "candidate_pool_positions": {
+            "count": 4483,
+            "first_half": 3490,
+            "last_quarter": 557,
+            "max": 85887,
+            "median": 20164.0,
+            "min": 4
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1543,
+            "last_quarter": 292,
+            "max": 84680,
+            "median": 19463.0,
+            "min": 11
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4483,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1886,
+            "jaccard": 0.853393665158371,
+            "set_exact": false,
+            "union": 2210
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        },
+        "stratified_2048": {
+          "candidate_pool_count": 2048,
+          "candidate_pool_positions": {
+            "count": 2048,
+            "first_half": 1594,
+            "last_quarter": 254,
+            "max": 85777,
+            "median": 20160.5,
+            "min": 7
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1550,
+            "last_quarter": 292,
+            "max": 85777,
+            "median": 20207.0,
+            "min": 7
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4483,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1039,
+            "jaccard": 0.33987569512594046,
+            "set_exact": false,
+            "union": 3057
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1039,
+            "jaccard": 0.33987569512594046,
+            "set_exact": false,
+            "union": 3057
+          }
+        },
+        "stratified_4096": {
+          "candidate_pool_count": 4096,
+          "candidate_pool_positions": {
+            "count": 4096,
+            "first_half": 3189,
+            "last_quarter": 509,
+            "max": 85887,
+            "median": 20160.5,
+            "min": 4
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1548,
+            "last_quarter": 288,
+            "max": 85392,
+            "median": 19617.0,
+            "min": 11
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4483,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1877,
+            "jaccard": 0.8458765209553853,
+            "set_exact": false,
+            "union": 2219
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1886,
+            "jaccard": 0.853393665158371,
+            "set_exact": false,
+            "union": 2210
+          }
+        },
+        "stratified_8192": {
+          "candidate_pool_count": 4483,
+          "candidate_pool_positions": {
+            "count": 4483,
+            "first_half": 3490,
+            "last_quarter": 557,
+            "max": 85887,
+            "median": 20164.0,
+            "min": 4
+          },
+          "positions": {
+            "count": 2048,
+            "first_half": 1543,
+            "last_quarter": 292,
+            "max": 84680,
+            "median": 19463.0,
+            "min": 11
+          },
+          "strictly_higher_count": 190,
+          "threshold_bin": 197,
+          "threshold_bucket_count": 4483,
+          "threshold_bucket_needed": 1858,
+          "vs_captured": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 1886,
+            "jaccard": 0.853393665158371,
+            "set_exact": false,
+            "union": 2210
+          },
+          "vs_exact": {
+            "a_count": 2048,
+            "b_count": 2048,
+            "intersection": 2048,
+            "jaccard": 1.0,
+            "set_exact": true,
+            "union": 2048
+          }
+        }
+      },
+      "rank": 3,
+      "seq_len": 85931,
+      "trace": "/traces/tp3/layer00-indexer-local.pt"
+    }
+  ],
+  "schema": "v20-indexer-boundary-policy-cpu-proof-v1"
+}

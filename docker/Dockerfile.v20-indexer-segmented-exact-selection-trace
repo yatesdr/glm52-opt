@@ -1,0 +1,41 @@
+FROM voipmonitor/vllm@sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0
+
+COPY workspace/vllm-v20-dcp-history-floor/vllm/envs.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/envs.py
+COPY workspace/vllm-v20-dcp-history-floor/vllm/model_executor/layers/sparse_attn_indexer.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/sparse_attn_indexer.py
+COPY workspace/vllm-v20-segmented-trace/vllm/model_executor/models/deepseek_v2.py \
+     /opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py
+COPY workspace/sparkinfer-v20-segmented-exact/sparkinfer/attention/nsa_indexer/selection_policy.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/selection_policy.py
+COPY workspace/sparkinfer-v20-segmented-exact/sparkinfer/attention/nsa_indexer/paged.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/paged.py
+COPY workspace/sparkinfer-v20-segmented-exact/sparkinfer/attention/nsa_indexer/scratch.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/scratch.py
+COPY workspace/sparkinfer-v20-segmented-exact/sparkinfer/attention/nsa_indexer/tiled_topk.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py
+COPY workspace/sparkinfer-v20-segmented-exact/sparkinfer/comm/pcie/pcie_dma.py \
+     /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py
+
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/envs.py | cut -d' ' -f1)" = "e1bbc8f89bf0003f5d03547c2e2be78dda24082b25bad595894c0c09d92bf3c7" \
+ && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/sparse_attn_indexer.py | cut -d' ' -f1)" = "254834e5adaeec1015cd4a71b1b1f6e36bfc9fe478da278924369548976e4943" \
+ && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py | cut -d' ' -f1)" = "23e910a5aa88644f3817ba62d15bdd69a6b89f4191c41c3555deb84c2d1f6254" \
+ && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/selection_policy.py | cut -d' ' -f1)" = "0454e259de086c1fece75959f510720cad76cbb5b2415145baa4955e1bde8c32" \
+ && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/paged.py | cut -d' ' -f1)" = "ed6626032b05af22e3ca6faa6eac8cb3510eac421cd208c5284ef4d24db918b6" \
+ && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/scratch.py | cut -d' ' -f1)" = "e0a4fe8e2261cb6cf135c6690b122df7eb4d9abc047e39b59c2e40ab68d075c7" \
+ && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py | cut -d' ' -f1)" = "6357cf776ee1326f1f544e4da0583fd161488ded4612eddf351be737b8dd77ab" \
+ && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py | cut -d' ' -f1)" = "16758ceeebb357a373149145cc75f1a6c02f380cb8e74fd3d361e153456adfef" \
+ && /opt/venv/bin/python -m py_compile \
+      /opt/venv/lib/python3.12/site-packages/vllm/envs.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/sparse_attn_indexer.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/selection_policy.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/paged.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/scratch.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py
+
+LABEL org.opencontainers.image.base.digest="sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0" \
+      org.opencontainers.image.vllm.commit="ffe1ed314430d7900cd597d6a0428eac285dad9a" \
+      org.opencontainers.image.sparkinfer.commit="1ed69d6f5dc81b25a43c7b2c782d5a4db483108d" \
+      org.opencontainers.image.patch="v20-indexer-segmented-exact-cross-layer-selection-trace"

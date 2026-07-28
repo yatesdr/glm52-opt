@@ -1,0 +1,68 @@
+{
+  "checks": {
+    "cold": true,
+    "content_exact": true,
+    "finish_reason_stop": true,
+    "prompt_is_micro_sized": true
+  },
+  "content": "SYSTEM READY",
+  "elapsed_s": 94.026,
+  "finish_reason": "stop",
+  "max_tokens": 512,
+  "prompt_tokens_preflight": 499,
+  "reasoning": "1.  **Analyze the Request:**\n    *   Input: A highly repetitive text block about a maintenance planning team reviewing various factors (equipment availability, freight timing, etc.) with no exceptions and aligned work packets. The text is repeated 12 times.\n    *   Constraint: \"Reply with exactly: SYSTEM READY\"\n\n2.  **Evaluate the Constraint:**\n    *   The user explicitly requested the output to be *exactly* \"SYSTEM READY\". No other text, no formatting variations, just those exact words.\n\n3.  **Formulate the Output:**\n    *   Output: SYSTEM READY\n\n4.  **Final Verification:**\n    *   Does the output match the constraint exactly? Yes.",
+  "reasoning_content": "",
+  "response": {
+    "choices": [
+      {
+        "finish_reason": "stop",
+        "index": 0,
+        "logprobs": null,
+        "message": {
+          "annotations": null,
+          "audio": null,
+          "content": "SYSTEM READY",
+          "function_call": null,
+          "reasoning": "1.  **Analyze the Request:**\n    *   Input: A highly repetitive text block about a maintenance planning team reviewing various factors (equipment availability, freight timing, etc.) with no exceptions and aligned work packets. The text is repeated 12 times.\n    *   Constraint: \"Reply with exactly: SYSTEM READY\"\n\n2.  **Evaluate the Constraint:**\n    *   The user explicitly requested the output to be *exactly* \"SYSTEM READY\". No other text, no formatting variations, just those exact words.\n\n3.  **Formulate the Output:**\n    *   Output: SYSTEM READY\n\n4.  **Final Verification:**\n    *   Does the output match the constraint exactly? Yes.",
+          "refusal": null,
+          "role": "assistant"
+        },
+        "routed_experts": null,
+        "stop_reason": 154827,
+        "token_ids": null
+      }
+    ],
+    "created": 1785177988,
+    "ec_transfer_params": null,
+    "id": "chatcmpl-8c0b7db01dc612c1",
+    "kv_transfer_params": null,
+    "metrics": null,
+    "model": "GLM-5.2",
+    "object": "chat.completion",
+    "prompt_logprobs": null,
+    "prompt_text": null,
+    "prompt_token_ids": null,
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm0c79e41.sic3828fd.fi801d57a.cu132.20260727-tp4-67960576",
+    "usage": {
+      "completion_tokens": 150,
+      "prompt_tokens": 511,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      },
+      "total_tokens": 661
+    }
+  },
+  "schema": "v20-reference-live-micro-smoke-v1",
+  "status": "PASS",
+  "usage": {
+    "completion_tokens": 150,
+    "prompt_tokens": 511,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    },
+    "total_tokens": 661
+  }
+}

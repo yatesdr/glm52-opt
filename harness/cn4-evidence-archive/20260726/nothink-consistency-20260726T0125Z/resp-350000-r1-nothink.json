@@ -1,0 +1,42 @@
+{
+  "id": "chatcmpl-80e1ded2283a0023",
+  "object": "chat.completion",
+  "created": 1785029016,
+  "model": "GLM-5.2",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **MNT-2024-087**. \n\nThis ticket number is used to track and manage maintenance requests for the Facility 27 compressor system. It is a unique identifier assigned to the maintenance request to ensure proper tracking and resolution. The number helps the maintenance team prioritize, address issues efficiently, and maintain a record of all maintenance activities. \n\nTo find the maintenance ticket number, **MNT-2024-087**, you can refer to the ticketing system used by the Facility 27 maintenance team. This number is essential for tracking the maintenance request and ensuring that all maintenance activities are properly documented and addressed.",
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "reasoning": null
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": 154827,
+      "token_ids": null,
+      "routed_experts": null
+    }
+  ],
+  "service_tier": null,
+  "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm5517197.sibe0edca.fi801d57a.cu132.20260725-tp4-743d1985",
+  "usage": {
+    "prompt_tokens": 343727,
+    "total_tokens": 343865,
+    "completion_tokens": 138,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    }
+  },
+  "prompt_logprobs": null,
+  "prompt_token_ids": null,
+  "prompt_text": null,
+  "kv_transfer_params": null,
+  "ec_transfer_params": null,
+  "metrics": null
+}

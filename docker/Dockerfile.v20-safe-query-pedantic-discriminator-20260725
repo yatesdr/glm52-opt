@@ -1,0 +1,49 @@
+# syntax=docker/dockerfile:1
+#
+# Exact causal discriminator for the post-6d32 deep-retrieval regression.
+#
+# Keep the complete fa71 production candidate (including PR #171 and its
+# ~501k-token pool), but rewind only the stable-libtorch extension to the
+# 6d32 implementation. Source inventory and ELF checks establish that the
+# two extensions have identical interfaces and differ in exactly one CUDA
+# translation unit: safe_query_bmm.cu (PEDANTIC vs regular FP32 compute).
+
+ARG OLD_IMAGE=ghcr.io/yatesdr/glm52-serve@sha256:6d32a0c3a64962078c74c86485da1090c9f01b287c70009e4761359ed063c338
+ARG CURRENT_IMAGE=ghcr.io/yatesdr/glm52-serve:gilded-gnosis-v20-prod-ready-20260724
+
+FROM ${OLD_IMAGE} AS old-safe-query
+
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so | cut -d ' ' -f 1)" = \
+      "fcf056af6607bb4fd0174fda977e45e2ebe69e8c09c0dab4844adc7bf33c635d" \
+    && test "$(stat -c %s /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so)" = \
+      "166034696" \
+    && grep -aFq "safe_mla_query_bmm" \
+      /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so
+
+FROM ${CURRENT_IMAGE}
+
+LABEL org.opencontainers.image.base.name="ghcr.io/yatesdr/glm52-serve:gilded-gnosis-v20-prod-ready-20260724"
+LABEL io.yatesdr.base.image-id="sha256:fa71a0c1e06e29db88364dcaa047c09c37662fda105551a988a2d09e54fdec86"
+LABEL io.yatesdr.discriminator="safe-query-bmm-pedantic-binary-rewind"
+LABEL io.yatesdr.discriminator.old-stable-libtorch-sha256="fcf056af6607bb4fd0174fda977e45e2ebe69e8c09c0dab4844adc7bf33c635d"
+LABEL io.yatesdr.discriminator.new-stable-libtorch-sha256="9e2608a49dfe7953bf822b244530053799a3ac99c5136f1b33b39d6fe91f78fa"
+
+# Refuse a moved or rebuilt CURRENT_IMAGE and require PR #171 to remain in
+# the discriminator. This image must change one file and one mechanism only.
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so | cut -d ' ' -f 1)" = \
+      "9e2608a49dfe7953bf822b244530053799a3ac99c5136f1b33b39d6fe91f78fa" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py | cut -d ' ' -f 1)" = \
+      "885401fc5dc10dcfa02fe6fc524763bb9a44150e4cf743c1e6f9a3460002da74"
+
+COPY --from=old-safe-query \
+    /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so \
+    /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so
+
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so | cut -d ' ' -f 1)" = \
+      "fcf056af6607bb4fd0174fda977e45e2ebe69e8c09c0dab4844adc7bf33c635d" \
+    && test "$(stat -c %s /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so)" = \
+      "166034696" \
+    && grep -aFq "safe_mla_query_bmm" \
+      /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py | cut -d ' ' -f 1)" = \
+      "885401fc5dc10dcfa02fe6fc524763bb9a44150e4cf743c1e6f9a3460002da74"

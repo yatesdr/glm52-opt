@@ -1,0 +1,14 @@
+# v2: adds wire_mode_probe (i8/mx family race), NVFP4-posture defaults
+# (dynamic KV on, i8 race on unset F8_DMA), updated autocal wrapper.
+FROM ghcr.io/yatesdr/glm52-serve@sha256:9bc5fcc3b175766ed342c682064522f33bf5cad556d17def1bdf9c02903d775b
+USER root
+COPY wire_mode_probe.py     /usr/local/bin/wire_mode_probe.py
+COPY serve-with-autocal.sh  /usr/local/bin/serve-with-autocal.sh
+RUN set -eu; \
+    chmod +x /usr/local/bin/serve-with-autocal.sh; \
+    /opt/venv/bin/python3 -m py_compile /usr/local/bin/wire_mode_probe.py; \
+    bash -n /usr/local/bin/serve-with-autocal.sh; \
+    grep -q "i8 family race" /usr/local/bin/serve-with-autocal.sh; \
+    grep -q "VLLM_NVFP4_MLA_DYNAMIC_SCALE unset" /usr/local/bin/serve-with-autocal.sh
+LABEL local.glm52.autocal.wire="F8_DMA unset in NVFP4 posture -> measured i8/i8_ring/i8_a2a race (verified, hang-guarded); explicit values win; i8_auto/mx_auto explicit tokens"
+LABEL local.glm52.dynamickv.default="on for KV_CACHE_DTYPE=nvfp4_ds_mla + KV_FP8_ROPE=1; other KV modes untouched"

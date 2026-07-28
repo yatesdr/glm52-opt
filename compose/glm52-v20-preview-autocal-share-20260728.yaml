@@ -1,0 +1,103 @@
+# GLM-5.2 v20 — community preview: dynamic NVFP4 KV scaling + auto-calibration
+# ============================================================================
+# What you get (vs the stock v20 RC):
+#   1. Self-describing per-token NVFP4 KV cache scales — fixes deep-context
+#      needle retrieval (frozen 350k: 0/3 -> 3/3 exact; randomized ladder
+#      6/6 through 466k tokens) with no calibration file and no capacity
+#      loss. PRs: local-inference-lab/sparkinfer#86, local-inference-lab/vllm#189.
+#   2. Quality-first online-MXFP8 weight membership (credit: destroyed) —
+#      measured KLD 0.1333 vs 0.1462 static-calibrated stock (n=3, lower is
+#      better) on our harness.
+#   3. NCCL_P2P_LEVEL=auto — boots measure your PCIe/NVLink topology and
+#      pick the fastest *verified* P2P mode (hang-guarded, cached after
+#      first boot, falls back to a safe static derivation). No more
+#      guessing PXB vs SYS.
+#
+# Requirements: 4 GPUs (tested: 4x RTX PRO 6000 Blackwell 96GB, SM120),
+# recent NVIDIA driver, the GLM-5.2 NF3-hybrid checkpoint on local disk.
+#
+# Quick start:
+#   1. Edit the model path under `volumes:` below.
+#   2. docker compose -f glm52-v20-preview-autocal-share-20260728.yaml up -d
+#   3. First boot: expect a short auto-calibration log ("[autocal] ...")
+#      before model load, then normal vLLM startup. API on :5001.
+#
+# Notes:
+#   - The KV cache mode is server-static; the named cache volume below keeps
+#     it isolated. If you previously ran OTHER images with this volume:
+#     docker volume rm glm52_v20_preview_cache   (then re-up).
+#   - To pin a P2P level yourself, set NCCL_P2P_LEVEL=PXB (etc.) — explicit
+#     values always win over auto.
+#   - To return to stock weight quantization, set ONLINE_QUANT and
+#     QUANTIZATION_CONFIG_JSON to empty strings.
+#   - Status: review preview. Retrieval + KLD evidence chains are published
+#     in the PRs; decode-throughput and restart qualification are in flight.
+
+name: glm52-v20-preview
+
+services:
+  glm52:
+    container_name: glm52-v20-preview
+    # Digest-pinned preview build (tag:
+    #   gilded-gnosis-v20-dynscale-autocal-mxq-preview-20260728)
+    image: ghcr.io/yatesdr/glm52-serve@sha256:9bc5fcc3b175766ed342c682064522f33bf5cad556d17def1bdf9c02903d775b
+    restart: "no"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    ports:
+      # Binds on ALL interfaces: the API (no auth) is reachable from your
+      # whole LAN. For localhost-only, change to "127.0.0.1:5001:5001".
+      - "0.0.0.0:5001:5001"
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              # TP4 needs exactly four GPUs; edit if yours are not 0-3.
+              device_ids: ["0", "1", "2", "3"]
+              capabilities: [gpu]
+    environment:
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      # --- serving posture (tested production shape) ---
+      TP: "4"
+      DCP: "4"
+      MTP: "3"
+      MAX_MODEL_LEN: "480000"
+      MAX_NUM_SEQS: "16"
+      MAX_BATCHED_TOKENS: "3072"
+      GRAPH: "64"
+      GPU_MEMORY_UTILIZATION: "0.9848"
+      F8_DMA: i8_ring
+      SPARKINFER_NSA_TOPK_SELECTION_POLICY: exact
+      VLLM_DCP_QUERY_SPLIT: "0"
+      VLLM_DCP_TOPK_OWNER_MERGE: "0"
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+      # --- the fixes (image also defaults NCCL_P2P_LEVEL=auto + MXFP8
+      #     membership; restated here for visibility) ---
+      KV_FP8_ROPE: "1"
+      VLLM_NVFP4_MLA_DYNAMIC_SCALE: "1"
+      NCCL_P2P_LEVEL: auto
+    volumes:
+      # EDIT ME: path to your GLM-5.2 NF3-hybrid checkpoint directory.
+      - /home/claude/LLM/GLM-5.2-hybrid:/model:ro
+      # Dedicated fresh cache (kernel + calibration results). Portable named
+      # volume; see the header note before reusing across images.
+      - glm52_v20_preview_cache:/root/.cache
+
+volumes:
+  glm52_v20_preview_cache:

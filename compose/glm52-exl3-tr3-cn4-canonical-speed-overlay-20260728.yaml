@@ -1,0 +1,25 @@
+# Performance-candidate overlay for the pinned CN4 TR3 qualification compose.
+#
+# The base qualification arm deliberately matched the preserved NF3 production
+# posture (PXB, no query split, no owner merge, no CKV prefetch). This overlay
+# enables the TR3 package's own validated TP4/DCP4 prefill posture while keeping
+# every quality-sensitive choice unchanged: exact top-k, i8_ring, dynamic
+# NVFP4 MLA KV, FP8 RoPE, EXL3 weights, MTP3, and the DRAM/NVMe tiers.
+#
+# Run only as a second compose file:
+#   docker compose \
+#     -f compose/glm52-exl3-tr3-dynamic-cn4-qualification-20260728.yaml \
+#     -f compose/glm52-exl3-tr3-cn4-canonical-speed-overlay-20260728.yaml \
+#     up -d --force-recreate
+
+services:
+  glm52:
+    environment:
+      # CN4 reports read/write P2P capability for every GPU pair. SYS allows
+      # NCCL to use the cross-host-bridge NODE links that PXB excludes.
+      NCCL_P2P_LEVEL: SYS
+
+      # Exact settings validated by the upstream TR3 TP4/DCP4 preset.
+      VLLM_DCP_QUERY_SPLIT: "1"
+      VLLM_DCP_TOPK_OWNER_MERGE: "1"
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "1"

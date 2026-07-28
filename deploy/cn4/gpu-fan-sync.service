@@ -1,0 +1,29 @@
+# CN4: sync the stacked GPU fans as one heat exchanger.
+#
+# These are desktop RTX PRO 6000 cards stacked directly on each other with a single exhaust out the
+# end of the chain, so the fans are series-coupled: a cool intake card idling its fan starves every
+# card downstream. Stock per-card curves produced 45/59/73/89C under load, with the exhaust card 1C
+# from the Blackwell slowdown point. Driving all fans from the hottest card's temperature brought it
+# to 39/46/53/63C and cut stack draw from 766W to 685W, because ~48W of the intake-to-exhaust power
+# gap was thermal leakage.
+#
+# ExecStopPost is the safety-critical line: fan control is MANUAL while this runs, so if the service
+# stops or crashes the fans MUST be handed back to the driver's automatic curve rather than left
+# stranded at whatever they were last set to.
+[Unit]
+Description=GPU fan sync (stacked-card heat exchanger, hottest-card policy)
+Documentation=file:///usr/local/bin/gpu-fan-sync
+After=nvidia-persistenced.service
+Wants=nvidia-persistenced.service
+
+[Service]
+Type=simple
+ExecStart=/usr/bin/python3 /usr/local/bin/gpu-fan-sync --apply --daemon --interval 5
+ExecStopPost=/usr/bin/python3 /usr/local/bin/gpu-fan-sync --restore
+Restart=on-failure
+RestartSec=10
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target

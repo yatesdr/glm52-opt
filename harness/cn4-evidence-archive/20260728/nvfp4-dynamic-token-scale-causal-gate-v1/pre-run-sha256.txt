@@ -1,0 +1,3 @@
+f0ebfbe0bf25410ffb91662592f3ec7c12659ddd65f34074b7361f29432cd0d3  /home/derek/dynamic-scale-gate-20260728/v20_run_causal_gate.py
+a2ad521f83750b696add479cd91f1b82bb49582761a34a91f85bdf562e15f79f  /home/derek/causal-gate-freeze-20260726/manifest.json
+776a8a804c3935991e1cdab1d7a3719d4ddcf6e957d483bc2f166b9822cb2e28  /home/derek/dynamic-scale-gate-20260728/writer-sm120-rank3-compile.json

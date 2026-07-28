@@ -1,0 +1,73 @@
+# NF3 5517197 production candidate — one qualification boot.
+#
+# Semantic base: voipmonitor/vllm@sha256:e7a8a854… (vLLM 5517197, SparkInfer be0edca,
+# FlashInfer 801d57a), plus ONLY the launcher fix so CN4's PXB survives — the stock
+# launcher hardcodes NCCL_P2P_LEVEL=SYS and would silently discard it (Sol, code-prep#111/112).
+#
+# Deliberately minimal: the release preset and measured DCP auto-policy own batching,
+# attention, CKV-gather, query-split and MoE routing. Do NOT port the old low-level
+# variables, and do NOT override MAX_BATCHED_TOKENS — the NF3 preset selects 2048.
+# KV_FP8_ROPE=1 is mandatory: the hybrid launcher defaults to nvfp4_ds_mla but leaves this
+# unset, and vLLM defaults it to 0, which would silently test a 432-byte BF16-RoPE record
+# instead of the 368-byte FP8-RoPE configuration we intend to qualify.
+services:
+  glm52-v20-candidate:
+    container_name: glm52-v20-candidate
+    image: glm52-serve:v20-5517197-pxb-20260725
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"]
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    ports:
+      - "0.0.0.0:5001:5001"
+    ipc: host
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      MODEL_FAMILY: glm52-hybrid
+      # Use the LOCAL checkpoint. Without this the launcher defaults to the HuggingFace repo id
+      # (serve-glm52-v16.sh:9) and re-downloads 349 GB we already have mounted at /model — that
+      # cost a 25-minute stall on the first attempt. serve-glm52-v16.sh:339 skips --revision
+      # automatically when MODEL starts with '/', so MODEL_REVISION needs no change.
+      MODEL: /model
+      # serve-glm52-v16.sh:12 defaults PORT to 8000. Our compose publishes 5001 and the healthcheck
+      # probes 5001, so without this the container serves on a port nothing is watching and never
+      # reports healthy. Caught by reading the resolved /proc cmdline, not the scripts.
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      TP: "4"
+      DCP: "4"
+      MTP: "3"
+      DCP_PREFILL_WORKSPACE: auto
+      MAX_MODEL_LEN: "480000"
+      MAX_NUM_SEQS: "16"
+      GRAPH: "64"
+      KV_FP8_ROPE: "1"
+      # Launcher default 0.96 left 3.24 GiB for KV vs 3.57 GiB needed at 480k (est. max len
+      # 434,688 — below our 450k test cell). 0.970 is what the fa71 candidate ran.
+      GPU_MEMORY_UTILIZATION: "0.97"
+      # CN4 host policy: proven 10.1–11.3x faster for the packed-CKV gather than SYS.
+      # Only survives because the launcher layer changed the hardcode to ${NCCL_P2P_LEVEL:-SYS}.
+      NCCL_P2P_LEVEL: PXB
+      # LEVER 2 (Sol dev#153): the ONLY change from the stock NF3 boot. v19 prod sets this
+      # and v20 does not. Source (b12x_moe.py, Sol) confirms unset selects quant_mode=nvfp4
+      # while A16=1 selects w4a16 — this affects EVERY MoE layer. A8 stays 0, as in v19.
+      B12X_MOE_FORCE_A16: "1"
+    volumes:
+      - ${GLM52_MODEL_DIR:?set GLM52_MODEL_DIR}:/model:ro
+      - ${GLM52_CACHE_DIR:?set GLM52_CACHE_DIR}:/cache:rw
+      - ${GLM52_CACHE_DIR:?set GLM52_CACHE_DIR}:/root/.cache:rw
+      - ${GLM52_NVME_DIR:?set GLM52_NVME_DIR}:/nvme-kv:rw

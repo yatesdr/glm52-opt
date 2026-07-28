@@ -1,0 +1,67 @@
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+fallback_prefill_kld_start {"context_length": 2048, "env": {"B12X_MOE_FORCE_A16": "1", "B12X_W4A16_TC_DECODE": "1", "VLLM_B12X_FORCE_MOE_A16": null, "VLLM_PCIE_ONESHOT_ALLREDUCE_MAX_SIZE": null, "VLLM_USE_B12X_MOE": "1", "VLLM_USE_B12X_SPARSE_INDEXER": "1", "VLLM_WORKER_MULTIPROC_METHOD": "spawn"}, "extra": {"decode_context_parallel_size": 1, "enforce_eager": true, "moe_backend": "b12x", "quantization_config": {"ignore": ["re:^model\\.layers\\.0\\.", "re:.*\\.self_attn\\.indexer\\.", "re:.*\\.mlp\\.gate$", "model.layers.78.eh_proj", "lm_head"], "linear": {"weight": "mxfp8"}, "shared_experts": {"weight": "mxfp8"}}}, "hf_overrides": {"index_topk_pattern": "FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS", "use_index_cache": true}, "max_windows": 1, "model": "/model", "reference_logits": "/kld-assets/reference-logits", "stride": 512}
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+wikitext_alias_failed {"error": "HfUriError(\"Invalid HF URI 'hf://datasets/wikitext@b08601e04326c79dfdd32d625aee71d232d685c3/.huggingface.yaml'. Repository id must be 'namespace/name', got 'wikitext'.\")", "fallback": "Salesforce/wikitext"}
+Traceback (most recent call last):
+  File "/kld-assets/prefill_kld_fallback_cleanup.py", line 120, in main
+    ds = load_dataset("wikitext", "wikitext-2-raw-v1", split="test")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kld-assets/pydeps/datasets/load.py", line 1698, in load_dataset
+    builder_instance = load_dataset_builder(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/kld-assets/pydeps/datasets/load.py", line 1325, in load_dataset_builder
+    dataset_module = dataset_module_factory(
+                     ^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kld-assets/pydeps/datasets/load.py", line 1217, in dataset_module_factory
+    raise e1 from None
+  File "/kld-assets/pydeps/datasets/load.py", line 1192, in dataset_module_factory
+    ).get_module()
+      ^^^^^^^^^^^^
+  File "/kld-assets/pydeps/datasets/load.py", line 608, in get_module
+    standalone_yaml_path = cached_path(
+                           ^^^^^^^^^^^^
+  File "/kld-assets/pydeps/datasets/utils/file_utils.py", line 180, in cached_path
+    ).resolve_path(url_or_filename)
+      ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kld-assets/pydeps/huggingface_hub/hf_file_system.py", line 305, in resolve_path
+    parsed = parse_hf_uri(f"{constants.HF_PROTOCOL}{path}")
+             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kld-assets/pydeps/huggingface_hub/utils/_hf_uris.py", line 319, in parse_hf_uri
+    return _parse_repo_body(location, type_, raw=raw)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kld-assets/pydeps/huggingface_hub/utils/_hf_uris.py", line 617, in _parse_repo_body
+    raise HfUriError(uri=raw, msg=f"Repository id must be 'namespace/name', got '{repo_id}'.")
+huggingface_hub.errors.HfUriError: Invalid HF URI 'hf://datasets/wikitext@b08601e04326c79dfdd32d625aee71d232d685c3/.huggingface.yaml'. Repository id must be 'namespace/name', got 'wikitext'.
+
+During handling of the above exception, another exception occurred:
+
+Traceback (most recent call last):
+  File "/kld-assets/prefill_kld_fallback_cleanup.py", line 319, in <module>
+    main()
+  File "/kld-assets/prefill_kld_fallback_cleanup.py", line 127, in main
+    ds = load_dataset("Salesforce/wikitext", "wikitext-2-raw-v1", split="test")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/kld-assets/pydeps/datasets/load.py", line 1698, in load_dataset
+    builder_instance = load_dataset_builder(
+                       ^^^^^^^^^^^^^^^^^^^^^
+  File "/kld-assets/pydeps/datasets/load.py", line 1363, in load_dataset_builder
+    builder_instance: DatasetBuilder = builder_cls(
+                                       ^^^^^^^^^^^^
+  File "/kld-assets/pydeps/datasets/builder.py", line 397, in __init__
+    with FileLock(lock_path):
+  File "/kld-assets/pydeps/filelock/_api.py", line 949, in __enter__
+    self.acquire()
+  File "/kld-assets/pydeps/filelock/_api.py", line 1057, in acquire
+    self._poll_until_acquired(
+  File "/kld-assets/pydeps/filelock/_api.py", line 1218, in _poll_until_acquired
+    self._acquire_with_fork_tracking()
+  File "/kld-assets/pydeps/filelock/_api.py", line 1274, in _acquire_with_fork_tracking
+    self._acquire()
+  File "/kld-assets/pydeps/filelock/_unix.py", line 70, in _acquire
+    missing_flock = self._acquire_native()
+                    ^^^^^^^^^^^^^^^^^^^^^^
+  File "/kld-assets/pydeps/filelock/_unix.py", line 85, in _acquire_native
+    fd = os.open(self.lock_file, open_flags, open_mode)
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+OSError: [Errno 30] Read-only file system: '/kld-assets/huggingface/datasets/_kld-assets_huggingface_datasets_Salesforce___wikitext_wikitext-2-raw-v1_0.0.0_b08601e04326c79dfdd32d625aee71d232d685c3.lock'

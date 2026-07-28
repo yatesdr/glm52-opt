@@ -1,0 +1,25 @@
+{
+  "tally": {
+    "natural/62000": [
+      "REASON_OK",
+      "REASON_OK"
+    ],
+    "natural/64000": [
+      "MISS",
+      "REASON_OK"
+    ],
+    "natural/65000": [
+      "EXACT",
+      "MISS"
+    ],
+    "natural/66000": [
+      "MISS",
+      "REASON_OK"
+    ],
+    "natural/67000": [
+      "MISS",
+      "MISS"
+    ]
+  },
+  "reps": 2
+}

@@ -1,0 +1,84 @@
+# GLM-5.2 v20 — dynamic NVFP4 KV + full auto-calibration (clean deployment)
+#
+# In this posture (nvfp4_ds_mla + KV_FP8_ROPE=1) the image automatically:
+#   - enables dynamic per-token KV scaling (the deep-retrieval fix);
+#   - measures GPU topology and sets NCCL_P2P_LEVEL (auto below);
+#   - races the INT8 wire transports (i8 / i8_ring / i8_a2a) and uses the
+#     fastest verified one — F8_DMA is deliberately NOT set here.
+# Explicit values always override any auto behavior. Other KV dtypes /
+# model families are unaffected by all of the above.
+#
+# Quality-first online-MXFP8 weight membership (credit: destroyed) is the
+# image default; set ONLINE_QUANT/QUANTIZATION_CONFIG_JSON to override.
+#
+# Requirements: 4x SM120 GPUs (~96 GB), GLM-5.2 NF3-hybrid checkpoint.
+# Edit the model path below, then: docker compose -f <this file> up -d
+
+name: glm52-v20-dynamickv
+
+services:
+  glm52:
+    container_name: glm52-v20-dynamickv
+    # tag: gilded-gnosis-v20-dynamickv-autocal-v4-20260728
+    image: ghcr.io/yatesdr/glm52-serve@sha256:bd4d1896438b1eb085ee1a2a3291745528f1b4c45f41f04076ff7702c205af74
+    restart: "no"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    ports:
+      # Binds all interfaces (LAN-reachable, no auth). For localhost-only
+      # use "127.0.0.1:5001:5001".
+      - "0.0.0.0:5001:5001"
+    ipc: host
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              # TP4 requires exactly four GPUs.
+              device_ids: ["0", "1", "2", "3"]
+              capabilities: [gpu]
+    environment:
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      # --- serving posture ---
+      TP: "4"
+      DCP: "4"
+      MTP: "3"
+      MAX_MODEL_LEN: "480000"
+      MAX_NUM_SEQS: "16"
+      MAX_BATCHED_TOKENS: "3072"
+      GRAPH: "64"
+      GPU_MEMORY_UTILIZATION: "0.9848"
+      # --- KV cache: NVFP4 + compact FP8 RoPE (the 368-byte record).
+      #     Dynamic per-token scaling and the INT8 wire race engage
+      #     automatically in this posture. ---
+      KV_CACHE_DTYPE: nvfp4_ds_mla
+      KV_FP8_ROPE: "1"
+      NCCL_P2P_LEVEL: auto
+      # Pinned to the stock exact selector (diagnostic alternates exist in
+      # this fork; nobody should serve with them).
+      SPARKINFER_NSA_TOPK_SELECTION_POLICY: exact
+      VLLM_DCP_QUERY_SPLIT: "0"
+      VLLM_DCP_TOPK_OWNER_MERGE: "0"
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+    volumes:
+      # EDIT ME: your GLM-5.2 NF3-hybrid checkpoint directory.
+      - /home/claude/LLM/GLM-5.2-hybrid:/model:ro
+      # Dedicated fresh cache (kernels + calibration decisions).
+      - glm52_v20_dynamickv_cache:/root/.cache
+
+volumes:
+  glm52_v20_dynamickv_cache:

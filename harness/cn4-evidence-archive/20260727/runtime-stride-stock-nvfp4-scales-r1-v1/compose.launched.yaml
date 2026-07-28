@@ -1,0 +1,83 @@
+name: glm52-v20-runtime-stride-stock-nvfp4-scales-r1-20260727
+
+# Clean-RC complement cell for the joint official-scorer + calibrated-scales
+# recovery. This uses the stock accelerated indexer on the same vLLM/SparkInfer
+# pins and the same execution posture as the passing reference cell. The only
+# intended scorer-side difference is the absence of
+# VLLM_GLM_INDEXER_REFERENCE_MODE=official_bf16_v1.
+
+services:
+  glm52-v20-stock:
+    container_name: glm52-v20-runtime-stride-stock-nvfp4-scales-r1-20260727
+    image: glm52-serve:v20-runtime-stride-stock-causal-20260727
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]
+    restart: "no"
+    labels:
+      autoheal: "false"
+      local.glm52.production: "false"
+      local.glm52.test: "runtime-stride-stock-nvfp4-scales-r1"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    ports:
+      - "0.0.0.0:5001:5001"
+    ipc: host
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      TP: "4"
+      DCP: "4"
+      MTP: "0"
+      DCP_PREFILL_WORKSPACE: auto
+      PCIE_CALIBRATION: auto
+      MAX_MODEL_LEN: "360000"
+      MAX_NUM_SEQS: "1"
+      MAX_BATCHED_TOKENS: "3072"
+      # The stock causal image already interposes its vLLM executable to
+      # disable prefix caching. The read-only wrapper mount below adds
+      # --enforce-eager as well so GRAPH=0 exactly matches the passing
+      # official-reference posture.
+      GRAPH: "0"
+      KV_CACHE_DTYPE: nvfp4_ds_mla
+      KV_FP8_ROPE: "1"
+      VLLM_NVFP4_MLA_SCALES_FILE: /opt/vllm/kv-scales/glm52-nvfp4-nf3-hybrid_mla_outer_scales_v1.json
+      GPU_MEMORY_UTILIZATION: "0.950"
+      NCCL_P2P_LEVEL: PXB
+      F8_DMA: i8_ring
+      VLLM_USE_B12X_SPARSE_INDEXER: "1"
+      VLLM_DCP_QUERY_SPLIT: "0"
+      VLLM_DCP_TOPK_OWNER_MERGE: "0"
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+      SPARKINFER_NSA_TOPK_SELECTION_POLICY: exact
+      VLLM_DISABLE_COMPILE_CACHE: "1"
+    volumes:
+      - /home/claude/LLM/GLM-5.2-hybrid:/model:ro
+      - /home/derek/proof-harness/vllm-official-reference-eager:/usr/local/libexec/glm52-causal/vllm:ro
+      - /home/derek/glm52-v20-runtime-stride-stock-nvfp4-scales-r1-v2-cache:/cache:rw
+      - /home/derek/glm52-v20-runtime-stride-stock-nvfp4-scales-r1-v2-cache:/root/.cache:rw
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.253.96.0/24

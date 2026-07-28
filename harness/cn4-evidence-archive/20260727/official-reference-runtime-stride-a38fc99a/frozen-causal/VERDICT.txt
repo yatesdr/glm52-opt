@@ -1,0 +1,1 @@
+INVALID — 250k control passed; 350k r1 produced no model answer because the diagnostic scorer OOMed allocating 492 MiB with 500.69 MiB physically free. Harness REFUTED label is not semantically valid for transport/runtime errors.

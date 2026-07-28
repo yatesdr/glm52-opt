@@ -1,0 +1,38 @@
+{
+  "image": "sha256:899e64cc6098407d1e41bca8db53f70ea60f31009b812872e4690540798ded1a",
+  "note": "Official scorer held constant; fp8_ds_mla 656B/BF16 RoPE; i8_ring block-INT8 DCP wire; MTP0/eager/no-prefix",
+  "freeze_dir": "harness/cn4-evidence-archive/20260726/sol-owned/causal-gate-freeze-20260726",
+  "stock_image": "glm52-serve:v20-5517197-pxb-20260725",
+  "recovered": 1,
+  "fail_count": 1,
+  "control_ok": null,
+  "verdict": "CONFIRMED \u2014 every frozen stock-FAIL prompt recovered",
+  "rows": [
+    {
+      "label": "fail-350k-r1",
+      "role": "FAIL",
+      "depth": 350000,
+      "seed": 1110001,
+      "prompt_sha256": "f0d1c16d816b777f27a3882d9e6b5ef056852684ea155fb11dd845f9e1654ab5",
+      "stock_verdict": "ABSENT",
+      "verdict": "EXACT",
+      "gate_pass": true,
+      "exact": true,
+      "cold": true,
+      "finish_reason": "stop",
+      "cached_tokens": 0,
+      "usage": {
+        "prompt_tokens": 343727,
+        "total_tokens": 343731,
+        "completion_tokens": 4,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "738216",
+      "reasoning_chars": 0,
+      "secs": 689.0
+    }
+  ]
+}

@@ -1,0 +1,25 @@
+# syntax=docker/dockerfile:1
+#
+# Measurement-only child of Dockerfile.v20-prod-head-20260725.
+# It must never be promoted as the clean production image.
+
+ARG PRODUCTION_IMAGE=glm52-v20-prod-head:20260725
+FROM ${PRODUCTION_IMAGE}
+
+LABEL org.opencontainers.image.revision="71053e516c13279d5735a54431cb44a8111d4af3"
+LABEL io.yatesdr.vllm.production-parent="625ac3b75bf26741b4d8de06a46ec803a8a80f23"
+LABEL io.yatesdr.vllm.diagnostic-revision="71053e516c13279d5735a54431cb44a8111d4af3"
+LABEL io.yatesdr.diagnostics="fail-closed-compute-phase-profiler"
+LABEL io.yatesdr.promotable="false"
+
+COPY workspace/vllm-v20-prod-profiler-head/vllm/ \
+    /opt/venv/lib/python3.12/site-packages/vllm/
+COPY patches/v20-prod-head/manifests/vllm-profiler.sha256 \
+    /tmp/vllm-profiler.sha256
+
+RUN test "$(sha256sum /tmp/vllm-profiler.sha256 | cut -d ' ' -f 1)" = "440ad3f6cf2e52b4d42d7d519fc0b9f1c6fac530a634d4220a35d58145acb59b" \
+    && cd /opt/venv/lib/python3.12/site-packages \
+    && sha256sum -c /tmp/vllm-profiler.sha256 \
+    && test -f vllm/model_executor/layers/compute_phase_profiler.py \
+    && /opt/venv/bin/python -m compileall -q vllm \
+    && grep -aFq "safe_mla_query_bmm" vllm/_C_stable_libtorch.abi3.so

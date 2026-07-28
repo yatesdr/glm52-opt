@@ -1,0 +1,1332 @@
+{
+  "by_decode_call": {
+    "2": {
+      "context_hit_layers": [],
+      "exact_hit_layers": [],
+      "minimum_nearest_distance": 137494
+    }
+  },
+  "by_layer": {
+    "0": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "1": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "10": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "14": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "18": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "2": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "22": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "26": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "30": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "34": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "38": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "42": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "46": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "50": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "54": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "58": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "6": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "62": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "66": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "70": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    },
+    "74": {
+      "context_hit_calls": [],
+      "decode_calls": 1,
+      "exact_hit_calls": [],
+      "minimum_nearest_distance": 137494
+    }
+  },
+  "context_hit_record_count": 0,
+  "decode_calls": [
+    2
+  ],
+  "exact_hit_record_count": 0,
+  "input_log": "harness/cn4-evidence-archive/20260727/official-reference-needle-trace-103473cd/tiny2/container.log",
+  "input_log_sha256": "ebab2658f1f79410f6d586a3fa3b9a52369bcb4099291d41bf419b249561d1c9",
+  "layers": [
+    0,
+    1,
+    2,
+    6,
+    10,
+    14,
+    18,
+    22,
+    26,
+    30,
+    34,
+    38,
+    42,
+    46,
+    50,
+    54,
+    58,
+    62,
+    66,
+    70,
+    74
+  ],
+  "max_local_seq_len": 100,
+  "min_local_seq_len": 0,
+  "needle_end": 137502,
+  "needle_start": 137499,
+  "parsed_record_count": 21,
+  "record_count": 21,
+  "records": [
+    {
+      "cache_prefix": "model.layers.0.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 0,
+      "line_number": 1,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 7.935445308685303
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": 18.37938117980957
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 3.446027994155884
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -2.3449795246124268
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": 16.07657241821289
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 8.069384574890137
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.1.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 1,
+      "line_number": 2,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 81.13902282714844
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": 83.09583282470703
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 81.9267578125
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": 79.99112701416016
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": 80.1644515991211
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 81.92755889892578
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.2.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 2,
+      "line_number": 3,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -4.729973316192627
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -0.4655933976173401
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -5.441666603088379
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -5.566661834716797
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -4.246195316314697
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": -3.9843006134033203
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.6.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 6,
+      "line_number": 4,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -2.591568946838379
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": 3.725700855255127
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 0.2981144189834595
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -0.8646146059036255
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": 12.843534469604492
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 14.560338973999023
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.10.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 10,
+      "line_number": 5,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -26.65875816345215
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -17.26416015625
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -28.360090255737305
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -43.2401123046875
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -35.04622268676758
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 37.45990753173828
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.14.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 14,
+      "line_number": 6,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -14.335282325744629
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -10.863529205322266
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -12.767772674560547
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -18.010143280029297
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -13.62232494354248
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 39.10222244262695
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.18.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 18,
+      "line_number": 7,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -22.748422622680664
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -19.809667587280273
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -18.498519897460938
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -20.300800323486328
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -17.5844783782959
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 42.7589111328125
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.22.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 22,
+      "line_number": 8,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -18.901607513427734
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -12.289043426513672
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -19.108179092407227
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -22.934431076049805
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -18.180543899536133
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 18.845041275024414
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.26.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 26,
+      "line_number": 9,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 26.8582820892334
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": 29.924541473388672
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 26.938785552978516
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": 24.02178955078125
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": 27.04291343688965
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 63.96808624267578
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.30.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 30,
+      "line_number": 10,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 42.81224060058594
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": 45.455909729003906
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 44.868141174316406
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": 48.06913375854492
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": 43.44075012207031
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 78.03205108642578
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.34.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 34,
+      "line_number": 11,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 0.991801917552948
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -1.6403348445892334
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -5.891116619110107
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -3.2065751552581787
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -3.983377456665039
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 46.62294387817383
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.38.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 38,
+      "line_number": 12,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -5.173780918121338
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -5.6292805671691895
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -5.613285064697266
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -4.298303604125977
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -12.266703605651855
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 32.01930618286133
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.42.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 42,
+      "line_number": 13,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 12.70921802520752
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": 11.117476463317871
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 10.674755096435547
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": 12.776213645935059
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": 11.015751838684082
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 49.15275192260742
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.46.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 46,
+      "line_number": 14,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 10.148174285888672
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": 6.572031497955322
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 9.940654754638672
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": 4.940999507904053
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -3.4432647228240967
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 45.55546951293945
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.50.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 50,
+      "line_number": 15,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -14.12490177154541
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -18.784976959228516
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -6.038545608520508
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -12.990522384643555
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -10.878233909606934
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 29.051876068115234
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.54.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 54,
+      "line_number": 16,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 0.8485003113746643
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -4.083613395690918
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 2.104740619659424
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -0.9270157814025879
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -7.455036163330078
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 41.37757873535156
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.58.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 58,
+      "line_number": 17,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -14.046181678771973
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -20.410022735595703
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -18.07649040222168
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -20.346363067626953
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -25.198421478271484
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 19.72846794128418
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.62.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 62,
+      "line_number": 18,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -10.249994277954102
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -16.2689208984375
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -1.8341493606567383
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -8.754136085510254
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -4.068758010864258
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 62.75678253173828
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.66.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 66,
+      "line_number": 19,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 17.54108238220215
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": 10.550458908081055
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 10.490812301635742
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": 4.575953483581543
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -0.6914940476417542
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 31.31633758544922
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.70.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 70,
+      "line_number": 20,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": 10.504809379577637
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": 7.494873523712158
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": 4.028390884399414
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -1.4759405851364136
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -6.108118057250977
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 24.92085838317871
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    },
+    {
+      "cache_prefix": "model.layers.74.self_attn.indexer.k_cache_official_bf16_v1",
+      "context_end": 137534,
+      "context_hit": false,
+      "context_indices": [],
+      "context_scores": [],
+      "context_start": 137467,
+      "dcp_rank": 0,
+      "decode_call": 2,
+      "exact_hit": false,
+      "exact_indices": [],
+      "exact_scores": [],
+      "layer": 74,
+      "line_number": 21,
+      "local_seq_len": 2,
+      "nearest": [
+        {
+          "distance": 137494,
+          "index": 5,
+          "score": -9.991055488586426
+        },
+        {
+          "distance": 137495,
+          "index": 4,
+          "score": -16.139307022094727
+        },
+        {
+          "distance": 137496,
+          "index": 3,
+          "score": -23.446094512939453
+        },
+        {
+          "distance": 137497,
+          "index": 2,
+          "score": -27.522480010986328
+        },
+        {
+          "distance": 137498,
+          "index": 1,
+          "score": -2.308710813522339
+        },
+        {
+          "distance": 137499,
+          "index": 0,
+          "score": 7.919806957244873
+        }
+      ],
+      "needle_end": 137502,
+      "needle_start": 137499,
+      "row": 0,
+      "schema": "glm-reference-needle-selection-trace-v1",
+      "selected_max": 5,
+      "selected_min": 0,
+      "valid_selected": 6
+    }
+  ],
+  "schema": "v20-glm-reference-needle-trace-analysis-v1",
+  "status": "PASS"
+}

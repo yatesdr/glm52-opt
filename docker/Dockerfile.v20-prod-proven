@@ -1,0 +1,32 @@
+# Syntax: docker/dockerfile:1
+#
+# Runtime-only production candidate derived from the published v20 final image.
+# The delta from af9d01cf1 contains two Python runtime files; all CUDA, C++,
+# SparkInfer, NCCL, FlashInfer, and base-system artifacts remain byte-for-byte
+# those of the validated base image.
+
+ARG BASE_IMAGE=voipmonitor/vllm@sha256:b90ea60347a45cf8d964f32b663dc2302cf7aab97c529b87f794f364bdc126f5
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.base.name="docker.io/voipmonitor/vllm"
+LABEL org.opencontainers.image.base.digest="sha256:b90ea60347a45cf8d964f32b663dc2302cf7aab97c529b87f794f364bdc126f5"
+LABEL org.opencontainers.image.revision="dcb83079fc7f43982b43b492e690a51e0f3750a2"
+LABEL io.yatesdr.vllm.base-revision="af9d01cf1094c1220efabc984986034e9453eecf"
+LABEL io.yatesdr.vllm.patchset="#165,native-mtp3-gate@de394d28e"
+
+COPY vllm/v1/kv_offload/tiering/fs/manager.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py
+COPY vllm/v1/attention/backends/mla/indexer.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/indexer.py
+
+RUN /opt/venv/bin/python -m py_compile \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/indexer.py \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py | cut -d ' ' -f 1)" = "653edbf4b393e2acd6204bf4664c300eaee9e959656040864491c94548b4cc60" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/indexer.py | cut -d ' ' -f 1)" = "23ad50cb6017e54f1c9fee76b0d999e3544d584e9377fc776041bfa3d2d2b821" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py | cut -d ' ' -f 1)" = "df63fc6f6a72f9b5b6cfacc25a5ead2d83f28f98c21df1b52961bf143f0a16f2" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/worker/gpu/model_runner.py | cut -d ' ' -f 1)" = "392c13256154b9ba66db732df5b8e2ea69dcfac65e5b603e06c4bd7330bc8d3e" \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/attention/mla_attention.py | cut -d ' ' -f 1)" = "6506fd5580bdfde622369943eb9b910ec0459e60911e53952de5f6a3659ec0db" \
+    && test -f /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so \
+    && grep -aFq "safe_mla_query_bmm" \
+      /opt/venv/lib/python3.12/site-packages/vllm/_C_stable_libtorch.abi3.so

@@ -1,0 +1,64 @@
+# v20 NF3 max-num-batched-tokens causal discriminator.
+#
+# Semantic variable:
+#   MAX_BATCHED_TOKENS=3072 (known-good v19 geometry; v20 preset uses 2048).
+#
+# Resource-only fit enablers:
+#   VLLM_B12X_MLA_CKV_PREFETCH_DEPTH=0 was already refuted by an exact-prompt
+#   causal run. It preserves synchronous full-CKV gathering while reclaiming
+#   the lookahead ring.
+#   GPU_MEMORY_UTILIZATION=0.974 raises only the allocator budget. The prior
+#   3072 boot at 0.970 measured 2.98 GiB available versus 3.57 GiB required;
+#   prefetch=0 plus this 0.004 increment should restore a >=500k-token pool.
+#
+# Everything else is the exact 5517197 NF3 production candidate: same image,
+# model, TP4/DCP4/MTP3, NVFP4 MLA KV, FP8 RoPE, PXB routing, graph cap, and
+# 480k maximum length.
+services:
+  glm52-v20-candidate:
+    container_name: glm52-v20-candidate
+    image: glm52-serve:v20-5517197-pxb-20260725
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]
+    restart: "no"
+    healthcheck:
+      test: ["CMD", "python3", "-c", "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"]
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    ports:
+      - "0.0.0.0:5001:5001"
+    ipc: host
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      TP: "4"
+      DCP: "4"
+      MTP: "3"
+      DCP_PREFILL_WORKSPACE: auto
+      MAX_MODEL_LEN: "480000"
+      MAX_NUM_SEQS: "16"
+      MAX_BATCHED_TOKENS: "3072"
+      GRAPH: "64"
+      KV_FP8_ROPE: "1"
+      GPU_MEMORY_UTILIZATION: "0.974"
+      NCCL_P2P_LEVEL: PXB
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+    volumes:
+      - ${GLM52_MODEL_DIR:?set GLM52_MODEL_DIR}:/model:ro
+      - ${GLM52_CACHE_DIR:?set GLM52_CACHE_DIR}:/cache:rw
+      - ${GLM52_CACHE_DIR:?set GLM52_CACHE_DIR}:/root/.cache:rw
+      - ${GLM52_NVME_DIR:?set GLM52_NVME_DIR}:/nvme-kv:rw

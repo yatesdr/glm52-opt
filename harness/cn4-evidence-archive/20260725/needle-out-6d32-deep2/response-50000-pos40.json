@@ -1,0 +1,42 @@
+{
+  "id": "chatcmpl-88e24e1a6e5e57df",
+  "object": "chat.completion",
+  "created": 1784945413,
+  "model": "GLM-5.2",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "738216",
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "reasoning": "The user wants to extract the maintenance ticket number for the Facility 27 compressor overhaul from the provided text.\nI need to scan the text for \"Facility 27 compressor overhaul\" and find the associated ticket number.\nLooking at the text: \"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\"\nThe number is 738216.\nThe user requested \"Reply with the number only.\""
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": 154827,
+      "token_ids": null,
+      "routed_experts": null
+    }
+  ],
+  "service_tier": null,
+  "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllmaf9d01c.siffa922b.fi801d57a.cu132.20260723-tp4-3611bd00",
+  "usage": {
+    "prompt_tokens": 49144,
+    "total_tokens": 49236,
+    "completion_tokens": 92,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    }
+  },
+  "prompt_logprobs": null,
+  "prompt_token_ids": null,
+  "prompt_text": null,
+  "kv_transfer_params": null,
+  "ec_transfer_params": null,
+  "metrics": null
+}

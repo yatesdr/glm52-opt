@@ -1,0 +1,16 @@
+{"aggregate_gbps": 14.146524427244884, "bytes_per_copy": 268435456, "edges": ["0->1"], "iterations": 20, "label": "single_0_1", "per_edge_gbps": 14.146524427244884, "seconds": 0.3795072879993313}
+{"aggregate_gbps": 10.139628914048172, "bytes_per_copy": 268435456, "edges": ["0->2"], "iterations": 20, "label": "single_0_2", "per_edge_gbps": 10.139628914048172, "seconds": 0.529477869999937}
+{"aggregate_gbps": 10.077738317814887, "bytes_per_copy": 268435456, "edges": ["0->3"], "iterations": 20, "label": "single_0_3", "per_edge_gbps": 10.077738317814887, "seconds": 0.5327295619999859}
+{"aggregate_gbps": 14.127059090952981, "bytes_per_copy": 268435456, "edges": ["1->0"], "iterations": 20, "label": "single_1_0", "per_edge_gbps": 14.127059090952981, "seconds": 0.38003020199994353}
+{"aggregate_gbps": 10.156512966712366, "bytes_per_copy": 268435456, "edges": ["1->2"], "iterations": 20, "label": "single_1_2", "per_edge_gbps": 10.156512966712366, "seconds": 0.5285976730001494}
+{"aggregate_gbps": 10.057029481410497, "bytes_per_copy": 268435456, "edges": ["1->3"], "iterations": 20, "label": "single_1_3", "per_edge_gbps": 10.057029481410497, "seconds": 0.5338265270002012}
+{"aggregate_gbps": 5.863647938658982, "bytes_per_copy": 268435456, "edges": ["2->0"], "iterations": 20, "label": "single_2_0", "per_edge_gbps": 5.863647938658982, "seconds": 0.9155919960003303}
+{"aggregate_gbps": 6.240976164155346, "bytes_per_copy": 268435456, "edges": ["2->1"], "iterations": 20, "label": "single_2_1", "per_edge_gbps": 6.240976164155346, "seconds": 0.860235479000039}
+{"aggregate_gbps": 14.21454915877694, "bytes_per_copy": 268435456, "edges": ["2->3"], "iterations": 20, "label": "single_2_3", "per_edge_gbps": 14.21454915877694, "seconds": 0.37769112899968604}
+{"aggregate_gbps": 4.603241326142607, "bytes_per_copy": 268435456, "edges": ["3->0"], "iterations": 20, "label": "single_3_0", "per_edge_gbps": 4.603241326142607, "seconds": 1.1662888689997999}
+{"aggregate_gbps": 5.526234062750994, "bytes_per_copy": 268435456, "edges": ["3->1"], "iterations": 20, "label": "single_3_1", "per_edge_gbps": 5.526234062750994, "seconds": 0.9714950650004539}
+{"aggregate_gbps": 14.27977857945525, "bytes_per_copy": 268435456, "edges": ["3->2"], "iterations": 20, "label": "single_3_2", "per_edge_gbps": 14.27977857945525, "seconds": 0.3759658520002631}
+{"aggregate_gbps": 27.515147425017886, "bytes_per_copy": 268435456, "edges": ["0->1", "1->0", "2->3", "3->2"], "iterations": 20, "label": "within_pairs", "per_edge_gbps": 6.878786856254472, "seconds": 0.7804732479999075}
+{"aggregate_gbps": 7.260173871354601, "bytes_per_copy": 268435456, "edges": ["0->2", "2->0", "1->3", "3->1"], "iterations": 20, "label": "cross_pairs", "per_edge_gbps": 1.8150434678386502, "seconds": 2.9578956180002933}
+{"aggregate_gbps": 7.246739021066733, "bytes_per_copy": 268435456, "edges": ["0->1", "1->2", "2->3", "3->0"], "iterations": 20, "label": "ring_0123", "per_edge_gbps": 1.8116847552666833, "seconds": 2.963379310000164}
+{"aggregate_gbps": 6.285277879356264, "bytes_per_copy": 268435456, "edges": ["0->1", "1->3", "3->2", "2->0"], "iterations": 20, "label": "ring_0132", "per_edge_gbps": 1.571319469839066, "seconds": 3.4166884730002494}

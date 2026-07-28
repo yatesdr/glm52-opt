@@ -1,0 +1,15 @@
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+W0726 08:59:25.124000 1 torch/distributed/run.py:862] 
+W0726 08:59:25.124000 1 torch/distributed/run.py:862] *****************************************
+W0726 08:59:25.124000 1 torch/distributed/run.py:862] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0726 08:59:25.124000 1 torch/distributed/run.py:862] *****************************************
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+{"bytes_per_tensor": 21024768, "device": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition", "elapsed_seconds": 1.2785266139981104, "global_mismatches": 0, "hidden": 6144, "kind": "pcie_dma_allreduce_integrity", "layers": 48, "operations": 144, "package": "sparkinfer", "package_version": "(unknown)", "rank_output_sha256": ["d0e1eb8a160d45f87b7cfa1984be19d1ef53f13d192e8f22daac95fd69360eec", "d0e1eb8a160d45f87b7cfa1984be19d1ef53f13d192e8f22daac95fd69360eec", "d0e1eb8a160d45f87b7cfa1984be19d1ef53f13d192e8f22daac95fd69360eec", "d0e1eb8a160d45f87b7cfa1984be19d1ef53f13d192e8f22daac95fd69360eec"], "reported_wire_mode": "bf16", "requested_wire_mode": "", "rows": 1711, "status": "PASS", "steps": 3, "torch": "2.12.0+cu132", "world_size": 4}

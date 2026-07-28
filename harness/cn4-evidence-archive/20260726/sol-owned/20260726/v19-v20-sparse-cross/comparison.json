@@ -1,0 +1,88 @@
+{
+  "cases": [
+    {
+      "case": [
+        2048,
+        1711
+      ],
+      "v19": {
+        "attention_sha256": "bdcc4467ece2cebccda76dd03643e222b573e02e60fa13419b253e8f49644e79",
+        "cache_sha256": "50b721478e75b86372e0c8fe440847ee5fc13d2a39b8418db5f7cde8545fdd76",
+        "cap": 2048,
+        "elapsed_seconds": 4.319947045005392,
+        "kind": "case",
+        "output_stride": [
+          8192,
+          512,
+          1
+        ],
+        "package": "b12x",
+        "package_version": "(unknown)",
+        "projection_sha256": "de221169574f21bc1a848190a6ca71e2f58b471fa673c60776d38bfae5d17afd",
+        "rows": 1711
+      },
+      "v20": {
+        "attention_sha256": "bdcc4467ece2cebccda76dd03643e222b573e02e60fa13419b253e8f49644e79",
+        "cache_sha256": "50b721478e75b86372e0c8fe440847ee5fc13d2a39b8418db5f7cde8545fdd76",
+        "cap": 2048,
+        "elapsed_seconds": 3.4318272920063464,
+        "kind": "case",
+        "output_stride": [
+          8192,
+          512,
+          1
+        ],
+        "package": "sparkinfer",
+        "package_version": "(unknown)",
+        "projection_sha256": "de221169574f21bc1a848190a6ca71e2f58b471fa673c60776d38bfae5d17afd",
+        "rows": 1711
+      }
+    },
+    {
+      "case": [
+        3072,
+        2735
+      ],
+      "v19": {
+        "attention_sha256": "1b3186f35722df2656a8457ce2398d0dfc786ac897f158e0a0481b98d466875b",
+        "cache_sha256": "50b721478e75b86372e0c8fe440847ee5fc13d2a39b8418db5f7cde8545fdd76",
+        "cap": 3072,
+        "elapsed_seconds": 0.4093025839974871,
+        "kind": "case",
+        "output_stride": [
+          8192,
+          512,
+          1
+        ],
+        "package": "b12x",
+        "package_version": "(unknown)",
+        "projection_sha256": "a4ef7d694ba56bf660bd843de3006bb34c4797d397951a0f1467f4b9a2d4f621",
+        "rows": 2735
+      },
+      "v20": {
+        "attention_sha256": "1b3186f35722df2656a8457ce2398d0dfc786ac897f158e0a0481b98d466875b",
+        "cache_sha256": "50b721478e75b86372e0c8fe440847ee5fc13d2a39b8418db5f7cde8545fdd76",
+        "cap": 3072,
+        "elapsed_seconds": 0.4167968510009814,
+        "kind": "case",
+        "output_stride": [
+          8192,
+          512,
+          1
+        ],
+        "package": "sparkinfer",
+        "package_version": "(unknown)",
+        "projection_sha256": "a4ef7d694ba56bf660bd843de3006bb34c4797d397951a0f1467f4b9a2d4f621",
+        "rows": 2735
+      }
+    }
+  ],
+  "fields": [
+    "cache_sha256",
+    "attention_sha256",
+    "projection_sha256",
+    "output_stride"
+  ],
+  "mismatches": [],
+  "verdict": "PASS_BYTE_IDENTICAL"
+}

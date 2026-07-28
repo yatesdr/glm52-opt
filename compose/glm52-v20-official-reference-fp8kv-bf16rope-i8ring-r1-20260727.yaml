@@ -1,0 +1,77 @@
+name: glm52-v20-official-reference-fp8kv-bf16rope-i8ring-r1-20260727
+
+# First discriminator after the combined higher-precision posture recovered
+# frozen 350k r1. The qualified official BF16/FP32 scorer, FP8-DS-MLA cache,
+# BF16 RoPE, and execution posture are held constant. Only the DCP byte
+# transport changes from raw BF16 to rank-consistent, numerically lossy
+# block-INT8 i8_ring.
+
+services:
+  glm52-v20-reference:
+    container_name: glm52-v20-official-reference-fp8kv-bf16rope-i8ring-r1-20260727
+    image: glm52-serve:v20-official-reference-runtime-stride-chunk16-75715e51
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]
+    restart: "no"
+    labels:
+      autoheal: "false"
+      local.glm52.production: "false"
+      local.glm52.test: "official-reference-fp8kv-bf16rope-i8ring-r1"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    ports:
+      - "0.0.0.0:5001:5001"
+    ipc: host
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      TP: "4"
+      DCP: "4"
+      MTP: "0"
+      DCP_PREFILL_WORKSPACE: auto
+      PCIE_CALIBRATION: auto
+      MAX_MODEL_LEN: "360000"
+      MAX_NUM_SEQS: "1"
+      MAX_BATCHED_TOKENS: "3072"
+      GRAPH: "0"
+      KV_CACHE_DTYPE: fp8_ds_mla
+      KV_FP8_ROPE: "0"
+      GPU_MEMORY_UTILIZATION: "0.950"
+      NCCL_P2P_LEVEL: PXB
+      F8_DMA: i8_ring
+      VLLM_GLM_INDEXER_REFERENCE_MODE: official_bf16_v1
+      VLLM_USE_B12X_SPARSE_INDEXER: "1"
+      VLLM_DCP_QUERY_SPLIT: "0"
+      VLLM_DCP_TOPK_OWNER_MERGE: "0"
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+      VLLM_DISABLE_COMPILE_CACHE: "1"
+    volumes:
+      - /home/claude/LLM/GLM-5.2-hybrid:/model:ro
+      - /home/derek/glm52-v20-official-reference-fp8kv-bf16rope-i8ring-r1-cache:/cache:rw
+      - /home/derek/glm52-v20-official-reference-fp8kv-bf16rope-i8ring-r1-cache:/root/.cache:rw
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.253.92.0/24

@@ -1,0 +1,59 @@
+{
+  "candidate_chunk": 16,
+  "cases": [
+    {
+      "candidate_elapsed_s": 2.6693,
+      "candidate_indices_sha256": "26471f1797a742b299a7ecf48cf616406618c506393529eeabcfdbe463080256",
+      "candidate_peak_allocated_bytes": 464754176,
+      "candidate_values_sha256": "61ace82508881da574ac8c81f9cf755e826beb875800ea6057d9d2aa9780d3fb",
+      "changed_rows": 0,
+      "max_abs_score_delta": 0.0,
+      "membership_equal": true,
+      "reference_elapsed_s": 0.0048,
+      "reference_indices_sha256": "26471f1797a742b299a7ecf48cf616406618c506393529eeabcfdbe463080256",
+      "reference_peak_allocated_bytes": 851916288,
+      "reference_values_sha256": "61ace82508881da574ac8c81f9cf755e826beb875800ea6057d9d2aa9780d3fb",
+      "seed": 2026072701,
+      "values_bitwise_equal": true
+    },
+    {
+      "candidate_elapsed_s": 0.0049,
+      "candidate_indices_sha256": "29206dbdc06d39d9941936ee558bf5186a5f6e47968401f0a24986e4ee43502d",
+      "candidate_peak_allocated_bytes": 464885248,
+      "candidate_values_sha256": "0be06b58f1010ef28d5b82f95a699c164f079f7a7e667532c10bd4c8cc4b820f",
+      "changed_rows": 0,
+      "max_abs_score_delta": 0.0,
+      "membership_equal": true,
+      "reference_elapsed_s": 0.0045,
+      "reference_indices_sha256": "29206dbdc06d39d9941936ee558bf5186a5f6e47968401f0a24986e4ee43502d",
+      "reference_peak_allocated_bytes": 852047360,
+      "reference_values_sha256": "0be06b58f1010ef28d5b82f95a699c164f079f7a7e667532c10bd4c8cc4b820f",
+      "seed": 2026072702,
+      "values_bitwise_equal": true
+    },
+    {
+      "candidate_elapsed_s": 0.0048,
+      "candidate_indices_sha256": "1ccccdabb33dff393c13f100388eae68b0f6aae597e2b2a7e25a9ddd9c2f15da",
+      "candidate_peak_allocated_bytes": 464885248,
+      "candidate_values_sha256": "ccec3212d70a04a12fc49796d040008ebc9f1ef50adfa2175ed48d515b959c7b",
+      "changed_rows": 0,
+      "max_abs_score_delta": 0.0,
+      "membership_equal": true,
+      "reference_elapsed_s": 0.0045,
+      "reference_indices_sha256": "1ccccdabb33dff393c13f100388eae68b0f6aae597e2b2a7e25a9ddd9c2f15da",
+      "reference_peak_allocated_bytes": 852047360,
+      "reference_values_sha256": "ccec3212d70a04a12fc49796d040008ebc9f1ef50adfa2175ed48d515b959c7b",
+      "seed": 2026072703,
+      "values_bitwise_equal": true
+    }
+  ],
+  "device": "cuda:0",
+  "head_dim": 128,
+  "heads": 32,
+  "key_rows": 85932,
+  "reference_chunk": 64,
+  "rows": 64,
+  "schema": "v20-glm-reference-chunk-equivalence-v1",
+  "status": "PASS",
+  "topk": 2048
+}

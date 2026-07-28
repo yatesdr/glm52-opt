@@ -1,0 +1,255 @@
+{
+  "implementation": "sparkinfer.attention.nsa_indexer",
+  "results": [
+    {
+      "captured_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1876,
+        "jaccard": 0.8450450450450451,
+        "set_exact": false,
+        "union": 2220
+      },
+      "execution": {
+        "cuda": "13.2",
+        "device": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+        "implementation": "sparkinfer.attention.nsa_indexer",
+        "kernel_seconds_including_first_compile": 11.583170876000622,
+        "python": "3.12.3",
+        "route": "packed_contiguous",
+        "torch": "2.12.0+cu132"
+      },
+      "input": {
+        "cache_sha256": "202ccf668cc86de6800d540d8e1e5c869f490e967dd6669095bd414f4fb31ee2",
+        "page_width": 1343,
+        "production_rows": 2735,
+        "q_sha256": "3f31e2bf1e58cba03e0ae58f7c81a516b10184ea8176fe2899194e32aa1f399b",
+        "replay_rows": 2735,
+        "seq_len": 85932,
+        "topk": 2048,
+        "weights_sha256": "a48b140e01b20efa47c7988187b69a7be6dcb59dbe6b234825f5702f021b5ba6"
+      },
+      "rank": 0,
+      "reference": {
+        "indices_sha256": "e1a6a4011eebcfa6356e583630ffb02afa66aea060bd59d8afdd6f426a4d5ba4",
+        "kth_score": 5.328878879547119,
+        "scores_sha256": "b101d90f6d625ec3edd6a6470c4b3e70f4d43857fd431c609002077f6ad1b58a",
+        "strictly_better_omitted": 186
+      },
+      "replay": {
+        "indices_sha256": "2c5a79f2ef477c093aff26e4ca034623e299609767f0717ce457017d9b73078f",
+        "min_score": 5.298756122589111,
+        "score_vs_reference_max_abs": 9.5367431640625e-07,
+        "score_vs_reference_mean_abs": 2.738088369369507e-07,
+        "scores_sha256": "9fe90a9f365b01b558883af869b46655f2fc2a254cec1d1096fdc6de02ef7480",
+        "valid_indices": 2048
+      },
+      "replay_vs_captured": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 2035,
+        "jaccard": 0.987384764677341,
+        "set_exact": false,
+        "union": 2061
+      },
+      "replay_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1883,
+        "jaccard": 0.850881156800723,
+        "set_exact": false,
+        "union": 2213
+      },
+      "source_trace": "/traces/tp0/layer00-indexer-local.pt",
+      "tensor_output": "/out/tp0-replay.pt"
+    },
+    {
+      "captured_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1897,
+        "jaccard": 0.8626648476580264,
+        "set_exact": false,
+        "union": 2199
+      },
+      "execution": {
+        "cuda": "13.2",
+        "device": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+        "implementation": "sparkinfer.attention.nsa_indexer",
+        "kernel_seconds_including_first_compile": 0.005909081999561749,
+        "python": "3.12.3",
+        "route": "packed_contiguous",
+        "torch": "2.12.0+cu132"
+      },
+      "input": {
+        "cache_sha256": "00a74d6e795f84a9443be4994aae71a5d45258ca71b08466a59d779b328abef2",
+        "page_width": 1343,
+        "production_rows": 2735,
+        "q_sha256": "3f31e2bf1e58cba03e0ae58f7c81a516b10184ea8176fe2899194e32aa1f399b",
+        "replay_rows": 2735,
+        "seq_len": 85932,
+        "topk": 2048,
+        "weights_sha256": "a48b140e01b20efa47c7988187b69a7be6dcb59dbe6b234825f5702f021b5ba6"
+      },
+      "rank": 1,
+      "reference": {
+        "indices_sha256": "3a180bc07b42ae6f54f312053d1317868a7ef17ef9237218689f3185beb5c83c",
+        "kth_score": 5.326171875,
+        "scores_sha256": "c00af72961c70971da5f73ce48584b62089f6584873b081c37d57bb699bbfb62",
+        "strictly_better_omitted": 164
+      },
+      "replay": {
+        "indices_sha256": "c218857e7a3ad77c639bab613a1b9e4627db9f56be52e1e907d58267a1d36ff1",
+        "min_score": 5.297219753265381,
+        "score_vs_reference_max_abs": 1.430511474609375e-06,
+        "score_vs_reference_mean_abs": 2.6240013539791107e-07,
+        "scores_sha256": "bedbc9c5819dc616493a0e46dd14f2148acc9b57937d1199678c3b11772d99f5",
+        "valid_indices": 2048
+      },
+      "replay_vs_captured": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 2035,
+        "jaccard": 0.987384764677341,
+        "set_exact": false,
+        "union": 2061
+      },
+      "replay_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1895,
+        "jaccard": 0.8609722853248524,
+        "set_exact": false,
+        "union": 2201
+      },
+      "source_trace": "/traces/tp1/layer00-indexer-local.pt",
+      "tensor_output": "/out/tp1-replay.pt"
+    },
+    {
+      "captured_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1872,
+        "jaccard": 0.841726618705036,
+        "set_exact": false,
+        "union": 2224
+      },
+      "execution": {
+        "cuda": "13.2",
+        "device": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+        "implementation": "sparkinfer.attention.nsa_indexer",
+        "kernel_seconds_including_first_compile": 0.005511335999472067,
+        "python": "3.12.3",
+        "route": "packed_contiguous",
+        "torch": "2.12.0+cu132"
+      },
+      "input": {
+        "cache_sha256": "16ca157900cad6e6cc6423582a2cfb41161c10e2dd3f08d6844868ed7f208ba6",
+        "page_width": 1343,
+        "production_rows": 2735,
+        "q_sha256": "3f31e2bf1e58cba03e0ae58f7c81a516b10184ea8176fe2899194e32aa1f399b",
+        "replay_rows": 2735,
+        "seq_len": 85932,
+        "topk": 2048,
+        "weights_sha256": "a48b140e01b20efa47c7988187b69a7be6dcb59dbe6b234825f5702f021b5ba6"
+      },
+      "rank": 2,
+      "reference": {
+        "indices_sha256": "42b718d13233c0213549e9ccde47e17cc6338f5efa10270a3eefa46c9bf72898",
+        "kth_score": 5.329695224761963,
+        "scores_sha256": "94e7ee873b4060e5d2c96abb24948338ca3b754950b098c0cb5f1a2f5283a8d1",
+        "strictly_better_omitted": 200
+      },
+      "replay": {
+        "indices_sha256": "d63e7ac4e2c6e988cab3f392b4c1b543efcbdac0956a6873db264d1e99a37b60",
+        "min_score": 5.297266006469727,
+        "score_vs_reference_max_abs": 1.430511474609375e-06,
+        "score_vs_reference_mean_abs": 2.637971192598343e-07,
+        "scores_sha256": "edcd9eeddea91a443041ea85f2919300ea53eee70baa155bffa852ee20575e71",
+        "valid_indices": 2048
+      },
+      "replay_vs_captured": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 2018,
+        "jaccard": 0.971126082771896,
+        "set_exact": false,
+        "union": 2078
+      },
+      "replay_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1869,
+        "jaccard": 0.8392456219128873,
+        "set_exact": false,
+        "union": 2227
+      },
+      "source_trace": "/traces/tp2/layer00-indexer-local.pt",
+      "tensor_output": "/out/tp2-replay.pt"
+    },
+    {
+      "captured_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1888,
+        "jaccard": 0.855072463768116,
+        "set_exact": false,
+        "union": 2208
+      },
+      "execution": {
+        "cuda": "13.2",
+        "device": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+        "implementation": "sparkinfer.attention.nsa_indexer",
+        "kernel_seconds_including_first_compile": 0.005522175999431056,
+        "python": "3.12.3",
+        "route": "packed_contiguous",
+        "torch": "2.12.0+cu132"
+      },
+      "input": {
+        "cache_sha256": "e9a0145e78ffc9ce691a21eb42af0087e9595863a3b68c9b567cd82b07777771",
+        "page_width": 1343,
+        "production_rows": 2735,
+        "q_sha256": "3f31e2bf1e58cba03e0ae58f7c81a516b10184ea8176fe2899194e32aa1f399b",
+        "replay_rows": 2735,
+        "seq_len": 85931,
+        "topk": 2048,
+        "weights_sha256": "a48b140e01b20efa47c7988187b69a7be6dcb59dbe6b234825f5702f021b5ba6"
+      },
+      "rank": 3,
+      "reference": {
+        "indices_sha256": "e4de994da1473a9611b0a935c907cb7cd79cd1434751c4cd30388d3fefc38372",
+        "kth_score": 5.336121559143066,
+        "scores_sha256": "fbb1d8903e188965253b1b0e608af69550946f4d349fc7c0e34103315f2da22f",
+        "strictly_better_omitted": 174
+      },
+      "replay": {
+        "indices_sha256": "44a9ec2fc58832b760fd320c8255a7169cebbffe30beac78e8e4f7be1a07709a",
+        "min_score": 5.304372310638428,
+        "score_vs_reference_max_abs": 1.430511474609375e-06,
+        "score_vs_reference_mean_abs": 2.6938505470752716e-07,
+        "scores_sha256": "83bb781bcc8f7973b1ff37b15092ddc322a489a8fb92737aac02a8428e827242",
+        "valid_indices": 2048
+      },
+      "replay_vs_captured": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 2022,
+        "jaccard": 0.9749276759884281,
+        "set_exact": false,
+        "union": 2074
+      },
+      "replay_vs_reference": {
+        "a_count": 2048,
+        "b_count": 2048,
+        "intersection": 1888,
+        "jaccard": 0.855072463768116,
+        "set_exact": false,
+        "union": 2208
+      },
+      "source_trace": "/traces/tp3/layer00-indexer-local.pt",
+      "tensor_output": "/out/tp3-replay.pt"
+    }
+  ],
+  "schema": "v19-v20-learned-paged-indexer-replay-v1",
+  "trace_root": "/traces"
+}

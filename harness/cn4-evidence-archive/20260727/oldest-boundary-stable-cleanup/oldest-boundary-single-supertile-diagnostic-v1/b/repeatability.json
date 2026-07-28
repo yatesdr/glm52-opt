@@ -1,0 +1,90 @@
+{
+  "pass": false,
+  "results": [
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 22013,
+          "score": 5.298354148864746
+        },
+        {
+          "index": 22017,
+          "score": 5.2987470626831055
+        }
+      ],
+      "intersection": 2046,
+      "rank": 0,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 69707,
+          "score": 5.846487998962402
+        },
+        {
+          "index": 70092,
+          "score": 5.371701240539551
+        }
+      ],
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 73543,
+          "score": 5.535529136657715
+        }
+      ],
+      "intersection": 2047,
+      "rank": 1,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 73200,
+          "score": 5.395997047424316
+        }
+      ],
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 3115,
+          "score": 5.297266006469727
+        }
+      ],
+      "intersection": 2047,
+      "rank": 2,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 67589,
+          "score": 5.702043056488037
+        }
+      ],
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 7940,
+          "score": 5.304372310638428
+        }
+      ],
+      "intersection": 2047,
+      "rank": 3,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 73680,
+          "score": 5.391030311584473
+        }
+      ],
+      "set_exact": false
+    }
+  ],
+  "schema": "v20-indexer-replay-repeatability-v1"
+}

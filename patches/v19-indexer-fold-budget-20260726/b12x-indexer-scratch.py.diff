@@ -1,0 +1,169 @@
+--- /private/tmp/claude-501/-Users-derek-glm52-opt/ce5a7d2d-8bcc-4f85-8882-b6c54d6495df/scratchpad/cn3b12x/b12x/attention/indexer/scratch.py	2026-07-18 19:05:48
++++ /private/tmp/claude-501/-Users-derek-glm52-opt/ce5a7d2d-8bcc-4f85-8882-b6c54d6495df/scratchpad/overlay5/b12x/attention/indexer/scratch.py	2026-07-26 18:18:05
+@@ -9,6 +9,8 @@
+ import torch
+ 
+ from b12x.attention.indexer.api import (
++    two_level_fold_reserved_rows,
++    two_level_fold_engages,
+     IndexerContiguousMetadata,
+     IndexerPagedDecodeMetadata,
+ )
+@@ -315,6 +317,10 @@
+     msa_sort_indices_offset_bytes: int
+     msa_expanded_page_table_offset_bytes: int
+     msa_expanded_seqlens_offset_bytes: int
++    two_level_fold_rows: int = 0
++    two_level_fold_values_offset_bytes: int = 0
++    two_level_fold_indices_offset_bytes: int = 0
++    two_level_fold_lengths_offset_bytes: int = 0
+ 
+ 
+ @dataclass(frozen=True, kw_only=True)
+@@ -393,6 +399,10 @@
+     msa_sort_indices: torch.Tensor | None = None
+     msa_expanded_page_table: torch.Tensor | None = None
+     msa_expanded_seqlens: torch.Tensor | None = None
++    two_level_fold_values: torch.Tensor | None = None
++    two_level_fold_indices: torch.Tensor | None = None
++    two_level_fold_lengths: torch.Tensor | None = None
++    two_level_fold_rows: int = 0
+ 
+     def bind(
+         self,
+@@ -465,6 +475,44 @@
+             self.indexer_contiguous_topk_indices[:row_count],
+         )
+ 
++    def get_two_level_fold_buffers(
++        self, *, row_count: int, total_slices: int
++    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
++        """Reserved candidate buffers for the two-level cross-chunk fold."""
++        if (
++            self.two_level_fold_values is None
++            or self.two_level_fold_indices is None
++            or self.two_level_fold_lengths is None
++        ):
++            raise RuntimeError(
++                "paged indexer scratch is missing two-level fold buffers"
++            )
++        row_count = int(row_count)
++        total_slices = int(total_slices)
++        if row_count < 0 or total_slices < 0:
++            raise ValueError(
++                "row_count/total_slices must be non-negative, got "
++                f"{row_count}/{total_slices}"
++            )
++        needed = row_count * total_slices
++        if needed > int(self.two_level_fold_rows):
++            raise ValueError(
++                f"two-level fold rows {needed} (q_rows={row_count} x "
++                f"slices={total_slices}) exceed the reserved budget "
++                f"{int(self.two_level_fold_rows)}"
++            )
++        if row_count > int(self.two_level_fold_lengths.shape[0]):
++            raise ValueError(
++                f"row_count {row_count} exceeds paged indexer scratch "
++                f"two-level lengths capacity "
++                f"{int(self.two_level_fold_lengths.shape[0])}"
++            )
++        return (
++            self.two_level_fold_values[:needed],
++            self.two_level_fold_indices[:needed],
++            self.two_level_fold_lengths[:row_count],
++        )
++
+     def get_indexer_contiguous_candidate_buffers(self) -> tuple[torch.Tensor, torch.Tensor]:
+         if (
+             self.indexer_contiguous_candidate_values is None
+@@ -993,6 +1041,38 @@
+     cursor += msa_expanded_rows * dtype_nbytes(torch.int32)
+     cursor = align_up(cursor, SCRATCH_ALIGN_BYTES)
+ 
++    # Two-level fold candidate buffers. Fixed size: api.plan_two_level_fold
++    # guarantees q_rows * total_slices <= TWO_LEVEL_FOLD_BUDGET_ROWS, so this
++    # reservation covers every shape rather than the (much larger) product of the
++    # per-factor maxima. Appended last, so no existing offset moves.
++    two_level_fold_rows = (
++        two_level_fold_reserved_rows(
++            max_q_rows=max_q_rows,
++            page_table_width=int(caps.max_page_table_width),
++            page_size=int(caps.page_size),
++            supertile_pages=max(int(supertile_tokens) // int(caps.page_size), 1),
++        )
++        if two_level_fold_engages(
++            width_tokens=int(caps.max_page_table_width) * int(caps.page_size)
++        )
++        else 0
++    )
++    two_level_fold_values_offset_bytes = cursor
++    two_level_fold_indices_offset_bytes = cursor
++    two_level_fold_lengths_offset_bytes = cursor
++    if two_level_fold_rows > 0:
++        two_level_fold_values_offset_bytes = cursor
++        cursor += two_level_fold_rows * int(caps.topk) * dtype_nbytes(torch.float32)
++        cursor = align_up(cursor, SCRATCH_ALIGN_BYTES)
++
++        two_level_fold_indices_offset_bytes = cursor
++        cursor += two_level_fold_rows * int(caps.topk) * dtype_nbytes(torch.int32)
++        cursor = align_up(cursor, SCRATCH_ALIGN_BYTES)
++
++        two_level_fold_lengths_offset_bytes = cursor
++        cursor += max_q_rows * dtype_nbytes(torch.int32)
++        cursor = align_up(cursor, SCRATCH_ALIGN_BYTES)
++
+     return _B12XIndexerPagedScratchLayout(
+         nbytes=max(int(cursor), SCRATCH_ALIGN_BYTES),
+         supertile_tokens=supertile_tokens,
+@@ -1027,6 +1107,10 @@
+         msa_sort_indices_offset_bytes=msa_sort_indices_offset_bytes,
+         msa_expanded_page_table_offset_bytes=msa_expanded_page_table_offset_bytes,
+         msa_expanded_seqlens_offset_bytes=msa_expanded_seqlens_offset_bytes,
++        two_level_fold_rows=two_level_fold_rows,
++        two_level_fold_values_offset_bytes=two_level_fold_values_offset_bytes,
++        two_level_fold_indices_offset_bytes=two_level_fold_indices_offset_bytes,
++        two_level_fold_lengths_offset_bytes=two_level_fold_lengths_offset_bytes,
+     )
+ 
+ 
+@@ -1383,6 +1467,29 @@
+         msa_expanded_page_table = None
+         msa_expanded_seqlens = None
+ 
++    two_level_fold_values = None
++    two_level_fold_indices = None
++    two_level_fold_lengths = None
++    if int(layout.two_level_fold_rows) > 0:
++        fold_rows = int(layout.two_level_fold_rows)
++        two_level_fold_values, _ = materialize_scratch_view(
++            scratch_storage,
++            offset_bytes=layout.two_level_fold_values_offset_bytes,
++            shape=(fold_rows, topk),
++            dtype=torch.float32,
++        )
++        two_level_fold_indices, _ = materialize_scratch_view(
++            scratch_storage,
++            offset_bytes=layout.two_level_fold_indices_offset_bytes,
++            shape=(fold_rows, topk),
++            dtype=torch.int32,
++        )
++        two_level_fold_lengths, _ = materialize_scratch_view(
++            scratch_storage,
++            offset_bytes=layout.two_level_fold_lengths_offset_bytes,
++            shape=(max_q_rows,),
++            dtype=torch.int32,
++        )
+     scratch = B12XIndexerPagedScratch(
+         shared_scratch=scratch_storage,
+         device=caps.device,
+@@ -1425,6 +1532,10 @@
+         msa_sort_indices=msa_sort_indices,
+         msa_expanded_page_table=msa_expanded_page_table,
+         msa_expanded_seqlens=msa_expanded_seqlens,
++        two_level_fold_values=two_level_fold_values,
++        two_level_fold_indices=two_level_fold_indices,
++        two_level_fold_lengths=two_level_fold_lengths,
++        two_level_fold_rows=int(layout.two_level_fold_rows),
+     )
+     return scratch
+ 

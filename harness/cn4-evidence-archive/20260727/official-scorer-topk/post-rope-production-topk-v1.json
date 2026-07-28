@@ -1,0 +1,82 @@
+{
+  "claim_boundary": "real frozen post-K-normalization/post-interleaved-RoPE activations; official FP32 scorer suffix and production top-k proven; raw K normalization/RoPE reconstruction remains separate",
+  "comparisons": [
+    {
+      "actual_indices_sha256": "ce4855112d29431193b6a56e712d132d7439df94c4d885c235273a462979b62d",
+      "actual_only_count": 0,
+      "actual_values_match_source_bitwise": true,
+      "actual_values_sha256": "790dbd06de4fcace07b20655fec89492658fe13d79606091a0dc903132de7be1",
+      "cutoff_slots": 1,
+      "cutoff_tie_count": 1,
+      "cutoff_value": 5.745027542114258,
+      "exact_index_set": true,
+      "exact_values_by_index": true,
+      "label": "production_row_topk_vs_torch",
+      "outside_cutoff_ties_exact": true,
+      "pass": true,
+      "reference_indices_sha256": "ce4855112d29431193b6a56e712d132d7439df94c4d885c235273a462979b62d",
+      "reference_only_count": 0,
+      "reference_values_sha256": "790dbd06de4fcace07b20655fec89492658fe13d79606091a0dc903132de7be1",
+      "strict_winner_count": 2047
+    },
+    {
+      "actual_indices_sha256": "ce4855112d29431193b6a56e712d132d7439df94c4d885c235273a462979b62d",
+      "actual_only_count": 0,
+      "actual_values_match_source_bitwise": true,
+      "actual_values_sha256": "790dbd06de4fcace07b20655fec89492658fe13d79606091a0dc903132de7be1",
+      "cutoff_slots": 1,
+      "cutoff_tie_count": 1,
+      "cutoff_value": 5.745027542114258,
+      "exact_index_set": true,
+      "exact_values_by_index": true,
+      "label": "production_tiled_topk_vs_torch",
+      "outside_cutoff_ties_exact": true,
+      "pass": true,
+      "reference_indices_sha256": "ce4855112d29431193b6a56e712d132d7439df94c4d885c235273a462979b62d",
+      "reference_only_count": 0,
+      "reference_values_sha256": "790dbd06de4fcace07b20655fec89492658fe13d79606091a0dc903132de7be1",
+      "strict_winner_count": 2047
+    }
+  ],
+  "pass": true,
+  "production_kernel": {
+    "module": "/opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py",
+    "module_sha256": "57d5ec00c70e60024bd94bb6afbb9174144c9c07cf88e5568a996ab511bc24c5",
+    "row_entrypoint": "run_row_topk",
+    "tiled_block_k": 256,
+    "tiled_block_q": 32,
+    "tiled_entrypoint": "run_tiled_topk",
+    "tiled_k_tiles": 1343
+  },
+  "runtime": {
+    "cuda": "13.2",
+    "device": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "torch": "2.12.0+cu132"
+  },
+  "schema": "v20-glm-reference-scorer-production-topk-proof-v1",
+  "scorer": {
+    "finite_scores": 343727,
+    "formula": "matmul(q.float,k.float.T) * 128**-0.5 -> relu -> weights.float * heads**-0.5 -> head sum -> causal mask",
+    "score_count": 343727,
+    "scores_sha256": "09577efde901ff04cd94afd387024fd94b9905b11c63dbb204c6afd9c05924a5",
+    "tf32": false,
+    "topk": 2048
+  },
+  "trace": {
+    "chunks": 112,
+    "directory": "/trace",
+    "first_position": 0,
+    "head_dim": 128,
+    "heads": 32,
+    "k_sha256": "6bf83dc96fbb86be528f54ebf6ed07c58afc10b12db869a95a0d36d47660a0f0",
+    "layer": 0,
+    "learned_weights_sha256": "396cabf75d88877a86c87601dd53832f976032ffc2f07ba187477160b2a6b5be",
+    "manifest_sha256": "8e6bf39b5fda414f9120fc998641002a842d06cb81db736f707768b5f7d3f526",
+    "positions": 343727,
+    "positions_sha256": "08f3d5c03f9894fd3ae36328ec40bebf87a9d3acc5236386598a469397aab7fa",
+    "q_sha256": "d18e1254afd57e41b043bd38ce7777e682f5e2e85b9902feb721e0dfa1f63de1",
+    "query_position": 343726,
+    "rank": 0,
+    "schema": "v20-indexer-prequant-activation-v1"
+  }
+}

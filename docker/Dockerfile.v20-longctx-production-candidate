@@ -1,0 +1,39 @@
+ARG BASE_IMAGE=glm52-serve:v20-5517197-pxb-20260725
+FROM ${BASE_IMAGE}
+
+ARG BASE_PCIE_DMA_SHA256=8cd43a0a9f7b8e1558f617e2a8eca7c7755d2f800a479d00cdb6ad04ed12f82f
+ARG FIXED_PCIE_DMA_SHA256=16758ceeebb357a373149145cc75f1a6c02f380cb8e74fd3d361e153456adfef
+ARG BASE_TOPK_SHA256=57d5ec00c70e60024bd94bb6afbb9174144c9c07cf88e5568a996ab511bc24c5
+ARG FIXED_TOPK_SHA256=525fb4f092480175584b3473ab6aecb678c181eac1e331d298959007eca95c65
+
+COPY workspace/sparkinfer-output-lifetime-pr/sparkinfer/comm/pcie/pcie_dma.py \
+    /tmp/v20-production-candidate/pcie_dma.py
+COPY workspace/sparkinfer-longctx-compat-pr/sparkinfer/attention/nsa_indexer/tiled_topk.py \
+    /tmp/v20-production-candidate/tiled_topk.py
+
+RUN set -eu; \
+    pcie=/opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py; \
+    topk=/opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py; \
+    test "$(sha256sum "${pcie}" | cut -d' ' -f1)" = "${BASE_PCIE_DMA_SHA256}"; \
+    test "$(sha256sum "${topk}" | cut -d' ' -f1)" = "${BASE_TOPK_SHA256}"; \
+    test "$(sha256sum /tmp/v20-production-candidate/pcie_dma.py | cut -d' ' -f1)" = "${FIXED_PCIE_DMA_SHA256}"; \
+    test "$(sha256sum /tmp/v20-production-candidate/tiled_topk.py | cut -d' ' -f1)" = "${FIXED_TOPK_SHA256}"; \
+    install -m 0644 /tmp/v20-production-candidate/pcie_dma.py "${pcie}"; \
+    install -m 0644 /tmp/v20-production-candidate/tiled_topk.py "${topk}"; \
+    /opt/venv/bin/python -m py_compile "${pcie}" "${topk}"; \
+    test "$(sha256sum "${pcie}" | cut -d' ' -f1)" = "${FIXED_PCIE_DMA_SHA256}"; \
+    test "$(sha256sum "${topk}" | cut -d' ' -f1)" = "${FIXED_TOPK_SHA256}"; \
+    test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py | cut -d' ' -f1)" = \
+      "180622452fad2500db4b57cdac3a961c13518aa5a1962c7ff4dd2cc634fa44c3"; \
+    rm -rf /tmp/v20-production-candidate
+
+ENV SPARKINFER_NSA_TOPK_SELECTION_POLICY=bounded_compat
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 long-context production candidate" \
+      local-inference.base.image="glm52-serve:v20-5517197-pxb-20260725" \
+      local-inference.vllm.commit="551719766029e78824a30d97ae6ac63917405b5f" \
+      local-inference.sparkinfer.base_commit="be0edcaae6f5d284bb29a82325aba7a0ead6960f" \
+      local-inference.sparkinfer.output_lifetime_pr="local-inference-lab/sparkinfer#80@0345e88a" \
+      local-inference.sparkinfer.selector_pr="local-inference-lab/sparkinfer#82@ec8052e4" \
+      local-inference.sparkinfer.selector_policy="bounded_compat" \
+      local-inference.diagnostics="none"

@@ -1,0 +1,19 @@
+##### DEPTH 350000 #####
+[finalization] depth=350000 ctx=343721 seed=20260725 — identical bytes for all variants
+
+chat-low     ABSENT          finish=length out_tok=2000 content_chars=0 reasoning_chars=10653 389s
+             content=''
+raw          EXACT           finish=stop out_tok=5 content_chars=9 reasoning_chars=0 371s
+             content='738216'
+
+FINALIZATION_PROBE_DONE
+##### DEPTH 450000 #####
+[finalization] depth=450000 ctx=441951 seed=20260725 — identical bytes for all variants
+
+chat-low     REASONING_ONLY  finish=stop out_tok=19 content_chars=0 reasoning_chars=84 491s
+             content=''
+raw          EXACT           finish=stop out_tok=4 content_chars=6 reasoning_chars=0 519s
+             content='738216'
+
+FINALIZATION_PROBE_DONE
+DEEP_RAW_DONE

@@ -1,0 +1,34 @@
+{
+  "pass": false,
+  "results": [
+    {
+      "first_count": 2048,
+      "intersection": 2046,
+      "rank": 0,
+      "second_count": 2048,
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "intersection": 2048,
+      "rank": 1,
+      "second_count": 2048,
+      "set_exact": true
+    },
+    {
+      "first_count": 2048,
+      "intersection": 2046,
+      "rank": 2,
+      "second_count": 2048,
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "intersection": 2048,
+      "rank": 3,
+      "second_count": 2048,
+      "set_exact": true
+    }
+  ],
+  "schema": "v20-indexer-replay-repeatability-v1"
+}

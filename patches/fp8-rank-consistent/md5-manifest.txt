@@ -1,0 +1,10 @@
+# Pinned v19 input bytes
+96e07e55c3843766999b88e184ce06dd  input/b12x/distributed/pcie_dma.py
+
+# Rank-consistent overlay bytes
+830d136566ec3383fd100eb997aa11b9  overlays/b12x/distributed/pcie_dma.py
+
+# Patch and gate bytes
+2f7345c271ac08f1bfba9ea5555f9c37  fp8-rank-consistent.patch
+6fd8a05a8ab6237fa2cd7276e75db4c0  checks/check_source_contract.py
+4de34437740fc98b5c2e4997b8e6c343  checks/test_pcie_dma_rank_consistency_gpu.py

@@ -1,0 +1,129 @@
+{
+  "depth_target": 350000,
+  "context_tokens": 343734,
+  "elapsed_s": 292.33,
+  "usage": {
+    "prompt_tokens": 343746,
+    "completion_tokens": 113,
+    "total_tokens": 343859,
+    "cached_tokens": 0,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    }
+  },
+  "checks": {
+    "needle_in_finalized_content": true,
+    "finalized_content_nonempty": true,
+    "finish_reason_stop": true,
+    "no_degeneration": true,
+    "cold_cached_tokens_zero": true,
+    "arithmetic_side_check": true,
+    "coherence_side_check": true
+  },
+  "needle_found_in": {
+    "reasoning": true,
+    "reasoning_content": false,
+    "serialized_message": true
+  },
+  "trigram_repeat": 0.0,
+  "content": "738216",
+  "reasoning": "The user is asking for the maintenance ticket number for the Facility 27 compressor overhaul, I need to find this information in the provided document.\n\nLooking through the document, I can see a sentence that states: \"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\"\n\nThis is the only mention of a maintenance ticket number in the document, and it specifically refers to the Facility 27 compressor overhaul.\n\nThe user asked me to reply with the number only.\n\nSo the answer is 738216.",
+  "reasoning_content": "",
+  "serialized_message": "{\"annotations\": null, \"audio\": null, \"content\": \"738216\", \"function_call\": null, \"reasoning\": \"The user is asking for the maintenance ticket number for the Facility 27 compressor overhaul, I need to find this information in the provided document.\\n\\nLooking through the document, I can see a sentence that states: \\\"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\\\"\\n\\nThis is the only mention of a maintenance ticket number in the document, and it specifically refers to the Facility 27 compressor overhaul.\\n\\nThe user asked me to reply with the number only.\\n\\nSo the answer is 738216.\", \"refusal\": null, \"role\": \"assistant\"}",
+  "finish_reason": "stop",
+  "side_checks": {
+    "arithmetic": {
+      "pass": true,
+      "secs": 2.63,
+      "finish_reason": "stop",
+      "tail": "ep 3: Add: 12193 + 1507 = 13700  \nStep 4: Subtract: 13700 - 256 = 13444  \n\n13444",
+      "usage": {
+        "prompt_tokens": 45,
+        "completion_tokens": 179,
+        "total_tokens": 224,
+        "cached_tokens": 0,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      }
+    },
+    "coherence": {
+      "pass": true,
+      "inconclusive_truncated": false,
+      "words": 193,
+      "trigram_repeat": 0.0,
+      "secs": 13.99,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 38,
+        "completion_tokens": 1098,
+        "total_tokens": 1136,
+        "cached_tokens": 0,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      }
+    }
+  },
+  "request": {
+    "model": "GLM-5.2",
+    "messages": [
+      {
+        "role": "user",
+        "content_sha256": "01de01be4eb985fdf655da977bc5655cdd929e040b5ce5202023578c6f3e2bbf",
+        "content_chars": 2124720
+      }
+    ],
+    "max_tokens": 800,
+    "temperature": 0,
+    "chat_template_kwargs": {
+      "reasoning_effort": "low"
+    }
+  },
+  "response_full": {
+    "id": "chatcmpl-be254236be089d5c",
+    "object": "chat.completion",
+    "created": 1785134328,
+    "model": "GLM-5.2",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "738216",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": "The user is asking for the maintenance ticket number for the Facility 27 compressor overhaul, I need to find this information in the provided document.\n\nLooking through the document, I can see a sentence that states: \"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\"\n\nThis is the only mention of a maintenance ticket number in the document, and it specifically refers to the Facility 27 compressor overhaul.\n\nThe user asked me to reply with the number only.\n\nSo the answer is 738216."
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": 154827,
+        "token_ids": null,
+        "routed_experts": null
+      }
+    ],
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm5517197.sibe0edca.fi801d57a.cu132.20260725-tp4-36b0e414",
+    "usage": {
+      "prompt_tokens": 343746,
+      "total_tokens": 343859,
+      "completion_tokens": 113,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null
+  },
+  "ts": "2026-07-27T06:43:56Z"
+}

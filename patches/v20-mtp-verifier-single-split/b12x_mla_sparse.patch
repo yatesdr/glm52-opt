@@ -1,0 +1,90 @@
+diff --git a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+index 2e5cea89..20679771 100644
+--- a/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
++++ b/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+@@ -257,6 +257,28 @@ def _global_causal_lens_for_ckv_gather(
+     return full_seq - chunk_len + (token_idx - chunk_start) + 1
+ 
+ 
++def _decode_forced_num_splits(
++    *, is_spec_decode: bool, max_num_splits: int
++) -> int:
++    """Keep verifier attention in one FP32 accumulation domain.
++
++    The split-K decode path stores every partition's normalized value vector in
++    the BF16 ``tmp_output`` workspace before the FP32 merge.  That intermediate
++    rounding is acceptable for ordinary one-token decode, where split-K is the
++    established throughput path, but it is not numerically equivalent to the
++    single-pass verifier path: cancellation between partitions can lose a
++    signal that a single FP32 accumulation preserves.
++
++    A genuine multi-token MTP verification batch therefore uses one split.  It
++    still uses the decode kernel and its CUDA-graph path; only the lossy
++    intermediate partition boundary is removed.  Explicitly forced short
++    prefills are not verifier batches and retain the requested split count.
++    """
++    if is_spec_decode:
++        return 1
++    return max(1, int(max_num_splits))
++
++
+ @triton.jit
+ def _map_global_topk_to_gathered_ckv_kernel(
+     req_id_ptr,
+@@ -1082,6 +1104,12 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+             )
+         self.spec_extend_as_decode = spec_decode_mode not in disabled_modes
+         self.spec_extend_as_decode_force = spec_decode_mode in forced_modes
++        if self.spec_extend_as_decode:
++            logger.info_once(
++                "B12X MTP verifier decode uses one split for BF16-partial "
++                "precision; ordinary decode retains up to %d splits",
++                self._num_splits_cap,
++            )
+ 
+         # Decode query rows per request (1, plus speculative draft tokens).
+         q_per_req = 1
+@@ -2228,6 +2256,10 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+             and num_actual_toks <= self._decode_max_rows
+         )
+         if use_decode_kernel:
++            forced_num_splits = _decode_forced_num_splits(
++                is_spec_decode=attn_metadata.is_spec_decode,
++                max_num_splits=self._num_splits_cap,
++            )
+             cache_seqlens = (
+                 attn_metadata.cache_seq_lens_per_req
+                 if attn_metadata.max_query_len <= 1
+@@ -2237,9 +2269,11 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+             if self._pad_heads:
+                 decode_q = q_buffer[:, : self._kernel_num_heads]
+                 decode_q[:, self._input_num_heads :, :].zero_()
+-            # Eager bind maps caller-owned scratch into views. forced_num_splits
+-            # pins the planner choice for this captured graph; the merge kernel is
+-            # specialized on that count and needs no device-side control fill.
++            # Eager bind maps caller-owned scratch into views. The forced split
++            # count pins the planner choice for this captured graph; the merge
++            # kernel is specialized on that count and needs no device-side
++            # control fill. Verifier batches use one split to avoid BF16 partial
++            # writeback before the FP32 merge.
+             binding = self._decode_plan.bind(
+                 scratch=scratch_storage,
+                 q=decode_q,
+@@ -2255,7 +2289,7 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                         kv_cache=kv_cache,
+                         sm_scale=self.scale,
+                         v_head_dim=self.kv_lora_rank,
+-                        forced_num_splits=self._num_splits_cap,
++                        forced_num_splits=forced_num_splits,
+                         return_lse=True,
+                         lse_scale="natural",
+                         **kernel_format_kwargs,
+@@ -2275,7 +2309,7 @@ class B12xMLASparseImpl(MLAAttentionImpl[B12xMLASparseMetadata]):
+                     kv_cache=kv_cache,
+                     sm_scale=self.scale,
+                     v_head_dim=self.kv_lora_rank,
+-                    forced_num_splits=self._num_splits_cap,
++                    forced_num_splits=forced_num_splits,
+                     **kernel_format_kwargs,
+                 ),
+             )

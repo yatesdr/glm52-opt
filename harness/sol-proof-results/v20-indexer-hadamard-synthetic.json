@@ -1,0 +1,123 @@
+{
+  "claim_boundary": "synthetic production-shape numeric proof; real checkpoint activation trace and end-to-end ladder remain required",
+  "fingerprints": {
+    "hadamard_fp8_scores": "1d3400a0df420ff1dbbb8da48a5270bb4a389dea422ce805a2cb84d7b9153c87",
+    "head_weights": "5731faa5dd53e1ca25d543a29048c1386c04ac9c733b5abd4b4e7c59e7de6979",
+    "oracle_scores": "e8ddf862d2a23b5564c237dfad4b564f5511ad245986634fd78a2e3fe6ea59c3",
+    "query": "71a79e01102a61d022a3d82e2451687d9952f926f6b7f157121483fe7f528a20",
+    "raw_fp8_scores": "c42dbb6188fa021bbccf03fd4a766f6f4ddf2c3e7f27a2392ef9a9aea13977b2"
+  },
+  "full_precision_orthogonality": {
+    "max_abs_score_delta": 0.000213623046875,
+    "relative_to_max_score": 5.014944175432491e-07
+  },
+  "geometry": {
+    "contexts": [
+      50000,
+      150000,
+      350000,
+      475000
+    ],
+    "head_dim": 128,
+    "heads": 32,
+    "scale_format": "ue8m0",
+    "topk": 2048,
+    "value_format": "e4m3fn"
+  },
+  "results": [
+    {
+      "context": 50000,
+      "false_negative_reduction": -2,
+      "hadamard_fp8": {
+        "candidates_within_one_rmse_of_boundary": 316,
+        "oracle_kth_score": 33.13710021972656,
+        "oracle_topk_false_negatives": 73,
+        "score_max_abs_error": 8.776338577270508,
+        "score_rmse": 1.0895567344498653,
+        "topk_jaccard": 0.9311645450259312,
+        "topk_recall": 0.96435546875
+      },
+      "raw_fp8": {
+        "candidates_within_one_rmse_of_boundary": 336,
+        "oracle_kth_score": 33.13710021972656,
+        "oracle_topk_false_negatives": 71,
+        "score_max_abs_error": 25.458465576171875,
+        "score_rmse": 1.155765412195247,
+        "topk_jaccard": 0.9329872581406323,
+        "topk_recall": 0.96533203125
+      },
+      "rmse_ratio_hadamard_over_raw": 0.9427144323175187
+    },
+    {
+      "context": 150000,
+      "false_negative_reduction": 3,
+      "hadamard_fp8": {
+        "candidates_within_one_rmse_of_boundary": 316,
+        "oracle_kth_score": 47.67329025268555,
+        "oracle_topk_false_negatives": 77,
+        "score_max_abs_error": 9.568405151367188,
+        "score_rmse": 1.0879984585853142,
+        "topk_jaccard": 0.9275294117647059,
+        "topk_recall": 0.96240234375
+      },
+      "raw_fp8": {
+        "candidates_within_one_rmse_of_boundary": 329,
+        "oracle_kth_score": 47.67329025268555,
+        "oracle_topk_false_negatives": 80,
+        "score_max_abs_error": 36.23876953125,
+        "score_rmse": 1.151626971675423,
+        "topk_jaccard": 0.924812030075188,
+        "topk_recall": 0.9609375
+      },
+      "rmse_ratio_hadamard_over_raw": 0.9447490249403068
+    },
+    {
+      "context": 350000,
+      "false_negative_reduction": 25,
+      "hadamard_fp8": {
+        "candidates_within_one_rmse_of_boundary": 233,
+        "oracle_kth_score": 62.47331619262695,
+        "oracle_topk_false_negatives": 60,
+        "score_max_abs_error": 10.348329544067383,
+        "score_rmse": 1.090167518084976,
+        "topk_jaccard": 0.9430740037950665,
+        "topk_recall": 0.970703125
+      },
+      "raw_fp8": {
+        "candidates_within_one_rmse_of_boundary": 246,
+        "oracle_kth_score": 62.47331619262695,
+        "oracle_topk_false_negatives": 85,
+        "score_max_abs_error": 36.23876953125,
+        "score_rmse": 1.149124939883075,
+        "topk_jaccard": 0.9203000468823254,
+        "topk_recall": 0.95849609375
+      },
+      "rmse_ratio_hadamard_over_raw": 0.9486936365647951
+    },
+    {
+      "context": 475000,
+      "false_negative_reduction": 33,
+      "hadamard_fp8": {
+        "candidates_within_one_rmse_of_boundary": 199,
+        "oracle_kth_score": 67.9986801147461,
+        "oracle_topk_false_negatives": 53,
+        "score_max_abs_error": 12.246416091918945,
+        "score_rmse": 1.0905434431912229,
+        "topk_jaccard": 0.9495478343645883,
+        "topk_recall": 0.97412109375
+      },
+      "raw_fp8": {
+        "candidates_within_one_rmse_of_boundary": 204,
+        "oracle_kth_score": 67.9986801147461,
+        "oracle_topk_false_negatives": 86,
+        "score_max_abs_error": 36.23876953125,
+        "score_rmse": 1.1485569879900426,
+        "topk_jaccard": 0.9194001874414246,
+        "topk_recall": 0.9580078125
+      },
+      "rmse_ratio_hadamard_over_raw": 0.9494900597833265
+    }
+  ],
+  "schema": "v20-indexer-hadamard-precision-cpu-proof-v1",
+  "seed": 20260726
+}

@@ -1,0 +1,78 @@
+name: v20-mnbt3072-fit
+services:
+  glm52-v20-candidate:
+    container_name: glm52-v20-candidate
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - capabilities:
+                - gpu
+              driver: nvidia
+              count: -1
+    entrypoint:
+      - /usr/local/bin/serve-gilded-gnosis.sh
+    environment:
+      DCP: "4"
+      DCP_PREFILL_WORKSPACE: auto
+      GPU_MEMORY_UTILIZATION: "0.974"
+      GRAPH: "64"
+      KV_FP8_ROPE: "1"
+      MAX_BATCHED_TOKENS: "3072"
+      MAX_MODEL_LEN: "480000"
+      MAX_NUM_SEQS: "16"
+      MODEL: /model
+      MODEL_FAMILY: glm52-hybrid
+      MTP: "3"
+      NCCL_P2P_LEVEL: PXB
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      TP: "4"
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - import urllib.request; urllib.request.urlopen('http://localhost:5001/health',
+          timeout=8)
+      timeout: 10s
+      interval: 30s
+      retries: 60
+      start_period: 5m0s
+    image: glm52-serve:v20-5517197-pxb-20260725
+    ipc: host
+    networks:
+      default: null
+    ports:
+      - mode: ingress
+        host_ip: 0.0.0.0
+        target: 5001
+        published: "5001"
+        protocol: tcp
+    restart: 'no'
+    shm_size: "34359738368"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    volumes:
+      - type: bind
+        source: /home/claude/LLM/GLM-5.2-hybrid
+        target: /model
+        read_only: true
+        bind: {}
+      - type: bind
+        source: /home/claude/glm52-v20-prod-ready/cache
+        target: /cache
+        bind: {}
+      - type: bind
+        source: /home/claude/glm52-v20-prod-ready/cache
+        target: /root/.cache
+        bind: {}
+      - type: bind
+        source: /nvme-kv
+        target: /nvme-kv
+        bind: {}
+networks:
+  default:
+    name: v20-mnbt3072-fit_default

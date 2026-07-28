@@ -1,0 +1,38 @@
+{
+  "image": "sha256:db82fdcb5756d4a547853ba1330538bdd8a3dc0c6443c29bc49ba77b69b51cd1",
+  "note": "dynamic per-token scale restart/cache-reuse qualification; exact selector; FP8 RoPE; i8_ring; TP4/DCP4/MTP3; graphs64; GMU=.9848; MNBT=3072; maxlen=480000; prefix cache disabled",
+  "freeze_dir": "/home/derek/causal-gate-freeze-20260726",
+  "stock_image": "glm52-serve:v20-5517197-pxb-20260725",
+  "recovered": 1,
+  "fail_count": 1,
+  "control_ok": null,
+  "verdict": "CONFIRMED \u2014 every frozen stock-FAIL prompt recovered",
+  "rows": [
+    {
+      "label": "fail-350k-r1",
+      "role": "FAIL",
+      "depth": 350000,
+      "seed": 1110001,
+      "prompt_sha256": "f0d1c16d816b777f27a3882d9e6b5ef056852684ea155fb11dd845f9e1654ab5",
+      "stock_verdict": "ABSENT",
+      "verdict": "EXACT",
+      "gate_pass": true,
+      "exact": true,
+      "cold": true,
+      "finish_reason": "stop",
+      "cached_tokens": 0,
+      "usage": {
+        "prompt_tokens": 343727,
+        "total_tokens": 343731,
+        "completion_tokens": 4,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "738216",
+      "reasoning_chars": 0,
+      "secs": 321.2
+    }
+  ]
+}

@@ -1,0 +1,18 @@
+[gate] image=sha256:db82fdcb5756d4a547853ba1330538bdd8a3dc0c6443c29bc49ba77b69b51cd1
+[gate] freeze=/home/derek/causal-gate-freeze-20260726  stock_image=glm52-serve:v20-5517197-pxb-20260725
+[gate] note=RC exact selector; NVFP4 MLA dynamic per-token scale; FP8 RoPE; i8_ring; TP4/DCP4/MTP3; graphs64; GMU=.9848; MNBT=3072; maxlen=480000; prefix cache disabled; fresh cache
+
+pass-250k-ctl   EXACT           gate=PASS finish=stop out=4 prompt_tok=245497 cached=0 stock=EXACT 227s
+                content='738216'
+fail-350k-r1    EXACT           gate=PASS finish=stop out=4 prompt_tok=343727 cached=0 stock=ABSENT 321s
+                content='738216'
+fail-350k-r2    EXACT           gate=PASS finish=stop out=4 prompt_tok=343727 cached=0 stock=ABSENT 321s
+                content='738216'
+fail-350k-r3    EXACT           gate=PASS finish=stop out=4 prompt_tok=343727 cached=0 stock=ABSENT 321s
+                content='738216'
+
+===== CAUSAL GATE SUMMARY =====
+  FAIL-role prompts recovered: 3/3
+  PASS control still passing:   True
+  VERDICT: CONFIRMED — every frozen stock-FAIL prompt recovered
+CAUSAL_GATE_DONE

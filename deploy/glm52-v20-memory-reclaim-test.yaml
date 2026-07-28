@@ -1,0 +1,170 @@
+# Production-shaped v20 memory-reclaim acceptance candidate for CN4.
+#
+# Required environment variables:
+#   GLM52_MODEL_DIR  - checkpoint directory
+#   GLM52_CACHE_DIR  - writable JIT/AOT cache directory
+#   GLM52_NVME_DIR   - dedicated ext4/xfs NVMe directory
+#
+# Deliberate deltas from the previous v20 candidate:
+#   * newest published Festr base (vLLM 992b874cf / SparkInfer a93df671);
+#   * PR #154 forward port releases dead absorbed kv_b_proj source storage;
+#   * CKV gather arena is bounded to the actual 480k endpoint;
+#   * CUDA graph sizes retain the useful powers of two through 64;
+#   * GMU is reduced from 0.980 to 0.976 for runtime safety.
+#
+# This is an acceptance compose: no restart policy and no autoheal. A first-boot
+# failure must remain visible instead of silently consuming another boot cycle.
+
+services:
+  glm52-v20-reclaim:
+    image: ghcr.io/yatesdr/glm52-serve:gilded-gnosis-v20-memory-reclaim-test-20260724
+    pull_policy: missing
+    container_name: glm52-v20-reclaim
+    restart: "no"
+    healthcheck:
+      test:
+        [
+          "CMD",
+          "/opt/venv/bin/python",
+          "-c",
+          "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)",
+        ]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 2600s
+    ports:
+      - "0.0.0.0:5001:5001"
+    gpus: all
+    ipc: host
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      nofile: 1048576
+    environment:
+      # Process and topology
+      CUDA_VISIBLE_DEVICES: "0,1,2,3"
+      CUDA_DEVICE_MAX_CONNECTIONS: "32"
+      CUTE_DSL_ARCH: sm_120a
+      TORCH_CUDA_ARCH_LIST: 12.0a
+      OMP_NUM_THREADS: "16"
+      GLOO_SOCKET_IFNAME: lo
+      NCCL_SOCKET_IFNAME: lo
+      NCCL_IB_DISABLE: "1"
+      NCCL_P2P_LEVEL: SYS
+      NCCL_PROTO: LL,LL128,Simple
+      VLLM_WORKER_MULTIPROC_METHOD: spawn
+      SAFETENSORS_FAST_GPU: "1"
+      LD_PRELOAD: /opt/libnccl-local-inference.so.2.30.4
+      VLLM_NCCL_SO_PATH: /opt/libnccl-local-inference.so.2.30.4
+      XDG_CACHE_HOME: /cache/jit
+      TRITON_CACHE_DIR: /cache/jit/triton
+      TORCH_EXTENSIONS_DIR: /cache/v20_992b_reclaim_ext
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:False
+      PYTHONHASHSEED: "0"
+
+      # Checkpoint format
+      KV_FP8_ROPE: "1"
+      NF3_GRID188: "1"
+      VLLM_NF3_GRID188_DECODE: "1"
+
+      # B12X feature set
+      VLLM_USE_B12X_FP8_GEMM: "1"
+      VLLM_USE_B12X_MOE: "1"
+      VLLM_USE_B12X_SPARSE_INDEXER: "1"
+      VLLM_USE_B12X_WO_PROJECTION: "1"
+      VLLM_USE_B12X_MHC: "1"
+      VLLM_USE_B12X_DCP_A2A: "1"
+      VLLM_USE_V2_MODEL_RUNNER: "1"
+      VLLM_USE_AOT_COMPILE: "1"
+      VLLM_USE_MEGA_AOT_ARTIFACT: "1"
+      VLLM_USE_FLASHINFER_SAMPLER: "1"
+      VLLM_USE_BREAKABLE_CUDAGRAPH: "0"
+      B12X_W4A16_TC_DECODE: "1"
+      B12X_W4A8_TINY_DECODE: "1"
+      B12X_MLA_SM120_UNIFIED: "1"
+      B12X_DENSE_SPLITK_TURBO: "1"
+      B12X_MOE_FORCE_A16: "1"
+      B12X_MOE_FORCE_A8: "0"
+
+      # DCP4 communication and bounded prefill workspaces
+      VLLM_DCP_GLOBAL_TOPK: "1"
+      VLLM_DCP_SHARD_DRAFT: "1"
+      VLLM_DCP_QUERY_SPLIT: "0"
+      VLLM_DCP_A2A_MAX_TOKENS: "64"
+      VLLM_DCP_A2A_LARGE_BACKEND: ag_rs
+      VLLM_DCP_PROJECT_BEFORE_MERGE: "1"
+      VLLM_DCP_PROJECT_BEFORE_MERGE_MIN_PREFILL_TOKENS: "1024"
+      VLLM_B12X_MLA_DCP_GATHER_IN_WORKSPACE: "1"
+      VLLM_B12X_MLA_CKV_GATHER: "1"
+      VLLM_B12X_MLA_CKV_GATHER_MAX_TOKENS: "480000"
+      VLLM_B12X_MLA_SPEC_EXTEND_AS_DECODE: auto
+
+      # PCIe collective: block-INT8 ring is the quality-preserving wire mode.
+      VLLM_ENABLE_PCIE_ALLREDUCE: "1"
+      VLLM_PCIE_ALLREDUCE_BACKEND: b12x
+      VLLM_PCIE_ONESHOT_ALLREDUCE_MAX_SIZE: 64KB
+      VLLM_PCIE_ONESHOT_FUSED_ADD_RMS_NORM_MAX_SIZE: 84KB
+      SPARKINFER_PCIE_DMA_FP8: i8_ring
+      VLLM_PCIE_DMA_FP8: i8_ring
+      SPARKINFER_PRINT_COMPILE_PROGRESS: "1"
+
+      # Keep honest CUDA-graph accounting. Do not disable this to inflate KV.
+      VLLM_MEMORY_PROFILE_INCLUDE_ATTN: "1"
+      VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: "1"
+      VLLM_DISABLED_KERNELS: MarlinFP8ScaledMMLinearKernel
+
+    volumes:
+      - ${GLM52_MODEL_DIR:?set GLM52_MODEL_DIR}:/model:ro
+      - ${GLM52_CACHE_DIR:?set GLM52_CACHE_DIR}:/cache:rw
+      - ${GLM52_CACHE_DIR:?set GLM52_CACHE_DIR}:/root/.cache:rw
+      - ${GLM52_NVME_DIR:?set GLM52_NVME_DIR}:/nvme-kv:rw
+    entrypoint:
+      - /bin/sh
+      - -c
+      - 'rm -f /dev/shm/vllm_offload_*.mmap 2>/dev/null || true; exec vllm serve "$@"'
+      - --
+    command:
+      - /model
+      - --served-model-name=GLM-5.2
+      - --host=0.0.0.0
+      - --port=5001
+      - --trust-remote-code
+      - --tensor-parallel-size=4
+      - --decode-context-parallel-size=4
+      - --dcp-comm-backend=a2a
+      - --dcp-kv-cache-interleave-size=1
+      - --kv-cache-dtype=nvfp4_ds_mla
+      - --attention-backend=B12X_MLA_SPARSE
+      - --moe-backend=b12x
+      - --quantization=nvfp4_nf3_hybrid
+      - '--quantization-config={"linear":{"weight":"mxfp8"},"shared_experts":{"weight":"mxfp8"},"ignore":["re:^model\\.layers\\.0\\.","re:.*\\.self_attn\\.indexer\\.","re:.*\\.mlp\\.gate$","model.layers.78.eh_proj","lm_head"]}'
+      - --load-format=safetensors
+      - -cc.pass_config.fuse_allreduce_rms=True
+      - --gpu-memory-utilization=0.976
+      - --max-model-len=480000
+      - --max-num-seqs=16
+      - --max-num-batched-tokens=3072
+      - --cudagraph-capture-sizes
+      - "1"
+      - "2"
+      - "4"
+      - "8"
+      - "16"
+      - "32"
+      - "64"
+      - --max-cudagraph-capture-size=64
+      - --async-scheduling
+      - --enable-chunked-prefill
+      - --enable-prefix-caching
+      - --enable-flashinfer-autotune
+      - --enable-auto-tool-choice
+      - --tool-call-parser=glm47
+      - --reasoning-parser=glm45
+      - '--default-chat-template-kwargs={"reasoning_effort":"high"}'
+      - --enable-prompt-tokens-details
+      - --enable-force-include-usage
+      - --enable-request-id-headers
+      - '--hf-overrides={"use_index_cache":true,"index_topk_pattern":"FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS"}'
+      - '--speculative-config={"model":"/model","method":"mtp","num_speculative_tokens":3,"moe_backend":"b12x","draft_sample_method":"probabilistic"}'
+      - '--kv-transfer-config={"kv_connector":"OffloadingConnector","kv_role":"kv_both","kv_connector_extra_config":{"spec_name":"TieringOffloadingSpec","cpu_bytes_to_use":64000000000,"secondary_tiers":[{"type":"fs","root_dir":"/nvme-kv/glm52-v20-reclaim-test","n_read_threads":16,"n_write_threads":16,"max_cache_size_bytes":64000000000,"locality":"LOCAL"}]}}'

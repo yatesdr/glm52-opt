@@ -1,0 +1,15 @@
+# Diagnostic overlay for the exact v19 image/config that passes the frozen
+# 343,727-token prompt. Apply after /home/derek/glm52-cn4-v20.yaml.
+services:
+  g52h:
+    image: glm52-serve:v19-longctx-trace-v2-20260726
+    container_name: glm52-v19-longctx-trace-v2
+    restart: "no"
+    labels:
+      autoheal: "false"
+    environment:
+      VLLM_LONGCTX_TRACE_DIR: /trace
+      VLLM_LONGCTX_TRACE_BATCH_TOKENS: "2735"
+      VLLM_LONGCTX_TRACE_MAX_LAYER: "78"
+    volumes:
+      - /home/derek/proof-results/20260726/longctx-first-divergence/v19:/trace:rw

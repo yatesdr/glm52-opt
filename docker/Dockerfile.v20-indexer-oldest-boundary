@@ -1,0 +1,21 @@
+FROM glm52-serve:v20-longctx-production-candidate-20260726
+
+ARG TILED_TOPK_INPUT_SHA256=525fb4f092480175584b3473ab6aecb678c181eac1e331d298959007eca95c65
+ARG TILED_TOPK_OUTPUT_SHA256=4d89638440a1bab62d632a4ebbba3de2cdbda8bc5bcd5c8d559b940d8c45e42e
+
+USER root
+
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py | cut -d' ' -f1)" = "${TILED_TOPK_INPUT_SHA256}"
+
+COPY tiled_topk.py /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py
+
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py | cut -d' ' -f1)" = "${TILED_TOPK_OUTPUT_SHA256}" \
+    && /opt/venv/bin/python -m py_compile \
+        /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py \
+    && /opt/venv/bin/python -c "from sparkinfer.attention.nsa_indexer.tiled_topk import _resolve_selection_policy as r; assert r(' oldest_boundary ') == 'oldest_boundary'"
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 stable oldest-boundary candidate pool"
+LABEL org.opencontainers.image.base.digest="sha256:259098b0f5a83c775ff09f8979f3fec8982b88d8d58434dc4c9284f2b4e68905"
+LABEL org.opencontainers.image.source.commit="7e47e9ac"
+LABEL local.glm52.selector.policy="oldest_boundary"
+LABEL local.glm52.selector.proof="d07442767bf0cdd7f891204f717f7abd7db3d0b6f9ed7402010b3b040627a349"

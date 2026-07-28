@@ -1,0 +1,103 @@
+# syntax=docker/dockerfile:1
+#
+# GLM-5.2 v19 production reliability candidate — 2026-07-26
+#
+# Tier-1 backport from the v20 line. Overlay only: 10 pure-Python vLLM files on
+# top of the shipping v19 prod image. No b12x change, no CUDA rebuild, no change
+# to the baked INT8 extension (TORCH_EXTENSIONS_DIR stays /cache/int8ext_baked_a826ef58).
+#
+# Contents (see patches/v19-reliability-20260726/ and
+# v19-reliability-backport-20260726.md):
+#   b3ea2e8f  vLLM #136  honor force_contiguous_mla_bmm_{input,weight,output}
+#   a8b59fbe  PR #132    workspace lanes — isolate speculative execution buffers
+#   ef7cae43  vLLM #130  preallocate packed DCP A2A graph buffers
+#   93735960  PR #132    shared-expert aux-stream capability hook (b12x_moe.py hunk excluded)
+#   e5b6cabb  PR #132    nvfp4_nf3_hybrid declines aux-stream overlap
+#
+# Deliberately NOT included: 4781731c (PCIe channel isolation) and 83579ac7 (#131)
+# both require b12x APIs absent from the shipped b12x 0.30.2.
+#
+# Base is digest-pinned to the exact image running on cn3 on 2026-07-26.
+
+ARG BASE=ghcr.io/yatesdr/glm52-serve@sha256:ca8481687f7169adf177f02df83c06259af0941e9a1de8695b5a4e60d745463a
+FROM ${BASE}
+
+ENV VLLM_SP=/opt/venv/lib/python3.12/site-packages
+
+# ---------------------------------------------------------------------------
+# Gate 1 — refuse to build on anything but the expected v19 base.
+# ---------------------------------------------------------------------------
+RUN set -eu; \
+    v="$(/opt/venv/bin/python -c 'import importlib.metadata as m; print(m.version("vllm"))')"; \
+    echo "base vllm version: $v"; \
+    case "$v" in \
+      *gilded.gnosis.v19.vllm7ea567a.b12x4cfa530*) echo "base OK" ;; \
+      *) echo "REFUSING: unexpected base vllm version: $v" >&2; exit 1 ;; \
+    esac; \
+    b="$(/opt/venv/bin/python -c 'import importlib.metadata as m; print(m.version("b12x"))')"; \
+    echo "base b12x version: $b"; \
+    [ "$b" = "0.30.2" ] || { echo "REFUSING: unexpected b12x version: $b" >&2; exit 1; }
+
+# ---------------------------------------------------------------------------
+# Overlay the 10 patched files.
+# ---------------------------------------------------------------------------
+COPY overlay/vllm/ ${VLLM_SP}/vllm/
+
+# ---------------------------------------------------------------------------
+# Gate 2 — invalidate stale bytecode, recompile against the image's py3.12.
+# ---------------------------------------------------------------------------
+RUN set -eu; cd "${VLLM_SP}"; \
+    for f in \
+      vllm/model_executor/layers/attention/mla_attention.py \
+      vllm/model_executor/layers/fused_moe/fused_moe_method_base.py \
+      vllm/model_executor/layers/fused_moe/runner/moe_runner.py \
+      vllm/model_executor/layers/fused_moe/runner/shared_experts.py \
+      vllm/model_executor/layers/quantization/nvfp4_nf3_hybrid.py \
+      vllm/v1/attention/ops/dcp_alltoall.py \
+      vllm/v1/worker/gpu/model_runner.py \
+      vllm/v1/worker/gpu/warmup.py \
+      vllm/v1/worker/gpu_worker.py \
+      vllm/v1/worker/workspace.py \
+    ; do \
+      rm -f "$(dirname "$f")/__pycache__/$(basename "$f" .py)."*.pyc; \
+      /opt/venv/bin/python -m py_compile "$f" || { echo "COMPILE FAILED: $f" >&2; exit 1; }; \
+    done; \
+    echo "all 10 overlay files compiled"
+
+# ---------------------------------------------------------------------------
+# Gate 3 — assert every patch is actually present, and that we introduced no
+# reference to a b12x symbol the shipped b12x 0.30.2 does not have.
+# ---------------------------------------------------------------------------
+RUN set -eu; cd "${VLLM_SP}"; \
+    check() { grep -q "$2" "$1" || { echo "MISSING PATCH MARKER: $2 in $1" >&2; exit 1; }; \
+              echo "  ok: $1 <- $2"; }; \
+    echo "verifying backport markers:"; \
+    check vllm/model_executor/layers/attention/mla_attention.py force_contiguous_mla_bmm_output ; \
+    check vllm/model_executor/layers/attention/mla_attention.py force_contiguous_mla_bmm_weight ; \
+    check vllm/v1/worker/workspace.py use_workspace_lane ; \
+    check vllm/v1/worker/gpu_worker.py num_workspace_lanes ; \
+    check vllm/v1/worker/gpu/model_runner.py use_workspace_lane ; \
+    check vllm/v1/worker/gpu/warmup.py use_workspace_lane ; \
+    check vllm/v1/attention/ops/dcp_alltoall.py is_vllm_cudagraph_capture_active ; \
+    check vllm/model_executor/layers/fused_moe/fused_moe_method_base.py supports_shared_experts_aux_stream ; \
+    check vllm/model_executor/layers/fused_moe/runner/shared_experts.py _experts_support_aux_stream ; \
+    check vllm/model_executor/layers/quantization/nvfp4_nf3_hybrid.py supports_shared_experts_aux_stream ; \
+    echo "verifying no missing-b12x-symbol references:"; \
+    if grep -rn 'tp_moe_plan_supports_aux_stream_overlap\|checkpoint_channels\|rollback_channels\|_capture_channel_stack' vllm/ ; then \
+      echo "FOUND reference to a b12x symbol absent from b12x 0.30.2" >&2; exit 1; \
+    fi; \
+    echo "  ok: none"; \
+    echo "verifying untouched invariants:"; \
+    grep -q 'VLLM_PCIE_ONESHOT_SINGLE_CHANNEL", "1"' vllm/envs.py \
+      || { echo "envs.py single-channel default changed unexpectedly" >&2; exit 1; }; \
+    echo "  ok: VLLM_PCIE_ONESHOT_SINGLE_CHANNEL default unchanged (v19 behaviour retained)"
+
+LABEL org.opencontainers.image.title="GLM-5.2 v19 prod reliability candidate" \
+      org.opencontainers.image.created="2026-07-26" \
+      org.opencontainers.image.base.digest="sha256:ca8481687f7169adf177f02df83c06259af0941e9a1de8695b5a4e60d745463a" \
+      io.glm52.base.tag="gilded-gnosis-v19-int8-block-patched" \
+      io.glm52.backport.tier="1" \
+      io.glm52.backport.commits="b3ea2e8f,a8b59fbe,ef7cae43,93735960(-b12x_moe),e5b6cabb" \
+      io.glm52.backport.doc="v19-reliability-backport-20260726.md" \
+      io.glm52.backport.b12x="unchanged-0.30.2" \
+      io.glm52.backport.cuda="unchanged"

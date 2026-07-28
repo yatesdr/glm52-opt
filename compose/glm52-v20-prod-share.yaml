@@ -1,0 +1,147 @@
+# GLM-5.2 v20 dynamic-KV production/review posture (2026-07-28).
+#
+# Defaults target CN3/CN4: TP4/DCP4 on four RTX PRO 6000 GPUs, 480k context,
+# dynamic per-token NVFP4 MLA-KV scaling, compact FP8 RoPE, MTP3, and the
+# exact v20 selector. The image includes the reviewed SparkInfer #86 and vLLM
+# #189 heads, bounded DRAM/NVMe prefix offload, and the startup-plan memory
+# calibration used to reclaim excess CUDA-graph estimates on later boots.
+#
+# DRAM/NVMe prefix offload is deliberately opt-in: paths and safe capacities
+# are host-specific. It does not reduce MAX_MODEL_LEN. On CN4, the validated
+# 64 GB DRAM + 1 TB NVMe posture retained 617,728 GPU KV tokens after applying
+# that host's recorded exact KV byte budget.
+#
+# Host-dependent choices are intentionally limited to two `auto` settings:
+#   NCCL_P2P_LEVEL=auto -> measured topology probe, then conservative fallback.
+#   F8_DMA=auto         -> fastest verified i8/i8_ring/i8_a2a mode; if none
+#                          verifies, fail safe to uncompressed F8_DMA=0.
+#
+# Override host paths without editing this file:
+#   MODEL_PATH=/path/to/checkpoint CACHE_PATH=/path/to/cache \
+#   NVME_KV_PATH=/path/to/nvme docker compose -f <this-file> up -d
+#
+# The image retains Festr's canonical launcher. All other values below are
+# visible launcher inputs; there is no replacement `vllm serve` command.
+
+name: glm52-v20-prod
+
+services:
+  glm52:
+    # Immutable digest for:
+    # ghcr.io/yatesdr/glm52-serve:
+    # gilded-gnosis-v20-dynamickv-prod-clean-r2-20260728
+    image: ghcr.io/yatesdr/glm52-serve@sha256:b4ef498c6b3494961ba381ccc85215590d5e3b3cd17ec04146152a101b653790
+    pull_policy: always
+    container_name: glm52-prod
+    restart: unless-stopped
+    ipc: host
+    gpus: all
+
+    ports:
+      - "0.0.0.0:${PORT:-5001}:${PORT:-5001}"
+
+    ulimits:
+      memlock: -1
+      nofile: 1048576
+
+    healthcheck:
+      test:
+        - CMD
+        - /opt/venv/bin/python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:${PORT:-5001}/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 2600s
+
+    environment:
+      # Model and public serving identity.
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      SERVED_MODEL_NAME: ${SERVED_MODEL_NAME:-GLM-5.2}
+      PORT: ${PORT:-5001}
+
+      # Explicit serving posture. These remain operator-overridable for TP8,
+      # different batch sizes, or different memory envelopes.
+      GPUS: ${GPUS:-0,1,2,3}
+      TP: ${TP:-4}
+      DCP: ${DCP:-4}
+      DCP_BACKEND: ${DCP_BACKEND:-a2a}
+      DCP_PREFILL_WORKSPACE: ${DCP_PREFILL_WORKSPACE:-auto}
+      MTP: ${MTP:-3}
+      MAX_MODEL_LEN: ${MAX_MODEL_LEN:-480000}
+      MAX_NUM_SEQS: ${MAX_NUM_SEQS:-16}
+      MAX_BATCHED_TOKENS: ${MAX_BATCHED_TOKENS:-3072}
+      GRAPH: ${GRAPH:-64}
+      # Measured 480k fit posture for the reusable CUDA-graph pool. The
+      # previous 0.970 default leaves only ~2.17 GiB for KV and cannot boot
+      # this TP4/DCP4/MTP3 profile.
+      GPU_MEMORY_UTILIZATION: ${GPU_MEMORY_UTILIZATION:-0.9848}
+      # First boot records actual graph use; matching later boots reuse a
+      # guarded exact KV budget. Override KV_CACHE_MEMORY_BYTES only with a
+      # value measured on the same hardware and serving posture.
+      VLLM_ENABLE_STARTUP_PLAN: ${VLLM_ENABLE_STARTUP_PLAN:-1}
+
+      # Checkpoint and compute path.
+      MOE_MODE: ${MOE_MODE:-a16}
+      MOE_BACKEND: ${MOE_BACKEND:-b12x}
+      LINEAR_BACKEND: ${LINEAR_BACKEND:-auto}
+      QUANTIZATION: ${QUANTIZATION:-nvfp4_nf3_hybrid}
+      ONLINE_QUANT: ${ONLINE_QUANT:-nf3-mxfp8}
+      NF3_GRID188: ${NF3_GRID188:-1}
+      LOAD_FORMAT: ${LOAD_FORMAT:-instanttensor}
+      INSTANTTENSOR_BACKEND: ${INSTANTTENSOR_BACKEND:-BUFFERED}
+
+      # Dynamic NVFP4 MLA-KV quality fix and compact 368-byte record.
+      KV_CACHE_DTYPE: ${KV_CACHE_DTYPE:-nvfp4_ds_mla}
+      KV_FP8_ROPE: ${KV_FP8_ROPE:-1}
+      VLLM_NVFP4_MLA_DYNAMIC_SCALE: ${VLLM_NVFP4_MLA_DYNAMIC_SCALE:-1}
+
+      # Optional Destroyed MXFP8 membership. Default off. Enabling it improves
+      # measured KLD but consumes additional VRAM and therefore may reduce the
+      # available KV pool. It never changes or caps MAX_MODEL_LEN; choose a
+      # context appropriate for your TP size and hardware.
+      DESTROYED_MXFP8: ${DESTROYED_MXFP8:-0}
+
+      # The only new host-dependent auto decisions added by this image.
+      NCCL_P2P_LEVEL: ${NCCL_P2P_LEVEL:-auto}
+      F8_DMA: ${F8_DMA:-auto}
+      B12X_PCIE_DMA: ${B12X_PCIE_DMA:-1}
+
+      # Validated 480k TP4/DCP4 posture. Query-split and CKV prefetch are
+      # disabled because their 233.25 MiB transient prevents the full-context
+      # profile from fitting on the limiting rank. Owner-merge is
+      # correctness-equivalent, but its extra all-to-all has caused large TP4
+      # prefill regressions on PCIe systems. TP8 operators may override these
+      # after measuring their own memory and topology envelope.
+      DCP_QUERY_SPLIT: ${DCP_QUERY_SPLIT:-0}
+      DCP_CKV_GATHER: ${DCP_CKV_GATHER:-1}
+      DCP_TOPK_OWNER_MERGE: ${DCP_TOPK_OWNER_MERGE:-0}
+      DCP_INDEXER_SHARDS: ${DCP_INDEXER_SHARDS:-0}
+      DCP_CKV_PREFETCH_DEPTH: ${DCP_CKV_PREFETCH_DEPTH:-0}
+      PCIE_CALIBRATION: ${PCIE_CALIBRATION:-auto}
+
+      # Optional bounded DRAM/NVMe prefix-cache offload. Leave empty for the
+      # GPU-only posture. To enable it, set KV_TRANSFER_CONFIG_JSON to the
+      # OffloadingConnector JSON below. Use a fresh root_dir when changing the
+      # record mode. In the default KV-parallel-size=1 posture this creates one
+      # manager / one _r0 namespace, so each capacity is aggregate—not a TP
+      # multiplier.
+      #
+      # {"kv_connector":"OffloadingConnector","kv_role":"kv_both",
+      #  "kv_connector_extra_config":{"spec_name":"TieringOffloadingSpec",
+      #  "cpu_bytes_to_use":64000000000,"secondary_tiers":[{"type":"fs",
+      #  "root_dir":"/nvme-kv/glm52-prod","n_read_threads":16,
+      #  "n_write_threads":16,"max_cache_size_bytes":1000000000000,
+      #  "locality":"LOCAL"}]}}
+      PYTORCH_CUDA_ALLOC_CONF: "expandable_segments:False"
+      PYTHONHASHSEED: "0"
+      KV_TRANSFER_CONFIG_JSON: ${KV_TRANSFER_CONFIG_JSON:-}
+
+      XDG_CACHE_HOME: /cache
+
+    volumes:
+      - ${MODEL_PATH:-/home/claude/LLM/GLM-5.2-hybrid}:/model:ro
+      - ${CACHE_PATH:-/home/claude/glm52-prod/cache}:/cache:rw
+      - ${NVME_KV_PATH:-/home/claude/nvme-kv}:/nvme-kv:rw

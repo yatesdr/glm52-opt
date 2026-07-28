@@ -1,0 +1,254 @@
+# GLM-5.2 v19 production reliability candidate r3 — Tier-1 backport + vLLM #154, 2026-07-26
+#
+# vllm serve flags and container environment are BYTE-IDENTICAL to the running prod
+# compose (/home/claude/glm52-prod-ring.yaml on cn3). Nothing about the model, the
+# quantization, the wire mode, GMU, batching, offload or the b12x feature set changes.
+#
+# Every deviation from prod is listed here and nowhere else:
+#
+#   1. image             -> the Tier-1 candidate (10 pure-Python vLLM files overlaid)
+#   2. container_name    -> glm52-prod-candidate  (cannot clobber the prod container)
+#   3. restart           -> "no"                  (TEST POSTURE: a crash must stay crashed)
+#   4. autoheal label    -> removed               (TEST POSTURE: no masking of a wedge)
+#   5. healthcheck       -> real 1-token inference instead of bare /health
+#   6. pull_policy       -> never                 (image is local-only, not pushed)
+#   7. model/cache paths -> env vars, cn3 values as defaults (so cn4 needs no edit)
+#
+# Deviations 3 and 4 exist so the acceptance suite can observe a failure instead of
+# having it silently restarted. They are TEST-ONLY.
+#
+# ---------------------------------------------------------------------------
+# PROMOTION TO PROD (after acceptance passes) — exactly four edits:
+#   restart: "no"                 ->  restart: unless-stopped
+#   (re-add)                      ->  labels: [ autoheal=true ]
+#   container_name                ->  glm52-prod
+#   (bring back the autoheal service from the prod compose, unchanged)
+# Keep the deep healthcheck. It is the durable fix for the 2026-07-24 500-storm,
+# where the shallow /health probe stayed 200 for ~50 minutes while inference 500'd.
+# ---------------------------------------------------------------------------
+#
+# RUN:
+#   cn3:  docker compose -f glm52-v19-reliability-20260726.yaml up -d
+#         (stop the prod stack first — the GPUs and port 5001 are exclusive)
+#   cn4:  export GLM52_MODEL_DIR=/path/to/GLM-5.2-hybrid
+#         export GLM52_CACHE_DIR=/path/to/cache
+#         load the image first (it is not in any registry):
+#           cn3$ docker save glm52-serve:v19-reliability-20260726 | zstd -T0 > /tmp/v19rel.tar.zst
+#           cn4$ zstd -d -c /tmp/v19rel.tar.zst | docker load
+#         then: docker compose -f glm52-v19-reliability-20260726.yaml up -d
+
+services:
+  g52h:
+    # Tier-1 candidate r2. Built on cn3 2026-07-26 from
+    # ghcr.io/yatesdr/glm52-serve@sha256:ca8481687f71… (gilded-gnosis-v19-int8-block-patched).
+    # Differs from that base in exactly 7 .py files — verified by full-tree sha256 diff:
+    #   6 x vLLM  — MLA BMM contiguity contract, workspace lanes, DCP A2A graph buffers
+    #   1 x b12x  — cooperative=True on the two W4A16 launches that use the software
+    #               all-CTA grid barrier, so the shared-experts aux stream is SAFE and
+    #               stays ENABLED (no ~11% decode give-back)
+    # b12x version pin 0.30.2 unchanged, no CUDA/wheel rebuild, baked INT8 ext a826ef58 untouched.
+    #
+    # FIRST BOOT IS SLOWER: the b12x kernel source changed, so the CuTe-DSL JIT entries for
+    # the W4A16 fused/hybrid MoE kernels are invalidated and recompile once into /cache/jit.
+    # start_period below (2600s) covers it. Subsequent boots are back to normal.
+    image: glm52-serve:v19-reliability-r4-20260726
+    pull_policy: never
+    container_name: glm52-prod-candidate
+    # 2026-07-26: promoted from "no" to unless-stopped. Authorized by Derek after the
+    # Phase-5 OOM, where this policy auto-recovered the box in ~20 min. It does not blind
+    # the acceptance suite — Phase 5 detects a crash via RestartCount either way.
+    restart: unless-stopped
+    healthcheck:
+      # Deep probe: a real 1-token completion through the engine, not just /health.
+      # urlopen raises on non-200/timeout; the assert catches a 200 with no choices.
+      # 5 x 60s => ~5 min to detect a 500-storm (was ~50 min with the shallow probe).
+      test:
+        - CMD
+        - /opt/venv/bin/python
+        - -c
+        - "import json,urllib.request as u; r=u.urlopen(u.Request('http://localhost:5001/v1/chat/completions', data=json.dumps({'model':'GLM-5.2','messages':[{'role':'user','content':'ping'}],'max_tokens':1}).encode(), headers={'Content-Type':'application/json'}), timeout=25); assert json.load(r)['choices']"
+      interval: 60s
+      timeout: 30s
+      retries: 5
+      # BOOT-SPECIFIC (2026-07-26): 7200s instead of the usual 2600s. This first boot also
+      # recompiles the changed b12x CuTe kernels, and historically a long compile has tripped
+      # the health monitor. Nothing can restart this container anyway (restart: "no" and the
+      # autoheal service is not running), but this keeps it from even reporting unhealthy
+      # mid-compile. REVERT TO 2600s FOR PROD PROMOTION.
+      start_period: 7200s
+    ports:
+      - "0.0.0.0:5001:5001"
+    gpus: all
+    shm_size: "32g"   # vestigial under ipc:host below; offload uses host /dev/shm
+    ipc: "host"       # shares host /dev/shm — the 64 GB offload mmap lives there
+    ulimits:
+      memlock: -1
+      nofile: 1048576
+    environment:
+      # --- process / topology (single host) ---
+      - CUDA_VISIBLE_DEVICES=0,1,2,3
+      - CUDA_DEVICE_MAX_CONNECTIONS=32
+      - CUTE_DSL_ARCH=sm_120a
+      - TORCH_CUDA_ARCH_LIST=12.0a
+      - OMP_NUM_THREADS=16
+      - GLOO_SOCKET_IFNAME=lo
+      - NCCL_SOCKET_IFNAME=lo
+      - NCCL_IB_DISABLE=1
+      - NCCL_P2P_LEVEL=SYS
+      - NCCL_PROTO=LL,LL128,Simple
+      - VLLM_WORKER_MULTIPROC_METHOD=spawn
+      - SAFETENSORS_FAST_GPU=1
+      - LD_PRELOAD=/opt/libnccl-local-inference.so.2.30.4
+      - VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+      - XDG_CACHE_HOME=/cache/jit
+      - TRITON_CACHE_DIR=/cache/jit/triton
+      # --- REQUIRED for the KV offload tier: offload is incompatible with expandable_segments:True ---
+      - PYTORCH_CUDA_ALLOC_CONF=expandable_segments:False
+      # --- our checkpoint-specific knobs ---
+      - KV_FP8_ROPE=1                 # 368 B compact KV record — required to fit 480k
+      - NF3_GRID188=1
+      - VLLM_NF3_GRID188_DECODE=1     # v18 faster nf3 decode
+      # --- b12x feature set ---
+      - VLLM_USE_B12X_FP8_GEMM=1
+      - VLLM_USE_B12X_MOE=1
+      - VLLM_USE_B12X_SPARSE_INDEXER=1
+      - VLLM_USE_B12X_WO_PROJECTION=1
+      - VLLM_USE_B12X_MHC=1
+      - VLLM_USE_B12X_DCP_A2A=1
+      - VLLM_USE_B12X_PCIE_DMA=1
+      - VLLM_USE_V2_MODEL_RUNNER=1
+      - VLLM_USE_AOT_COMPILE=1
+      - VLLM_USE_MEGA_AOT_ARTIFACT=1
+      - VLLM_USE_FLASHINFER_SAMPLER=1
+      - VLLM_USE_BREAKABLE_CUDAGRAPH=0
+      - B12X_W4A16_TC_DECODE=1
+      - B12X_W4A8_TINY_DECODE=1
+      - B12X_MLA_SM120_UNIFIED=1
+      - B12X_DENSE_SPLITK_TURBO=1
+      - B12X_MOE_FORCE_A16=1          # expert activation path only; NVFP4/NF3 weights untouched
+      - B12X_MOE_FORCE_A8=0
+      # --- DCP4 collective / prefill workspace ---
+      - VLLM_DCP_GLOBAL_TOPK=1
+      - VLLM_DCP_SHARD_DRAFT=1
+      - VLLM_DCP_QUERY_SPLIT=0
+      - VLLM_DCP_A2A_MAX_TOKENS=64
+      - VLLM_DCP_A2A_LARGE_BACKEND=ag_rs
+      - VLLM_DCP_PROJECT_BEFORE_MERGE=1                      # dcp4 prefill workspace (needs batched=3072)
+      - VLLM_DCP_PROJECT_BEFORE_MERGE_MIN_PREFILL_TOKENS=1024
+      - VLLM_B12X_MLA_DCP_GATHER_IN_WORKSPACE=1
+      - VLLM_B12X_MLA_CKV_GATHER=1
+      # --- PCIe all-reduce + fp8 DMA ---
+      - VLLM_ENABLE_PCIE_ALLREDUCE=1
+      - VLLM_PCIE_ALLREDUCE_BACKEND=b12x
+      - VLLM_PCIE_ONESHOT_ALLREDUCE_MAX_SIZE=64KB
+      - VLLM_PCIE_ONESHOT_FUSED_ADD_RMS_NORM_MAX_SIZE=84KB   # pairs with fuse_allreduce_rms
+      # PCIe all-reduce TP wire mode. i8_ring = block-INT8 ring (PR #46 + PR #44 rank-consistency,
+      # baked into the image): recovers ~1,640 tok/s prefill AND passes needle retrieval at full
+      # depth 50k-475k, unlike E4M3 ag/ring which corrupt deep retrieval. Validated prod choice.
+      #
+      # NOTE (2026-07-26): the v19 async cuBLAS concurrency hazard this compose previously left to
+      # the autoheal watchdog is now addressed IN THE IMAGE, on both of its mechanisms:
+      #   1. vLLM #136 honors the contiguous-BMM contract that B12X_MLA_SPARSE declares
+      #      (the OOB strided cuBLAS BMM at mla_attention.py:1476), plus workspace lane
+      #      isolation so the MTP draft stops aliasing the target's workspace.
+      #   2. b12x W4A16 fused/hybrid MoE kernels now launch cooperatively. Their _grid_barrier
+      #      is a spin-wait all-CTA barrier; a normal launch could admit only part of the grid
+      #      while these shared-expert GEMMs held the remaining SMs, hanging the spinners.
+      #      b12x/moe/fused/dynamic.py already did this for the Grid188 path; w4a16 (what we
+      #      run under B12X_MOE_FORCE_A16=1) did not.
+      #
+      # VLLM_DISABLE_SHARED_EXPERTS_STREAM is deliberately NOT set: the overlap is worth ~11%
+      # decode and is now safe rather than disabled. It remains available as an emergency
+      # runtime fallback if the acceptance suite ever shows a residual MoE hang.
+      # See v19-reliability-backport-20260726.md.
+      - VLLM_PCIE_DMA_FP8=i8_ring
+      - B12X_PCIE_DMA_FP8=i8_ring
+      - TORCH_EXTENSIONS_DIR=/cache/int8ext_baked_a826ef58   # keyed to the baked .cu (a826ef58) — do not change
+      # --- memory profiler (helps the 480k GMU headroom estimate) ---
+      - VLLM_MEMORY_PROFILE_INCLUDE_ATTN=1
+      - VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS=1
+      - VLLM_DISABLED_KERNELS=MarlinFP8ScaledMMLinearKernel
+    volumes:
+      - ${GLM52_MODEL_DIR:-/home/claude/LLM/GLM-5.2-hybrid}:/model:ro
+      - ${GLM52_CACHE_DIR:-/home/claude/glm52-prod/cache}:/cache:rw
+      - ${GLM52_CACHE_DIR:-/home/claude/glm52-prod/cache}:/root/.cache:rw
+    entrypoint:
+      - /bin/sh
+      - -c
+      # clear stale offload mmaps from prior containers (ipc:host shares /dev/shm) so the 64 GB
+      # offload region can allocate; without this a crowded /dev/shm crashes offload init.
+      - 'rm -f /dev/shm/vllm_offload_*.mmap 2>/dev/null || true; exec vllm serve "$@"'
+      - --
+    command:
+      - /model
+      - --served-model-name=GLM-5.2
+      - --host=0.0.0.0
+      - --port=5001
+      - --trust-remote-code
+      - --tensor-parallel-size=4
+      - --decode-context-parallel-size=4
+      # NOTE (tuning): a2a is validated; ag_rs is the Discord decode tip we're testing next.
+      - --dcp-comm-backend=a2a
+      - --dcp-kv-cache-interleave-size=1
+      - --kv-cache-dtype=nvfp4_ds_mla
+      - --attention-backend=B12X_MLA_SPARSE
+      - --moe-backend=b12x
+      - --quantization=nvfp4_nf3_hybrid
+      - '--quantization-config={"linear":{"weight":"mxfp8"},"shared_experts":{"weight":"mxfp8"},"ignore":["re:^model\\.layers\\.0\\.","re:.*\\.self_attn\\.indexer\\.","re:.*\\.mlp\\.gate$","model.layers.78.eh_proj","lm_head"]}'
+      - --load-format=safetensors
+      - -cc.pass_config.fuse_allreduce_rms=True
+      # 480k context: GMU 0.970 is the stable ceiling WITH offload on. Raise past 0.970 only
+      # if you drop the offload tier (--kv-transfer-config); 0.975 OOMs on the first real prefill.
+      #
+      # NOTE (2026-07-26): the backport adds a second workspace lane for the MTP draft, so the
+      # KV pool is expected to land slightly BELOW the prod baseline of 644,864 tokens. That is
+      # expected, not a regression — it is the cost of the draft no longer aliasing the target's
+      # workspace. GMU stays at 0.970 — do not raise it to compensate until the acceptance suite
+      # has recorded the actual pool size.
+      # Throughput is NOT expected to change: the shared-experts overlap is retained.
+      - --gpu-memory-utilization=0.970
+      # MITIGATION 2026-07-26 for the Phase-5 OOM. b12x/attention/indexer/paged.py:771
+      # (index_topk_fp8, two-level fold) allocates fold_values+fold_indices with bare
+      # torch.empty — ~384 MiB at deep context — bypassing the scratch manager, so vLLM's
+      # memory profiler never reserves for it. Measured runtime demand beyond the profile
+      # was 1.58 GiB; profiled headroom was only 1.89 GiB, leaving 179 MiB against a
+      # 192 MiB request at 475k on a loaded arena.
+      #
+      # Bounding KV to 3.82 GiB (auto-sizing picked 4.27) raises headroom to 2.34 GiB
+      # = 1.48x the observed overshoot, and keeps the pool (~513k) above max-model-len
+      # so full 480k context still fits. Giving back more (0.75 GiB) would drop the pool
+      # to ~473k and break full context. expandable_segments:True is NOT an option here —
+      # the offload tier is incompatible with it.
+      #
+      # This is a MITIGATION, not a cure: the 384 MiB is still unprofiled. The cure is to
+      # route those buffers through the scratch manager (upstream b12x fix).
+      # r4 (2026-07-26): --kv-cache-memory-bytes DELIBERATELY REMOVED.
+      # vLLM takes an early-return branch when that flag is set and never
+      # profiles for sizing, so vLLM #172 (two-pass profile that counts the
+      # persistent b12x PCIe/DCP pools) would be completely inert. Dropping it
+      # lets the profiler size the KV cache honestly for the first time.
+      #
+      # EXPECT THE POOL TO SHRINK. The profiler will now count ~1.7 GiB of
+      # non-torch memory it has always ignored. Whatever number it produces is
+      # the first trustworthy one -- 644,864 / 573,696 / 513,024 were all sized
+      # against an undercount. Record it; do NOT "fix" it by raising GMU.
+      - --max-model-len=480000
+      - --max-num-seqs=16
+      - --max-num-batched-tokens=3072
+      - --max-cudagraph-capture-size=64
+      - --async-scheduling
+      - --enable-chunked-prefill
+      - --enable-prefix-caching
+      - --enable-flashinfer-autotune
+      - --enable-auto-tool-choice
+      - --tool-call-parser=glm47
+      - --reasoning-parser=glm45
+      - '--default-chat-template-kwargs={"reasoning_effort":"high"}'
+      - --enable-prompt-tokens-details
+      - --enable-force-include-usage
+      - --enable-request-id-headers
+      - '--hf-overrides={"use_index_cache":true,"index_topk_pattern":"FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS"}'
+      - '--speculative-config={"model":"/model","method":"mtp","num_speculative_tokens":3,"moe_backend":"b12x","draft_sample_method":"probabilistic"}'
+      # KV offload: GPU hot tier + 64 GB DRAM warm tier (extends prefix caching). Remove this line
+      # for GPU-only (then you can raise --gpu-memory-utilization).
+      - '--kv-transfer-config={"kv_connector":"OffloadingConnector","kv_role":"kv_both","kv_connector_extra_config":{"spec_name":"TieringOffloadingSpec","cpu_bytes_to_use":64000000000,"secondary_tiers":[]}}'

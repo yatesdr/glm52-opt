@@ -1,0 +1,36 @@
+# Clean-boot integration repair for the published GLM-5.2 v20 dynamic-KV
+# image. PR #189 correctly registers its dynamic-scale controls, but its full
+# envs.py overlay was based on the upstream runtime-stride source and omitted
+# three pre-existing image-specific registrations consumed by the unchanged
+# DCP/custom-allreduce implementation. Merge those registrations without
+# changing any kernel, model, selector, record, or launcher behavior.
+FROM ghcr.io/yatesdr/glm52-serve@sha256:beecd32f951c8f4479da8c920fffbc0a1d249655057202c80c3fc05b78c22c55
+
+USER root
+
+COPY patches/v20-env-registry-integration/envs-base-extensions.patch \
+    /opt/glm52-overlays/envs-base-extensions.patch
+
+RUN set -eu; \
+    envs=/opt/venv/lib/python3.12/site-packages/vllm/envs.py; \
+    printf '%s  %s\n' \
+      7a7822a7c7930e0320bd4f486370a07149bf3d9de1d863ec002c321783a0c4ef "${envs}" \
+      3e34254906940bba48c84da1e4f042e4927878c8ba0a613b9c555a396511f97c /opt/glm52-overlays/envs-base-extensions.patch \
+      | sha256sum -c -; \
+    patch --batch --fuzz=0 -p1 \
+      -d /opt/venv/lib/python3.12/site-packages/vllm \
+      < /opt/glm52-overlays/envs-base-extensions.patch; \
+    printf '%s  %s\n' \
+      4020fbc4a778f2a4d09da96ea03069ba4eb7a8e6a9b338e1ed22cd1d98b2722f "${envs}" \
+      | sha256sum -c -; \
+    /opt/venv/bin/python3 -m py_compile "${envs}"; \
+    VLLM_NVFP4_MLA_DYNAMIC_SCALE=0 \
+    VLLM_NVFP4_MLA_SCALES_FILE=/tmp/static-scales.json \
+    VLLM_DCP_INDEXER_SHARDS=3 \
+    VLLM_DCP_QUERY_SPLIT_MIN_CONTEXT_TOKENS=12345 \
+    VLLM_PCIE_DMA_MIN_BYTES=7MB \
+      /opt/venv/bin/python3 -c 'from vllm import envs; expected={"VLLM_NVFP4_MLA_DYNAMIC_SCALE":False,"VLLM_NVFP4_MLA_SCALES_FILE":"/tmp/static-scales.json","VLLM_DCP_INDEXER_SHARDS":3,"VLLM_DCP_QUERY_SPLIT_MIN_CONTEXT_TOKENS":12345,"VLLM_PCIE_DMA_MIN_BYTES":"7MB"}; actual={name:getattr(envs,name) for name in expected}; assert actual == expected, (actual,expected)'
+
+LABEL local.glm52.integration.env-registry.input-sha256="7a7822a7c7930e0320bd4f486370a07149bf3d9de1d863ec002c321783a0c4ef"
+LABEL local.glm52.integration.env-registry.output-sha256="4020fbc4a778f2a4d09da96ea03069ba4eb7a8e6a9b338e1ed22cd1d98b2722f"
+LABEL local.glm52.integration.env-registry.fix="preserve PR189 dynamic controls plus runtime-stride DCP/PCIe controls"

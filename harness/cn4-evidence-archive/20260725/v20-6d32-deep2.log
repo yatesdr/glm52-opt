@@ -1,0 +1,19 @@
+# server=http://localhost:5001 model=GLM-5.2 filler=56 tok/block position=40% max_tokens=3000 runtag=6d32-deep2
+depth=50000 pos=40% ctx=49144 cached=0 completion=92 finish=stop secs=131
+   retrieval=PASS (where=content)   finalization=PASS
+   content='738216'
+   reasoning_tail='lity 27 compressor overhaul is 738216."\nThe number is 738216.\nThe user requested "Reply with the number only."'
+depth=250000 pos=40% ctx=245605 cached=0 completion=66 finish=stop secs=974
+   retrieval=PASS (where=content)   finalization=PASS
+   content='738216'
+   reasoning_tail='maintenance ticket number for the Facility 27 compressor overhaul is 738216."\n\nThe user wants the number only.'
+depth=350000 pos=40% ctx=343834 cached=0 completion=3000 finish=length secs=1590
+   retrieval=MISS (where=-)   finalization=FAIL(content empty)
+   content=''
+   reasoning_tail='nd with "I don\'t know". \n\nIf the document does not contain this information, please respond with "I don\'t know'
+   ! WARNING: hit max_tokens; raise --max-tokens before trusting a MISS
+depth=475000 pos=40% ctx=466595 cached=0 completion=18 finish=stop secs=2437
+   retrieval=PASS (where=reasoning)   finalization=FAIL(content empty)
+   content=''
+   reasoning_tail='The maintenance ticket number for the Facility 27 compressor overhaul is 738216.'
+# DONE failures=1

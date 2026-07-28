@@ -1,0 +1,66 @@
+--- /private/tmp/claude-501/-Users-derek-glm52-opt/ce5a7d2d-8bcc-4f85-8882-b6c54d6495df/scratchpad/cn3b12x/b12x/attention/indexer/paged.py	2026-07-18 19:05:48
++++ /private/tmp/claude-501/-Users-derek-glm52-opt/ce5a7d2d-8bcc-4f85-8882-b6c54d6495df/scratchpad/overlay5/b12x/attention/indexer/paged.py	2026-07-26 18:12:16
+@@ -14,6 +14,8 @@
+ import triton.language as tl
+ 
+ from b12x.attention.indexer.api import (
++    plan_two_level_fold,
++    two_level_fold_engages,
+     build_paged_mqa_schedule_metadata,
+     uses_paged_mqa_schedule,
+ )
+@@ -752,28 +754,33 @@
+     fold_values = None
+     fold_indices = None
+     fold_lengths = None
+-    if not output_physical_slots and width_tokens >= 2 * _TWO_LEVEL_SLICE_TOKENS:
+-        slice_tokens = _TWO_LEVEL_SLICE_TOKENS
+-        min_slice = -(-width_tokens // _TWO_LEVEL_MAX_SLICES)
+-        if min_slice > slice_tokens:
+-            slice_tokens = -(-min_slice // page_size) * page_size
+-        base = 0
+-        for c in range(num_chunks):
+-            c_pages = min((c + 1) * supertile_pages, page_table_width) - c * supertile_pages
+-            c_tokens = c_pages * page_size
+-            splits_c = max(1, -(-c_tokens // slice_tokens))
+-            two_level_slices.append((splits_c, base))
+-            base += splits_c
+-        total_slices = base
+-        fold_values = torch.empty(
+-            (q_rows * total_slices, topk), dtype=torch.float32, device=q_fp8.device
+-        )
+-        fold_indices = torch.empty(
+-            (q_rows * total_slices, topk), dtype=torch.int32, device=q_fp8.device
+-        )
+-        fold_lengths = torch.full(
+-            (q_rows,), total_slices * topk, dtype=torch.int32, device=q_fp8.device
++    if two_level_fold_engages(
++        width_tokens=width_tokens, output_physical_slots=output_physical_slots
++    ):
++        # Slice planning lives in api.plan_two_level_fold so the scratch
++        # reservation and this call site cannot disagree. The planner bounds
++        # q_rows * total_slices to TWO_LEVEL_FOLD_BUDGET_ROWS by coarsening the
++        # slice size, which is free for correctness (each slice still returns its
++        # own top-k, so their union still contains the global top-k).
++        two_level_slices, total_slices = plan_two_level_fold(
++            width_tokens=width_tokens,
++            page_size=page_size,
++            q_rows=q_rows,
++            supertile_pages=supertile_pages,
++            page_table_width=page_table_width,
++            num_chunks=num_chunks,
+         )
++        # Reserved through the indexer scratch. These were previously bare
++        # torch.empty allocations the host memory profiler never saw, so the KV
++        # pool was over-sized and this call OOM'd at deep context.
++        (
++            fold_values,
++            fold_indices,
++            fold_lengths,
++        ) = scratch.get_two_level_fold_buffers(
++            row_count=q_rows, total_slices=total_slices
++        )
++        fold_lengths.fill_(total_slices * topk)
+     # output. Only needed when there is more than one supertile chunk.
+     carry_buf_values = None
+     carry_buf_indices = None

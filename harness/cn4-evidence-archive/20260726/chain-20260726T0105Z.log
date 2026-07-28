@@ -1,0 +1,26 @@
+[chain] start 2026-07-26T01:00:46Z pid=337446
+##### THINKING-MODE FIX TEST 250k #####
+[thinking-mode] depth=250000 ctx=245491 seed=20260725 max_tokens=2000
+
+chat-default     REASONING_ONLY  finish=stop out_tok=4 content_chars=0 reasoning_chars=6 think_closed=False cached=0 314s
+                 content=''
+chat-nothink     EXACT           finish=stop out_tok=4 content_chars=6 reasoning_chars=0 think_closed=False cached=0 315s
+                 content='738216'
+chat-thinkfls    IN_CONTENT      finish=stop out_tok=18 content_chars=80 reasoning_chars=0 think_closed=False cached=244992 2s
+                 content='The maintenance ticket number for the Facility 27 compressor overhaul is 738216.'
+raw              ABSENT          finish=length out_tok=2000 content_chars=7411 reasoning_chars=0 think_closed=False cached=67584 265s
+                 content='No explanation. No yapping. No preface. No thinking out loud. No preamble. No in'
+
+THINKING_MODE_PROBE_DONE
+[chain] thinking-mode exit=0
+##### SOL TOKEN-IDENTITY 250k (proofs#133) #####
+[identity] depth=250000 plain=245491 chat=245503 no_think=245497 prompt_sha256=fde493ea5b921594d239e2a743229d61c9977557057aa49bd1389700d5a56b54
+raw-plain          EXACT           finish=stop out=5 ids=5 idsha=f8f4f892cfc1 1.6s
+raw-chat-ids       EXACT           finish=stop out=4 ids=4 idsha=3deb38ee3d70 1.6s
+chat-thinking      EXACT           finish=stop out=8 ids=8 idsha=68eb02a4e342 2.3s
+raw-no-think-ids   EXACT           finish=stop out=4 ids=4 idsha=3deb38ee3d70 249.6s
+chat-no-thinking   EXACT           finish=stop out=4 ids=4 idsha=3deb38ee3d70 2.3s
+{"raw_chat_ids_equal_chat_ids": false, "raw_no_think_ids_equal_chat_no_think_ids": true}
+CHAT_TOKEN_IDENTITY_PROBE_DONE
+[chain] token-identity exit=0
+CHAIN_DONE 2026-07-26T01:20:03Z

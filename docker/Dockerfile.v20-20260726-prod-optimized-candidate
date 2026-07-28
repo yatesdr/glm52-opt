@@ -1,0 +1,49 @@
+ARG BASE_IMAGE=voipmonitor/vllm@sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0
+FROM ${BASE_IMAGE}
+
+ARG BASE_B12X_MLA_SHA256=a2002892614587a737475ef58834b9445a65de764bcbcd646c586a9162a2f2bf
+ARG FIXED_B12X_MLA_SHA256=643c6015c4b24ee31a8b2ba07408c1b1ae42048cdecfb469031aee2ed749688f
+ARG BASE_PCIE_DMA_SHA256=f89ce4062f064edac67734ae9e5d4dd32480ac200ab828ebfee945350c2fc2c6
+ARG FIXED_PCIE_DMA_SHA256=16758ceeebb357a373149145cc75f1a6c02f380cb8e74fd3d361e153456adfef
+ARG BASE_TOPK_SHA256=57d5ec00c70e60024bd94bb6afbb9174144c9c07cf88e5568a996ab511bc24c5
+ARG FIXED_TOPK_SHA256=525fb4f092480175584b3473ab6aecb678c181eac1e331d298959007eca95c65
+
+COPY workspace/vllm-v20-sync-ckv-borrow/vllm/v1/attention/backends/mla/b12x_mla_sparse.py \
+    /tmp/v20-optimized-candidate/b12x_mla_sparse.py
+COPY workspace/sparkinfer-v20-20260726-prod-fixes/sparkinfer/comm/pcie/pcie_dma.py \
+    /tmp/v20-optimized-candidate/pcie_dma.py
+COPY workspace/sparkinfer-v20-20260726-prod-fixes/sparkinfer/attention/nsa_indexer/tiled_topk.py \
+    /tmp/v20-optimized-candidate/tiled_topk.py
+
+RUN set -eu; \
+    b12x_mla=/opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py; \
+    pcie=/opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py; \
+    topk=/opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py; \
+    test "$(sha256sum "${b12x_mla}" | cut -d' ' -f1)" = "${BASE_B12X_MLA_SHA256}"; \
+    test "$(sha256sum "${pcie}" | cut -d' ' -f1)" = "${BASE_PCIE_DMA_SHA256}"; \
+    test "$(sha256sum "${topk}" | cut -d' ' -f1)" = "${BASE_TOPK_SHA256}"; \
+    test "$(sha256sum /tmp/v20-optimized-candidate/b12x_mla_sparse.py | cut -d' ' -f1)" = "${FIXED_B12X_MLA_SHA256}"; \
+    test "$(sha256sum /tmp/v20-optimized-candidate/pcie_dma.py | cut -d' ' -f1)" = "${FIXED_PCIE_DMA_SHA256}"; \
+    test "$(sha256sum /tmp/v20-optimized-candidate/tiled_topk.py | cut -d' ' -f1)" = "${FIXED_TOPK_SHA256}"; \
+    install -m 0644 /tmp/v20-optimized-candidate/b12x_mla_sparse.py "${b12x_mla}"; \
+    install -m 0644 /tmp/v20-optimized-candidate/pcie_dma.py "${pcie}"; \
+    install -m 0644 /tmp/v20-optimized-candidate/tiled_topk.py "${topk}"; \
+    /opt/venv/bin/python -m py_compile "${b12x_mla}" "${pcie}" "${topk}"; \
+    test "$(sha256sum "${b12x_mla}" | cut -d' ' -f1)" = "${FIXED_B12X_MLA_SHA256}"; \
+    test "$(sha256sum "${pcie}" | cut -d' ' -f1)" = "${FIXED_PCIE_DMA_SHA256}"; \
+    test "$(sha256sum "${topk}" | cut -d' ' -f1)" = "${FIXED_TOPK_SHA256}"; \
+    test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py | cut -d' ' -f1)" = \
+      "180622452fad2500db4b57cdac3a961c13518aa5a1962c7ff4dd2cc634fa44c3"; \
+    rm -rf /tmp/v20-optimized-candidate
+
+ENV SPARKINFER_NSA_TOPK_SELECTION_POLICY=bounded_compat
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 production optimized candidate" \
+      local-inference.base.digest="sha256:10261c7d65101c8aba2ce1fb59eabe73aff9d35eca5043b330cc0ce76d3c98d0" \
+      local-inference.vllm.base_commit="0c79e41db41f250ccdfc4be92d171960a5787f73" \
+      local-inference.vllm.sync_ckv_borrow_commit="ff9b8fc50" \
+      local-inference.sparkinfer.base_commit="e603f74bb67d0fce547336f1fb73c3c23e8f1887" \
+      local-inference.sparkinfer.output_lifetime_pr="local-inference-lab/sparkinfer#80@0345e88a" \
+      local-inference.sparkinfer.selector_pr="local-inference-lab/sparkinfer#82@ec8052e4" \
+      local-inference.sparkinfer.selector_policy="bounded_compat" \
+      local-inference.diagnostics="none"

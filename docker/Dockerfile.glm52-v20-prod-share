@@ -1,0 +1,74 @@
+# Shareable GLM-5.2 v20 production image.
+#
+# Base lineage (immutable):
+#   Festr runtime-stride RC
+#     + SparkInfer PR #86 (dynamic per-token NVFP4 MLA KV scale)
+#     + vLLM PR #189 (runtime gate and wiring)
+#
+# The pinned base below is the exact artifact that passed the frozen 250k /
+# 3x350k retrieval gate, the randomized cold ladder through 466k tokens,
+# restart/repeatability, and the n=3 KLD comparison. This layer adds:
+#   - bounded filesystem-tier capacity from vLLM commit 95488c388;
+#   - one narrow launcher hook for an explicit KV_TRANSFER_CONFIG_JSON;
+#   - two host-dependent communication probes and a thin entrypoint that
+#     exports their decisions before delegating to Festr's canonical launcher.
+FROM ghcr.io/yatesdr/glm52-serve@sha256:db82fdcb5756d4a547853ba1330538bdd8a3dc0c6443c29bc49ba77b69b51cd1
+
+USER root
+
+ADD https://raw.githubusercontent.com/yatesdr/vllm-opt/95488c3885d46145d49fb07ecb911b76c7b80a44/vllm/v1/kv_offload/tiering/fs/manager.py /opt/glm52-overlays/fs-manager.py
+
+COPY derive_nccl_p2p_level.py /usr/local/bin/derive_nccl_p2p_level.py
+COPY nccl_p2p_probe.py /usr/local/bin/nccl_p2p_probe.py
+COPY wire_mode_probe.py /usr/local/bin/wire_mode_probe.py
+COPY serve-glm52-prod-auto.sh /usr/local/bin/serve-glm52-prod-auto.sh
+COPY patches/serve-glm52-v16-kv-transfer-env.patch /opt/glm52-overlays/serve-glm52-v16-kv-transfer-env.patch
+
+RUN set -eu; \
+    printf '%s  %s\n' \
+      ffb5904cba86f5703e2dfb274690e9da3b0f35e6130ab4f6730c43a573601b3d /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py \
+      ae4b812eadb6201a5bf0da4bbc7f41adbb7f8a6bc8fca249d2b27524310b2813 /usr/local/bin/serve-glm52-v16.sh \
+      | sha256sum -c -; \
+    printf '%s  %s\n' \
+      653edbf4b393e2acd6204bf4664c300eaee9e959656040864491c94548b4cc60 /opt/glm52-overlays/fs-manager.py \
+      8c17504518c04d20ac8209771d8d3f0cba1911dc7aa41fe78db45e974a60c5e2 /opt/glm52-overlays/serve-glm52-v16-kv-transfer-env.patch \
+      8f317442446ad03da4da9005ef45791d0c64af3cd54198548fac6b75dad8ce0e /usr/local/bin/derive_nccl_p2p_level.py \
+      5392b3b78de83bd6924897917712dbe222d264f5d39018fd9c31a8cdaad07203 /usr/local/bin/nccl_p2p_probe.py \
+      07fcef2d1414a782ed2cc091dcb9891ab9dc49810cdda50c48bd8d6d5a3c6c46 /usr/local/bin/wire_mode_probe.py \
+      75cbe9825ffea84d153e640379b8a409a00e4b29a7c23b23a1ed9d00084884b9 /usr/local/bin/serve-glm52-prod-auto.sh \
+      | sha256sum -c -; \
+    install -m 0644 /opt/glm52-overlays/fs-manager.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py; \
+    patch --batch --fuzz=0 -p1 -d / \
+      < /opt/glm52-overlays/serve-glm52-v16-kv-transfer-env.patch; \
+    printf '%s  %s\n' \
+      653edbf4b393e2acd6204bf4664c300eaee9e959656040864491c94548b4cc60 /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py \
+      92a2bdda01a29cba36980497473c30cc22bef76dfaff44921507ddfffe140d78 /usr/local/bin/serve-glm52-v16.sh \
+      | sha256sum -c -; \
+    chmod 0755 /usr/local/bin/serve-glm52-prod-auto.sh; \
+    /opt/venv/bin/python3 -m py_compile \
+      /usr/local/bin/derive_nccl_p2p_level.py \
+      /usr/local/bin/nccl_p2p_probe.py \
+      /usr/local/bin/wire_mode_probe.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/kv_offload/tiering/fs/manager.py; \
+    /opt/venv/bin/python3 /usr/local/bin/derive_nccl_p2p_level.py --self-test; \
+    bash -n /usr/local/bin/serve-glm52-prod-auto.sh; \
+    test -x /usr/local/bin/serve-gilded-gnosis.sh
+
+# Visible, runtime-overridable defaults. The companion Compose repeats the
+# quality-relevant values so reviewers do not have to inspect image metadata.
+ENV KV_FP8_ROPE=1 \
+    VLLM_NVFP4_MLA_DYNAMIC_SCALE=1 \
+    DESTROYED_MXFP8=0 \
+    NCCL_P2P_LEVEL=auto \
+    F8_DMA=auto
+
+ENTRYPOINT ["/usr/local/bin/serve-glm52-prod-auto.sh"]
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 dynamic NVFP4 KV production review"
+LABEL org.opencontainers.image.description="Festr runtime-stride RC plus dynamic NVFP4 scaling, bounded NVMe KV capacity, and measured NCCL/i8 preflight"
+LABEL local.glm52.base.digest="sha256:db82fdcb5756d4a547853ba1330538bdd8a3dc0c6443c29bc49ba77b69b51cd1"
+LABEL local.glm52.dynamic.sparkinfer.pr="86"
+LABEL local.glm52.dynamic.vllm.pr="189"
+LABEL local.glm52.offload.vllm.commit="95488c3885d46145d49fb07ecb911b76c7b80a44"
+LABEL local.glm52.autotune.scope="NCCL_P2P_LEVEL and F8_DMA only"

@@ -1,0 +1,6 @@
+services:
+  glm52-v20-candidate:
+    image: glm52-serve:v20-longctx-trace-output-lifetime-fix-12c0bc19-20260726
+    container_name: glm52-v20-longctx-output-lifetime-fix
+    volumes:
+      - /home/derek/proof-results/20260726/longctx-first-divergence/v20-output-lifetime-fix:/trace

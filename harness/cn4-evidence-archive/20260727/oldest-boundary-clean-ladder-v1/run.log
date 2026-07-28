@@ -1,0 +1,20 @@
+[gate2] filler block = 56 tokens; results -> /home/derek/proof-results/20260727/oldest-boundary-clean-ladder-v1
+[gate2] === 50k ===
+  built prompt: 49101 context tokens (target 50000), needle at ~40%
+  PASS ctx=49101 cached=0 out=91 40.65s answer='738216'
+[gate2] === 150k ===
+  built prompt: 147276 context tokens (target 150000), needle at ~40%
+  PASS ctx=147276 cached=0 out=81 112.07s answer='738216'
+[gate2] === 250k ===
+  built prompt: 245505 context tokens (target 250000), needle at ~40%
+  PASS ctx=245505 cached=0 out=66 192.84s answer='738216'
+[gate2] === 300k ===
+  built prompt: 294620 context tokens (target 300000), needle at ~40%
+  PASS ctx=294620 cached=0 out=67 240.44s answer='738216'
+[gate2] === 350k ===
+  built prompt: 343734 context tokens (target 350000), needle at ~40%
+  PASS ctx=343734 cached=0 out=113 292.33s answer='738216'
+[gate2] === 475k ===
+  built prompt: 466495 context tokens (target 475000), needle at ~40%
+  PASS ctx=466495 cached=0 out=75 431.83s answer='738216'
+[gate2] VERDICT: PASS

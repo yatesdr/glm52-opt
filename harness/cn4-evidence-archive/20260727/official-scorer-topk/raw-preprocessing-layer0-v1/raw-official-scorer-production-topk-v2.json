@@ -1,0 +1,271 @@
+{
+  "claim_boundary": "frozen real pre-normalization/pre-RoPE layer activation; complete official GLM indexer scorer and production top-k replay",
+  "first_bitwise_divergence": "q_projection_separate_vs_runtime",
+  "pass": true,
+  "production_kernel": {
+    "comparisons": [
+      {
+        "actual_indices_sha256": "0d8185a8161a1fb05d81e95f9f2019e64b421bcbcf9be7090756b29d9ec0d0e1",
+        "actual_values_match_source_bitwise": true,
+        "actual_values_sha256": "3617e3aadbea1faf0d8d01e83783697469fd4ba5980b6e4f51b002c9ca8af393",
+        "exact_index_set": true,
+        "exact_values_by_index": true,
+        "label": "production_row_topk_vs_torch",
+        "pass": true,
+        "reference_indices_sha256": "0d8185a8161a1fb05d81e95f9f2019e64b421bcbcf9be7090756b29d9ec0d0e1",
+        "reference_values_sha256": "3617e3aadbea1faf0d8d01e83783697469fd4ba5980b6e4f51b002c9ca8af393"
+      },
+      {
+        "actual_indices_sha256": "0d8185a8161a1fb05d81e95f9f2019e64b421bcbcf9be7090756b29d9ec0d0e1",
+        "actual_values_match_source_bitwise": true,
+        "actual_values_sha256": "3617e3aadbea1faf0d8d01e83783697469fd4ba5980b6e4f51b002c9ca8af393",
+        "exact_index_set": true,
+        "exact_values_by_index": true,
+        "label": "production_tiled_topk_vs_torch",
+        "pass": true,
+        "reference_indices_sha256": "0d8185a8161a1fb05d81e95f9f2019e64b421bcbcf9be7090756b29d9ec0d0e1",
+        "reference_values_sha256": "3617e3aadbea1faf0d8d01e83783697469fd4ba5980b6e4f51b002c9ca8af393"
+      }
+    ],
+    "cutoff": {
+      "cutoff_value": 5.734244346618652,
+      "needed_at_cutoff": 1,
+      "rows_at_cutoff": 1,
+      "selected_at_cutoff": 1,
+      "strict_winners": 2047,
+      "tie_at_selection_boundary": false,
+      "unique_cutoff_row": true
+    },
+    "module": "/opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py",
+    "module_sha256": "57d5ec00c70e60024bd94bb6afbb9174144c9c07cf88e5568a996ab511bc24c5",
+    "proof_harness_sha256": "4735b3ea8a13e28fd3046dd8f8cf4eb1e8ebbd968ba17c2ddc94478c5b005d46",
+    "row_entrypoint": "run_row_topk",
+    "tiled_block_k": 256,
+    "tiled_block_q": 32,
+    "tiled_entrypoint": "run_tiled_topk"
+  },
+  "reference": {
+    "formula": "separate BF16 q/k projections -> BF16 LayerNorm(k) -> GLM interleaved RoPE -> q.float@k.float.T * 128**-0.5 -> ReLU -> FP32 learned head projection * 32**-0.5 -> head sum -> exact top-2048",
+    "model_config_sha256": "254974797e9f455716a30ab5505ba68272181b20b58a3693e54f94fb8056f3ef",
+    "rope_theta": 8000000.0,
+    "tf32": false,
+    "transformers_source_sha256": "adb8317a21716b01273046e46c807f14f0dbaf035af59b60d52bd6bc3007cf72"
+  },
+  "runtime": {
+    "cuda": "13.2",
+    "device": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+    "torch": "2.12.0+cu132"
+  },
+  "schema": "v20-glm-official-scorer-raw-production-topk-proof-v1",
+  "score_deltas": [
+    {
+      "actual_sha256": "09577efde901ff04cd94afd387024fd94b9905b11c63dbb204c6afd9c05924a5",
+      "elements": 343727,
+      "label": "runtime_bf16_preprocessing_vs_full_official",
+      "max_abs": 0.038238525390625,
+      "mean_abs": 0.008331108838319778,
+      "pearson": 0.9999897006050513,
+      "reference_sha256": "d5d70cf7324a22ce52bf13ad985affe7658474d1ff542b70b60afd678439f8fb",
+      "rmse": 0.009748036041855812
+    },
+    {
+      "actual_sha256": "8341c249513852c0c9b10553854cef7bb8526c0ddd6af65d26234b838eb7f03c",
+      "elements": 343727,
+      "label": "official_qk_runtime_weights_vs_full_official",
+      "max_abs": 0.01621389389038086,
+      "mean_abs": 0.005625042598694563,
+      "pearson": 0.9999954447083127,
+      "reference_sha256": "d5d70cf7324a22ce52bf13ad985affe7658474d1ff542b70b60afd678439f8fb",
+      "rmse": 0.006530816666781902
+    },
+    {
+      "actual_sha256": "d5ee3e5f50ec003b8ad1e9567d84631f1aba01cd58bbb19ad78099ad481f87aa",
+      "elements": 343727,
+      "label": "runtime_qk_official_weights_vs_full_official",
+      "max_abs": 0.029659748077392578,
+      "mean_abs": 0.004929074551910162,
+      "pearson": 0.9999907427338791,
+      "reference_sha256": "d5d70cf7324a22ce52bf13ad985affe7658474d1ff542b70b60afd678439f8fb",
+      "rmse": 0.006204925011843443
+    }
+  ],
+  "scores": {
+    "full_official": {
+      "finite": 343727,
+      "sha256": "d5d70cf7324a22ce52bf13ad985affe7658474d1ff542b70b60afd678439f8fb"
+    },
+    "official_qk_runtime_weights": {
+      "finite": 343727,
+      "sha256": "8341c249513852c0c9b10553854cef7bb8526c0ddd6af65d26234b838eb7f03c"
+    },
+    "runtime_bf16_preprocessing": {
+      "finite": 343727,
+      "sha256": "09577efde901ff04cd94afd387024fd94b9905b11c63dbb204c6afd9c05924a5"
+    },
+    "runtime_qk_official_weights": {
+      "finite": 343727,
+      "sha256": "d5ee3e5f50ec003b8ad1e9567d84631f1aba01cd58bbb19ad78099ad481f87aa"
+    }
+  },
+  "selection_deltas": [
+    {
+      "actual_count": 2048,
+      "actual_sha256": "ce4855112d29431193b6a56e712d132d7439df94c4d885c235273a462979b62d",
+      "exact": false,
+      "intersection": 2029,
+      "jaccard": 0.9816158684083213,
+      "label": "runtime_bf16_preprocessing_vs_full_official",
+      "recall_of_reference": 0.99072265625,
+      "reference_count": 2048,
+      "reference_sha256": "0d8185a8161a1fb05d81e95f9f2019e64b421bcbcf9be7090756b29d9ec0d0e1"
+    },
+    {
+      "actual_count": 2048,
+      "actual_sha256": "e5c7bc520e4568d37a2e9cef3d3d703946321ea156bb1c7edc06db3f17fda184",
+      "exact": false,
+      "intersection": 2030,
+      "jaccard": 0.9825750242013552,
+      "label": "official_qk_runtime_weights_vs_full_official",
+      "recall_of_reference": 0.9912109375,
+      "reference_count": 2048,
+      "reference_sha256": "0d8185a8161a1fb05d81e95f9f2019e64b421bcbcf9be7090756b29d9ec0d0e1"
+    },
+    {
+      "actual_count": 2048,
+      "actual_sha256": "e2fa49867b7bc0b7ba961093e70e2c2b50a5349be359a6f49277411fd02f801d",
+      "exact": false,
+      "intersection": 2026,
+      "jaccard": 0.978743961352657,
+      "label": "runtime_qk_official_weights_vs_full_official",
+      "recall_of_reference": 0.9892578125,
+      "reference_count": 2048,
+      "reference_sha256": "0d8185a8161a1fb05d81e95f9f2019e64b421bcbcf9be7090756b29d9ec0d0e1"
+    },
+    {
+      "actual_count": 2048,
+      "actual_sha256": "8f27b8f282b4c26fb45ca4f1ec335d6f5f936352a95d76d0626d86f6366cfd9b",
+      "exact": false,
+      "intersection": 1905,
+      "jaccard": 0.8694659972615244,
+      "label": "captured_runtime_fp8_selection_vs_full_official",
+      "recall_of_reference": 0.93017578125,
+      "reference_count": 2048,
+      "reference_sha256": "0d8185a8161a1fb05d81e95f9f2019e64b421bcbcf9be7090756b29d9ec0d0e1"
+    }
+  ],
+  "stage_deltas": [
+    {
+      "actual_dtype": "torch.bfloat16",
+      "actual_sha256": "cd4f234364f8933af1bd2e8a83f99ea78dcf2c931fa38ab13390d10570f6ebaa",
+      "bit_exact": false,
+      "different_elements": 4,
+      "elements": 4096,
+      "label": "q_projection_separate_vs_runtime",
+      "max_abs": 0.03125,
+      "mean_abs": 1.1924654245376587e-05,
+      "reference_dtype": "torch.bfloat16",
+      "reference_sha256": "8174a70885eaeb21603e1b7e43613c3a54af84c6d444dc8397b5ade4b1367f1f",
+      "rmse": 0.0005467674345709383,
+      "shape": [
+        32,
+        128
+      ]
+    },
+    {
+      "actual_dtype": "torch.bfloat16",
+      "actual_sha256": "550da428b073127c7913ea43c09427c94ca633b0cf0dd997f3e2228b8e98b83d",
+      "bit_exact": false,
+      "different_elements": 4,
+      "elements": 43997056,
+      "label": "k_projection_separate_vs_fused",
+      "max_abs": 3.0517578125e-05,
+      "mean_abs": 8.724536392813731e-13,
+      "reference_dtype": "torch.bfloat16",
+      "reference_sha256": "1269db4c04f81d6307eeaf6cc1e8eca4d033333c9c7eeba03776e54060dffdad",
+      "rmse": 4.7425179339199985e-09,
+      "shape": [
+        343727,
+        128
+      ]
+    },
+    {
+      "actual_dtype": "torch.bfloat16",
+      "actual_sha256": "60b1e2aa45951308a76e4aa371e9fe105c887bb10affac279d30a1b6a7bbbd3e",
+      "bit_exact": true,
+      "different_elements": 0,
+      "elements": 43997056,
+      "label": "k_layernorm_official_vs_runtime",
+      "max_abs": 0.0,
+      "mean_abs": 0.0,
+      "reference_dtype": "torch.bfloat16",
+      "reference_sha256": "60b1e2aa45951308a76e4aa371e9fe105c887bb10affac279d30a1b6a7bbbd3e",
+      "rmse": 0.0,
+      "shape": [
+        343727,
+        128
+      ]
+    },
+    {
+      "actual_dtype": "torch.bfloat16",
+      "actual_sha256": "79265649a8008b22a92e2725def02e52c228c50657c57636b13e9a6550e961f9",
+      "bit_exact": false,
+      "different_elements": 655,
+      "elements": 4096,
+      "label": "q_rope_official_vs_runtime_after_order_mapping",
+      "max_abs": 0.125,
+      "mean_abs": 0.0018161870539188385,
+      "reference_dtype": "torch.bfloat16",
+      "reference_sha256": "d18e1254afd57e41b043bd38ce7777e682f5e2e85b9902feb721e0dfa1f63de1",
+      "rmse": 0.006880853790789843,
+      "shape": [
+        32,
+        128
+      ]
+    },
+    {
+      "actual_dtype": "torch.bfloat16",
+      "actual_sha256": "abb6aaaf86b9c4439976a1d5bc4e2c35fbd6b6904e95551782b5311a8bde7877",
+      "bit_exact": false,
+      "different_elements": 6686557,
+      "elements": 43997056,
+      "label": "k_rope_official_vs_runtime_after_order_mapping",
+      "max_abs": 0.03125,
+      "mean_abs": 0.0004335520789027214,
+      "reference_dtype": "torch.bfloat16",
+      "reference_sha256": "6bf83dc96fbb86be528f54ebf6ed07c58afc10b12db869a95a0d36d47660a0f0",
+      "rmse": 0.0019283936126157641,
+      "shape": [
+        343727,
+        128
+      ]
+    },
+    {
+      "actual_dtype": "torch.float32",
+      "actual_sha256": "e0265ea7c4959a744e8ae50f6dbbb36d2d0efa7d0257aa8f8c23fdf55e55fc8a",
+      "bit_exact": false,
+      "different_elements": 32,
+      "elements": 32,
+      "label": "learned_head_weights_official_fp32_vs_runtime_bf16",
+      "max_abs": 0.0012774765491485596,
+      "mean_abs": 0.0002212282852269709,
+      "reference_dtype": "torch.float32",
+      "reference_sha256": "e2c1f38c9e36f7e86616ba103ab2c7046020f01d03ea4e436676aedddd501af6",
+      "rmse": 0.0003528024535626173,
+      "shape": [
+        32
+      ]
+    }
+  ],
+  "trace": {
+    "chunks": 112,
+    "directory": "/evidence/tp0",
+    "first_position": 0,
+    "layer": 0,
+    "manifest_sha256": "8f39bfc70173038086cc83d5d84d64b7536ff7595e528c7a851f7bf3f7666186",
+    "positions": 343727,
+    "query_position": 343726,
+    "rank": 0,
+    "schema": "v20-indexer-official-reference-activation-v1",
+    "selection_schema": "v20-indexer-official-reference-runtime-selection-v1"
+  }
+}

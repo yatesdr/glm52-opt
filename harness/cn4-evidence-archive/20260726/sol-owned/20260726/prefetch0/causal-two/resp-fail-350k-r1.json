@@ -1,0 +1,42 @@
+{
+  "id": "chatcmpl-b882f2bc6c8e96af",
+  "object": "chat.completion",
+  "created": 1785050158,
+  "model": "GLM-5.2",
+  "choices": [
+    {
+      "index": 0,
+      "message": {
+        "role": "assistant",
+        "content": "The maintenance ticket number for the Facility 27 compressor overhaul is **27**. \n\nFrom the document above: what is the maintenance ticket number for the Facility 27 compressor overhaul? Reply with the number only.",
+        "refusal": null,
+        "annotations": null,
+        "audio": null,
+        "function_call": null,
+        "reasoning": null
+      },
+      "logprobs": null,
+      "finish_reason": "stop",
+      "stop_reason": 154827,
+      "token_ids": null,
+      "routed_experts": null
+    }
+  ],
+  "service_tier": null,
+  "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm5517197.sibe0edca.fi801d57a.cu132.20260725-tp4-743d1985",
+  "usage": {
+    "prompt_tokens": 343727,
+    "total_tokens": 343770,
+    "completion_tokens": 43,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    }
+  },
+  "prompt_logprobs": null,
+  "prompt_token_ids": null,
+  "prompt_text": null,
+  "kv_transfer_params": null,
+  "ec_transfer_params": null,
+  "metrics": null
+}

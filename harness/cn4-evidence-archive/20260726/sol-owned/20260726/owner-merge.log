@@ -1,0 +1,163 @@
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+W0726 06:48:58.023000 1 torch/distributed/run.py:862] 
+W0726 06:48:58.023000 1 torch/distributed/run.py:862] *****************************************
+W0726 06:48:58.023000 1 torch/distributed/run.py:862] Setting OMP_NUM_THREADS environment variable for each process to be 1 in default, to avoid your system being overloaded, please further tune the variable for optimal performance in your application as needed. 
+W0726 06:48:58.023000 1 torch/distributed/run.py:862] *****************************************
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+INFO 07-26 06:49:16 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:49:16 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:49:16 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:49:16 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-26 06:49:16 [pynccl.py:113] vLLM is using nccl==2.30.4
+[rank1]: Traceback (most recent call last):
+[rank1]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 248, in <module>
+[rank1]:     raise SystemExit(main())
+[rank1]:                      ^^^^^^
+[rank1]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 211, in main
+[rank1]:     result = run_case(
+[rank1]:              ^^^^^^^^^
+[rank1]:   File "/opt/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+[rank1]:     return func(*args, **kwargs)
+[rank1]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 98, in run_case
+[rank1]:     indexer_mod._merge_b12x_dcp_topk(
+[rank1]:   File "/opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/sparse_attn_indexer.py", line 1174, in _merge_b12x_dcp_topk
+[rank1]:     dcp_group = get_indexer_dcp_group(dcp_world_size)
+[rank1]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank1]:   File "/opt/venv/lib/python3.12/site-packages/vllm/distributed/parallel_state.py", line 1467, in get_indexer_dcp_group
+[rank1]:     dcp_group = get_dcp_group()
+[rank1]:                 ^^^^^^^^^^^^^^^
+[rank1]:   File "/opt/venv/lib/python3.12/site-packages/vllm/distributed/parallel_state.py", line 1436, in get_dcp_group
+[rank1]:     assert _DCP is not None, "decode context model parallel group is not initialized"
+[rank1]:            ^^^^^^^^^^^^^^^^
+[rank1]: AssertionError: decode context model parallel group is not initialized
+[rank0]: Traceback (most recent call last):
+[rank0]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 248, in <module>
+[rank0]:     raise SystemExit(main())
+[rank0]:                      ^^^^^^
+[rank0]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 211, in main
+[rank0]:     result = run_case(
+[rank0]:              ^^^^^^^^^
+[rank0]:   File "/opt/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+[rank0]:     return func(*args, **kwargs)
+[rank0]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 98, in run_case
+[rank0]:     indexer_mod._merge_b12x_dcp_topk(
+[rank0]:   File "/opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/sparse_attn_indexer.py", line 1174, in _merge_b12x_dcp_topk
+[rank0]:     dcp_group = get_indexer_dcp_group(dcp_world_size)
+[rank0]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/venv/lib/python3.12/site-packages/vllm/distributed/parallel_state.py", line 1467, in get_indexer_dcp_group
+[rank0]:     dcp_group = get_dcp_group()
+[rank0]:                 ^^^^^^^^^^^^^^^
+[rank0]:   File "/opt/venv/lib/python3.12/site-packages/vllm/distributed/parallel_state.py", line 1436, in get_dcp_group
+[rank0]:     assert _DCP is not None, "decode context model parallel group is not initialized"
+[rank0]:            ^^^^^^^^^^^^^^^^
+[rank0]: AssertionError: decode context model parallel group is not initialized
+[rank2]: Traceback (most recent call last):
+[rank2]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 248, in <module>
+[rank2]:     raise SystemExit(main())
+[rank2]:                      ^^^^^^
+[rank2]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 211, in main
+[rank2]:     result = run_case(
+[rank2]:              ^^^^^^^^^
+[rank2]:   File "/opt/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+[rank2]:     return func(*args, **kwargs)
+[rank2]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 98, in run_case
+[rank2]:     indexer_mod._merge_b12x_dcp_topk(
+[rank2]:   File "/opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/sparse_attn_indexer.py", line 1174, in _merge_b12x_dcp_topk
+[rank2]:     dcp_group = get_indexer_dcp_group(dcp_world_size)
+[rank2]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank2]:   File "/opt/venv/lib/python3.12/site-packages/vllm/distributed/parallel_state.py", line 1467, in get_indexer_dcp_group
+[rank2]:     dcp_group = get_dcp_group()
+[rank2]:                 ^^^^^^^^^^^^^^^
+[rank2]:   File "/opt/venv/lib/python3.12/site-packages/vllm/distributed/parallel_state.py", line 1436, in get_dcp_group
+[rank2]:     assert _DCP is not None, "decode context model parallel group is not initialized"
+[rank2]:            ^^^^^^^^^^^^^^^^
+[rank2]: AssertionError: decode context model parallel group is not initialized
+[rank3]: Traceback (most recent call last):
+[rank3]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 248, in <module>
+[rank3]:     raise SystemExit(main())
+[rank3]:                      ^^^^^^
+[rank3]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 211, in main
+[rank3]:     result = run_case(
+[rank3]:              ^^^^^^^^^
+[rank3]:   File "/opt/venv/lib/python3.12/site-packages/torch/utils/_contextlib.py", line 124, in decorate_context
+[rank3]:     return func(*args, **kwargs)
+[rank3]:            ^^^^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/proof/v20_owner_merge_equivalence_probe.py", line 98, in run_case
+[rank3]:     indexer_mod._merge_b12x_dcp_topk(
+[rank3]:   File "/opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/sparse_attn_indexer.py", line 1174, in _merge_b12x_dcp_topk
+[rank3]:     dcp_group = get_indexer_dcp_group(dcp_world_size)
+[rank3]:                 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+[rank3]:   File "/opt/venv/lib/python3.12/site-packages/vllm/distributed/parallel_state.py", line 1467, in get_indexer_dcp_group
+[rank3]:     dcp_group = get_dcp_group()
+[rank3]:                 ^^^^^^^^^^^^^^^
+[rank3]:   File "/opt/venv/lib/python3.12/site-packages/vllm/distributed/parallel_state.py", line 1436, in get_dcp_group
+[rank3]:     assert _DCP is not None, "decode context model parallel group is not initialized"
+[rank3]:            ^^^^^^^^^^^^^^^^
+[rank3]: AssertionError: decode context model parallel group is not initialized
+W0726 06:49:24.419000 1 torch/distributed/elastic/multiprocessing/api.py:1014] Sending process 99 closing signal SIGTERM
+W0726 06:49:24.420000 1 torch/distributed/elastic/multiprocessing/api.py:1014] Sending process 100 closing signal SIGTERM
+W0726 06:49:24.420000 1 torch/distributed/elastic/multiprocessing/api.py:1014] Sending process 101 closing signal SIGTERM
+E0726 06:49:24.584000 1 torch/distributed/elastic/multiprocessing/api.py:988] failed (exitcode: 1) local_rank: 0 (pid: 98) of binary: /opt/venv/bin/python
+Traceback (most recent call last):
+  File "/opt/venv/bin/torchrun", line 7, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/elastic/multiprocessing/errors/__init__.py", line 367, in wrapper
+    return f(*args, **kwargs)
+           ^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/run.py", line 1016, in main
+    run(args)
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/run.py", line 1007, in run
+    elastic_launch(
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 191, in __call__
+    return launch_agent(self._config, self._entrypoint, list(args))
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/torch/distributed/launcher/api.py", line 371, in launch_agent
+    raise ChildFailedError(
+torch.distributed.elastic.multiprocessing.errors.ChildFailedError: 
+============================================================
+/proof/v20_owner_merge_equivalence_probe.py FAILED
+------------------------------------------------------------
+Failures:
+[1]:
+  time      : 2026-07-26_06:49:24
+  host      : cn4
+  rank      : 1 (local_rank: 1)
+  exitcode  : 1 (pid: 99) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[2]:
+  time      : 2026-07-26_06:49:24
+  host      : cn4
+  rank      : 2 (local_rank: 2)
+  exitcode  : 1 (pid: 100) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+[3]:
+  time      : 2026-07-26_06:49:24
+  host      : cn4
+  rank      : 3 (local_rank: 3)
+  exitcode  : 1 (pid: 101) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+------------------------------------------------------------
+Root Cause (first observed failure):
+[0]:
+  time      : 2026-07-26_06:49:24
+  host      : cn4
+  rank      : 0 (local_rank: 0)
+  exitcode  : 1 (pid: 98) 
+  error_file: <N/A>
+  traceback : To enable traceback see: https://pytorch.org/docs/stable/elastic/errors.html
+============================================================

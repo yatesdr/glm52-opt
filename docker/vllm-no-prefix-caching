@@ -1,0 +1,8 @@
+#!/usr/bin/env bash
+set -euo pipefail
+
+# The stock GLM launcher currently enables prefix caching unconditionally.
+# Keep the release entrypoint and all of its policy selection, but make the
+# frozen causal gate cold by construction. argparse resolves the later
+# BooleanOptionalAction value to false.
+exec /opt/venv/bin/vllm "$@" --no-enable-prefix-caching

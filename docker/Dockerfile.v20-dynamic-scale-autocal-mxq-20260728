@@ -1,0 +1,48 @@
+# GLM-5.2 v20: dynamic per-token NVFP4 KV scaling (gate-tested base)
+#   + quality-first online-MXFP8 weight membership defaults (destroyed)
+#   + NCCL_P2P_LEVEL auto-calibration (measured probe -> static topo -> defaults)
+#
+# Builds FROM the published gate-tested digest, so every Python source file
+# of the dynamic-scale stack is bit-identical to the evidence image; this
+# layer only ADDS calibration tooling and default env. All defaults are
+# runtime-overridable; explicit values always win.
+#
+# Evidence tier: the dynamic-scale stack carries the full frozen/ladder/KLD
+# evidence chain. The MXFP8 membership default carries arm-D KLD evidence
+# (n=3, 0.1332616 +/- 0.0021250, fully rank-separated vs dynamic-alone);
+# arm C decomposition and the production retrieval smoke under this weight
+# config are still in flight -- treat as REVIEW PREVIEW until they land.
+
+FROM ghcr.io/yatesdr/glm52-serve@sha256:db82fdcb5756d4a547853ba1330538bdd8a3dc0c6443c29bc49ba77b69b51cd1
+
+USER root
+
+COPY derive_nccl_p2p_level.py /usr/local/bin/derive_nccl_p2p_level.py
+COPY nccl_p2p_probe.py       /usr/local/bin/nccl_p2p_probe.py
+COPY serve-with-autocal.sh   /usr/local/bin/serve-with-autocal.sh
+
+RUN set -eu; \
+    chmod +x /usr/local/bin/serve-with-autocal.sh; \
+    /opt/venv/bin/python3 -m py_compile \
+      /usr/local/bin/derive_nccl_p2p_level.py \
+      /usr/local/bin/nccl_p2p_probe.py; \
+    /opt/venv/bin/python3 /usr/local/bin/derive_nccl_p2p_level.py --self-test; \
+    bash -n /usr/local/bin/serve-with-autocal.sh; \
+    test -x /usr/local/bin/serve-gilded-gnosis.sh
+
+# Topology auto-calibration on by default; any explicit level overrides.
+ENV NCCL_P2P_LEVEL=auto
+
+# Quality-first online-MXFP8 weight membership (destroyed's config, arm-D
+# evidence): protect the attention input projections, MoE gates, the MTP
+# draft eh_proj, and lm_head; shared experts stay BF16. Override or unset
+# in the compose to return to stock weight quantization.
+ENV ONLINE_QUANT=custom
+ENV QUANTIZATION_CONFIG_JSON='{"linear":{"weight":"mxfp8"},"ignore":["re:.*\\.fused_qkv_a_proj$","re:.*\\.q_a_proj$","re:.*kv_a_proj_with_mqa","re:.*\\.mlp\\.gate$","model.layers.78.eh_proj","lm_head"]}'
+
+ENTRYPOINT ["/usr/local/bin/serve-with-autocal.sh"]
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 dynamic-scale + autocal + MXFP8 quality membership (review preview)"
+LABEL local.glm52.base.image.digest="sha256:db82fdcb5756d4a547853ba1330538bdd8a3dc0c6443c29bc49ba77b69b51cd1"
+LABEL local.glm52.autocal="NCCL_P2P_LEVEL=auto: measured probe -> static topo (PXB-capped) -> NCCL defaults; F8_DMA auto tokens documented, land with SparkInfer #81 extension"
+LABEL local.glm52.mxq="quality-first online-MXFP8 membership default (arm-D KLD 0.1332616 n=3); arm C + retrieval smoke pending"

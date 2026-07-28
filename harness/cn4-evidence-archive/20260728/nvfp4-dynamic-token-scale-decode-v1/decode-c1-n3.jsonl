@@ -1,0 +1,6 @@
+RUN=1
+{"aggregate_tok_s": 57.26, "all_finalized": true, "client_completion_tokens": 512, "concurrency": 1, "effective_peak_concurrency": 1, "elapsed_s": 8.942, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 57.26, "mtp_acceptance": 0.4389, "mtp_accepted_tokens": 291, "mtp_draft_tokens": 663, "output_tokens_requested_each": 512, "requests_ok": 1, "server_generation_tokens": 512}
+RUN=2
+{"aggregate_tok_s": 67.25, "all_finalized": true, "client_completion_tokens": 512, "concurrency": 1, "effective_peak_concurrency": 1, "elapsed_s": 7.613, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 67.25, "mtp_acceptance": 0.5099, "mtp_accepted_tokens": 309, "mtp_draft_tokens": 606, "output_tokens_requested_each": 512, "requests_ok": 1, "server_generation_tokens": 512}
+RUN=3
+{"aggregate_tok_s": 71.68, "all_finalized": true, "client_completion_tokens": 512, "concurrency": 1, "effective_peak_concurrency": 1, "elapsed_s": 7.143, "errors": [], "finish_reasons": ["length"], "median_per_user_tok_s": 71.68, "mtp_acceptance": 0.5679, "mtp_accepted_tokens": 322, "mtp_draft_tokens": 567, "output_tokens_requested_each": 512, "requests_ok": 1, "server_generation_tokens": 512}

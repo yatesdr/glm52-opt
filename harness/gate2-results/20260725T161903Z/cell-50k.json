@@ -1,0 +1,128 @@
+{
+  "depth_target": 50000,
+  "context_tokens": 49109,
+  "elapsed_s": 42.11,
+  "usage": {
+    "prompt_tokens": 49121,
+    "completion_tokens": 90,
+    "total_tokens": 49211,
+    "cached_tokens": 0,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    }
+  },
+  "checks": {
+    "needle_in_finalized_content": false,
+    "finalized_content_nonempty": true,
+    "finish_reason_stop": true,
+    "no_degeneration": true,
+    "cold_cached_tokens_zero": true,
+    "arithmetic_side_check": true,
+    "coherence_side_check": false
+  },
+  "needle_found_in": {
+    "reasoning": true,
+    "reasoning_content": false,
+    "serialized_message": true
+  },
+  "trigram_repeat": 0.0,
+  "content": "73838216",
+  "reasoning": "The user wants to know the maintenance ticket number for the Facility 27 compressor compressor overhaul, based on the provided text.\n\nI need to scan the text for \"Facility \", \"compressor\", \"overhaul\", \"maintenance ticket\", \"number\".\n\nLooking at the text:\n\"For reference, the maintenance ticket number for the 27 compressor overhaul is 738216.\"\n\nThe number is 738216.",
+  "reasoning_content": "",
+  "serialized_message": "{\"annotations\": null, \"audio\": null, \"content\": \"73838216\", \"function_call\": null, \"reasoning\": \"The user wants to know the maintenance ticket number for the Facility 27 compressor compressor overhaul, based on the provided text.\\n\\nI need to scan the text for \\\"Facility \\\", \\\"compressor\\\", \\\"overhaul\\\", \\\"maintenance ticket\\\", \\\"number\\\".\\n\\nLooking at the text:\\n\\\"For reference, the maintenance ticket number for the 27 compressor overhaul is 738216.\\\"\\n\\nThe number is 738216.\", \"refusal\": null, \"role\": \"assistant\"}",
+  "finish_reason": "stop",
+  "side_checks": {
+    "arithmetic": {
+      "pass": true,
+      "secs": 3.09,
+      "finish_reason": "stop",
+      "tail": "ep 3: Add: 12193 + 1507 = 13700  \nStep 4: Subtract: 13700 - 256 = 13444  \n\n13444",
+      "usage": {
+        "prompt_tokens": 45,
+        "completion_tokens": 188,
+        "total_tokens": 233,
+        "cached_tokens": 0,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      }
+    },
+    "coherence": {
+      "pass": false,
+      "words": 60,
+      "trigram_repeat": 0.0,
+      "secs": 19.01,
+      "finish_reason": "length",
+      "usage": {
+        "prompt_tokens": 38,
+        "completion_tokens": 1500,
+        "total_tokens": 1538,
+        "cached_tokens": 0,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      }
+    }
+  },
+  "request": {
+    "model": "GLM-5.2",
+    "messages": [
+      {
+        "role": "user",
+        "content_sha256": "5dfd3ffaad59ddb5fa175018b6a0408918329f26c67f14ddbf2fe30ff6b4db84",
+        "content_chars": 299659
+      }
+    ],
+    "max_tokens": 800,
+    "temperature": 0,
+    "chat_template_kwargs": {
+      "reasoning_effort": "low"
+    }
+  },
+  "response_full": {
+    "id": "chatcmpl-87047f94e0d08cf8",
+    "object": "chat.completion",
+    "created": 1784996357,
+    "model": "GLM-5.2",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "73838216",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": "The user wants to know the maintenance ticket number for the Facility 27 compressor compressor overhaul, based on the provided text.\n\nI need to scan the text for \"Facility \", \"compressor\", \"overhaul\", \"maintenance ticket\", \"number\".\n\nLooking at the text:\n\"For reference, the maintenance ticket number for the 27 compressor overhaul is 738216.\"\n\nThe number is 738216."
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": 154827,
+        "token_ids": null,
+        "routed_experts": null
+      }
+    ],
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm992b874.sia93df67.fi801d57a.cu132.20260724-tp4-44cf7ce8",
+    "usage": {
+      "prompt_tokens": 49121,
+      "total_tokens": 49211,
+      "completion_tokens": 90,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null
+  },
+  "ts": "2026-07-25T16:20:21Z"
+}

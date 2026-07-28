@@ -1,0 +1,996 @@
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+fallback_prefill_kld_start {"context_length": 2048, "env": {"B12X_MOE_FORCE_A16": "1", "B12X_W4A16_TC_DECODE": "1", "VLLM_B12X_FORCE_MOE_A16": null, "VLLM_PCIE_ONESHOT_ALLREDUCE_MAX_SIZE": null, "VLLM_USE_B12X_MOE": "1", "VLLM_USE_B12X_SPARSE_INDEXER": "1", "VLLM_WORKER_MULTIPROC_METHOD": "spawn"}, "extra": {"decode_context_parallel_size": 1, "enforce_eager": true, "moe_backend": "b12x", "quantization_config": {"ignore": ["re:^model\\.layers\\.0\\.", "re:.*\\.self_attn\\.indexer\\.", "re:.*\\.mlp\\.gate$", "model.layers.78.eh_proj", "lm_head"], "linear": {"weight": "mxfp8"}, "shared_experts": {"weight": "mxfp8"}}}, "hf_overrides": {"index_topk_pattern": "FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS", "use_index_cache": true}, "max_windows": 1, "model": "/model", "reference_logits": "/kld-assets/reference-logits", "stride": 512}
+Warning: You are sending unauthenticated requests to the HF Hub. Please set a HF_TOKEN to enable higher rate limits and faster downloads.
+wikitext_alias_failed {"error": "HfUriError(\"Invalid HF URI 'hf://datasets/wikitext@b08601e04326c79dfdd32d625aee71d232d685c3/.huggingface.yaml'. Repository id must be 'namespace/name', got 'wikitext'.\")", "fallback": "Salesforce/wikitext"}
+tokenized {"num_tokens": 2048, "first16": [284, 8396, 425, 10960, 465, 284, 14721, 8396, 425, 10960, 465, 374, 458, 6364, 4531, 1154]}
+INFO 07-28 02:34:15 [api_utils.py:273] non-default args: {'tokenizer': '/model', 'trust_remote_code': True, 'load_format': 'instanttensor', 'dtype': 'bfloat16', 'kv_cache_dtype': 'nvfp4_ds_mla', 'max_model_len': 4096, 'tensor_parallel_size': 4, 'moe_backend': 'b12x', 'enable_prefix_caching': False, 'gpu_memory_utilization': 0.9, 'max_num_batched_tokens': 512, 'max_num_seqs': 1, 'max_logprobs': -1, 'disable_log_stats': True, 'hf_overrides': {'use_index_cache': True, 'index_topk_pattern': 'FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS'}, 'quantization': 'nvfp4_nf3_hybrid', 'quantization_config': QuantizationConfigArgs(linear=QuantSpec(weight=QuantKey(dtype=torch.float8_e4m3fn, scale=ScaleDesc(dtype=torch.uint8, static=False, group_shape=GroupShape(row=1, col=32)), scale2=None, symmetric=True), activation=None), moe=None, shared_experts=QuantSpec(weight=QuantKey(dtype=torch.float8_e4m3fn, scale=ScaleDesc(dtype=torch.uint8, static=False, group_shape=GroupShape(row=1, col=32)), scale2=None, symmetric=True), activation=None), ignore=['re:^model\\.layers\\.0\\.', 're:.*\\.self_attn\\.indexer\\.', 're:.*\\.mlp\\.gate$', 'model.layers.78.eh_proj', 'lm_head']), 'enforce_eager': True, 'attention_backend': 'B12X_MLA_SPARSE', 'model': '/model'}
+WARNING 07-28 02:34:15 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_PCIE_DMA_FP8
+WARNING 07-28 02:34:15 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_RTX6K_FUSED_ALLREDUCE_ADD
+WARNING 07-28 02:34:15 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_CACHE_DIR
+WARNING 07-28 02:34:15 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_NVFP4_MLA_DYNAMIC_SCALE
+WARNING 07-28 02:34:15 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_CPP_AR_IGNORE_CUTOFF_MAX_ROWS
+WARNING 07-28 02:34:15 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_RTX6K_FUSED_ALLREDUCE_ADD_END_BARRIER
+WARNING 07-28 02:34:15 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_CPP_AR_1STAGE_NCCL_CUTOFF
+WARNING 07-28 02:34:15 [envs.py:2348] Unknown vLLM environment variable detected: VLLM_USE_B12X_ABSORB_BMM
+INFO 07-28 02:34:32 [model.py:622] Resolved architecture: GlmMoeDsaForCausalLM
+INFO 07-28 02:34:32 [model.py:1790] Using max model len 4096
+INFO 07-28 02:34:35 [cache.py:286] Using nvfp4_ds_mla data type to store kv cache. It reduces the GPU memory footprint and boosts the performance. Meanwhile, it may cause accuracy drop without a proper scaling factor
+INFO 07-28 02:34:35 [scheduler.py:252] Chunked prefill is enabled with max_num_batched_tokens=512.
+WARNING 07-28 02:34:35 [modelopt.py:1114] Detected ModelOpt NVFP4 checkpoint (quant_algo=NVFP4). Please note that the format is experimental and could change in future.
+INFO 07-28 02:34:35 [vllm.py:1162] Asynchronous scheduling is enabled.
+WARNING 07-28 02:34:35 [vllm.py:1216] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+WARNING 07-28 02:34:35 [vllm.py:1245] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+INFO 07-28 02:34:35 [kernel.py:299] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+INFO 07-28 02:34:35 [vllm.py:1424] Cudagraph is disabled under eager mode
+INFO 07-28 02:34:35 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+[transformers] The following generation flags are not valid and may be ignored: ['top_p']. Set `TRANSFORMERS_VERBOSITY=info` for more details.
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+(EngineCore pid=226) INFO 07-28 02:34:54 [core.py:116] Initializing a V1 LLM engine (v0.11.2.dev280+gilded.gnosis.v20.vllm0c79e41.sic3828fd.fi801d57a.cu132.20260727) with config: model='/model', speculative_config=None, tokenizer='/model', skip_tokenizer_init=False, tokenizer_mode=auto, revision=None, tokenizer_revision=None, trust_remote_code=True, dtype=torch.bfloat16, max_seq_len=4096, download_dir=None, load_format=instanttensor, tensor_parallel_size=4, pipeline_parallel_size=1, data_parallel_size=1, decode_context_parallel_size=1, dcp_comm_backend=ag_rs, disable_custom_all_reduce=False, quantization=nvfp4_nf3_hybrid, quantization_config=QuantizationConfigArgs(linear=QuantSpec(weight=QuantKey(dtype=torch.float8_e4m3fn, scale=ScaleDesc(dtype=torch.uint8, static=False, group_shape=GroupShape(row=1, col=32)), scale2=None, symmetric=True), activation=None), moe=None, shared_experts=QuantSpec(weight=QuantKey(dtype=torch.float8_e4m3fn, scale=ScaleDesc(dtype=torch.uint8, static=False, group_shape=GroupShape(row=1, col=32)), scale2=None, symmetric=True), activation=None), ignore=['re:^model\\.layers\\.0\\.', 're:.*\\.self_attn\\.indexer\\.', 're:.*\\.mlp\\.gate$', 'model.layers.78.eh_proj', 'lm_head']), enforce_eager=True, enable_return_routed_experts=False, kv_cache_dtype=nvfp4_ds_mla, device_config=cuda, structured_outputs_config=StructuredOutputsConfig(backend='auto', disable_any_whitespace=False, disable_additional_properties=False, reasoning_parser='', reasoning_parser_plugin='', enable_in_reasoning=False), observability_config=ObservabilityConfig(show_hidden_metrics_for_version=None, otlp_traces_endpoint=None, collect_detailed_traces=None, kv_cache_metrics=False, kv_cache_metrics_sample=0.01, cudagraph_metrics=False, enable_layerwise_nvtx_tracing=False, enable_mfu_metrics=False, enable_mm_processor_stats=False, enable_logging_iteration_details=False, jit_monitor_mode='warn', jit_monitor_verbose=False), seed=0, served_model_name=/model, enable_prefix_caching=False, enable_chunked_prefill=True, pooler_config=None, compilation_config={'mode': <CompilationMode.NONE: 0>, 'debug_dump_path': None, 'cache_dir': '', 'compile_cache_save_format': 'binary', 'backend': 'inductor', 'custom_ops': ['all'], 'ir_enable_torch_wrap': False, 'splitting_ops': [], 'compile_mm_encoder': False, 'cudagraph_mm_encoder': False, 'encoder_cudagraph_token_budgets': [], 'encoder_cudagraph_max_vision_items_per_batch': 0, 'encoder_cudagraph_max_frames_per_batch': None, 'compile_sizes': [], 'compile_ranges_endpoints': [512], 'inductor_compile_config': {'enable_auto_functionalized_v2': False, 'combo_kernels': True, 'benchmark_combo_kernel': True}, 'inductor_passes': {}, 'cudagraph_mode': <CUDAGraphMode.NONE: 0>, 'cudagraph_num_of_warmups': 0, 'cudagraph_capture_sizes': [], 'cudagraph_copy_inputs': False, 'cudagraph_specialize_lora': True, 'use_inductor_graph_partition': False, 'pass_config': {'fuse_norm_quant': True, 'fuse_act_quant': True, 'fuse_attn_quant': False, 'enable_sp': False, 'fuse_gemm_comms': False, 'fuse_allreduce_rms': False, 'enable_qk_norm_rope_fusion': False, 'fuse_rope_kvcache_cat_mla': False, 'fuse_act_padding': False, 'fuse_qk_norm_rope_kvcache': False}, 'max_cudagraph_capture_size': 0, 'dynamic_shapes_config': {'type': <DynamicShapesType.BACKED: 'backed'>, 'evaluate_guards': False, 'assume_32_bit_indexing': False}, 'local_cache_dir': None, 'fast_moe_cold_start': False, 'static_all_moe_layers': []}, kernel_config=KernelConfig(ir_op_priority=IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native']), enable_flashinfer_autotune=True, enable_cutedsl_warmup=True, enable_bf16x3_router_gemm=False, moe_backend='b12x', linear_backend='auto')
+(EngineCore pid=226) INFO 07-28 02:34:54 [multiproc_executor.py:140] DP group leader: node_rank=0, node_rank_within_dp=0, master_addr=127.0.0.1, mq_connect_ip=192.168.13.34 (local), world_size=4, local_world_size=4
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+(Worker pid=306) INFO 07-28 02:35:16 [parallel_state.py:1847] world_size=4 rank=0 local_rank=0 distributed_init_method=tcp://127.0.0.1:37203 backend=nccl
+(Worker pid=308) INFO 07-28 02:35:17 [parallel_state.py:1847] world_size=4 rank=2 local_rank=2 distributed_init_method=tcp://127.0.0.1:37203 backend=nccl
+(Worker pid=309) INFO 07-28 02:35:17 [parallel_state.py:1847] world_size=4 rank=3 local_rank=3 distributed_init_method=tcp://127.0.0.1:37203 backend=nccl
+(Worker pid=307) INFO 07-28 02:35:17 [parallel_state.py:1847] world_size=4 rank=1 local_rank=1 distributed_init_method=tcp://127.0.0.1:37203 backend=nccl
+(Worker pid=306) (Worker pid=309) INFO 07-28 02:35:17 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-28 02:35:17 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+(Worker pid=307) (Worker pid=308) INFO 07-28 02:35:17 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-28 02:35:17 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+(Worker pid=306) INFO 07-28 02:35:17 [pynccl.py:113] vLLM is using nccl==2.30.4
+(Worker pid=309) WARNING 07-28 02:35:18 [symm_mem.py:100] SymmMemCommunicator: native P2P atomics are not supported between devices [0, 1, 2, 3], communicator is not available.
+(Worker pid=306) WARNING 07-28 02:35:18 [symm_mem.py:100] SymmMemCommunicator: native P2P atomics are not supported between devices [0, 1, 2, 3], communicator is not available.
+(Worker pid=307) WARNING 07-28 02:35:18 [symm_mem.py:100] SymmMemCommunicator: native P2P atomics are not supported between devices [0, 1, 2, 3], communicator is not available.
+(Worker pid=308) WARNING 07-28 02:35:18 [symm_mem.py:100] SymmMemCommunicator: native P2P atomics are not supported between devices [0, 1, 2, 3], communicator is not available.
+(Worker pid=306) INFO 07-28 02:35:18 [cuda_communicator.py:272] Using ['CUSTOM_CPP_PCIE', 'PYNCCL'] all-reduce backends (in dispatch order) for group 'tp:0' out of potential backends: ['NCCL_SYMM_MEM', 'QUICK_REDUCE', 'FLASHINFER', 'AITER_CUSTOM', 'CUSTOM', 'SYMM_MEM', 'PYNCCL'].
+(Worker pid=306) INFO 07-28 02:35:18 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+(Worker pid=307) INFO 07-28 02:35:18 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+(Worker pid=308) (Worker pid=309) INFO 07-28 02:35:18 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+INFO 07-28 02:35:18 [nccl.py:24] Found nccl from environment variable VLLM_NCCL_SO_PATH=/opt/libnccl-local-inference.so.2.30.4
+(Worker pid=306) INFO 07-28 02:35:18 [cuda_communicator.py:272] Using ['PYNCCL'] all-reduce backends (in dispatch order) for group 'ep:0' out of potential backends: ['NCCL_SYMM_MEM', 'QUICK_REDUCE', 'FLASHINFER', 'AITER_CUSTOM', 'CUSTOM', 'SYMM_MEM', 'PYNCCL'].
+(Worker pid=306) INFO 07-28 02:35:18 [parallel_state.py:2278] rank 0 in world size 4 is assigned as DP rank 0, PP rank 0, PCP rank 0, TP rank 0, EP rank 0, EPLB rank N/A
+(Worker pid=306) INFO 07-28 02:35:18 [gpu_worker.py:381] Using V2 Model Runner
+(Worker_TP1 pid=307) INFO 07-28 02:35:19 [model_runner.py:372] Loading model from scratch...
+(Worker_TP2 pid=308) INFO 07-28 02:35:19 [model_runner.py:372] Loading model from scratch...
+(Worker_TP3 pid=309) INFO 07-28 02:35:19 [model_runner.py:372] Loading model from scratch...
+(Worker_TP0 pid=306) INFO 07-28 02:35:19 [model_runner.py:372] Loading model from scratch...
+(Worker_TP0 pid=306) INFO 07-28 02:35:19 [cuda.py:425] Using AttentionBackendEnum.B12X_MLA_SPARSE backend.
+(Worker_TP1 pid=307) INFO 07-28 02:35:19 [cuda.py:425] Using AttentionBackendEnum.B12X_MLA_SPARSE backend.
+(Worker_TP2 pid=308) INFO 07-28 02:35:19 [cuda.py:425] Using AttentionBackendEnum.B12X_MLA_SPARSE backend.
+(Worker_TP3 pid=309) INFO 07-28 02:35:19 [cuda.py:425] Using AttentionBackendEnum.B12X_MLA_SPARSE backend.
+(Worker_TP1 pid=307) (Worker_TP2 pid=308) (Worker_TP0 pid=306) (Worker_TP3 pid=309) INFO 07-28 02:35:19 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+INFO 07-28 02:35:19 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+INFO 07-28 02:35:19 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+INFO 07-28 02:35:19 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [selector.py:174] Using FLASH_ATTN MLA prefill backend.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deep_gemm.py:202] DeepGEMM PDL enabled on deep_gemm.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deep_gemm.py:120] DeepGEMM E8M0 enabled on current platform.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.1.self_attn.fused_qkv_a_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [__init__.py:846] Using B12xMxfp8LinearKernel for MXFP8 GEMM
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.1.self_attn.q_b_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.1.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.1.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.1.mlp.gate_up_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.1.mlp.down_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.2.self_attn.fused_qkv_a_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.2.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.2.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.2.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.2.mlp.gate_up_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.2.mlp.down_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.3.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.3.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.3.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.3.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 3.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.4.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.4.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.4.self_attn.kv_b_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.4.self_attn.o_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 4.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.5.self_attn.fused_qkv_a_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.5.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.5.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.5.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 5.
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.6.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.6.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.6.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.6.self_attn.o_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.7.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.7.self_attn.q_b_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.7.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.7.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 7.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.8.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.8.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.8.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.8.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 8.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.9.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.9.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.9.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.9.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 9.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.10.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.10.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.10.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.10.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.11.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.11.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.11.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.11.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 11.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.12.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.12.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.12.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.12.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 12.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.13.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.13.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.13.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.13.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 13.
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.14.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.14.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.14.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.14.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:23 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.15.self_attn.fused_qkv_a_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.15.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.15.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.15.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 15.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.16.self_attn.fused_qkv_a_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.16.self_attn.q_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.16.self_attn.kv_b_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.16.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 16.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.17.self_attn.fused_qkv_a_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.17.self_attn.q_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.17.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.17.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 17.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.18.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.18.self_attn.q_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.18.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.18.self_attn.o_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.19.self_attn.fused_qkv_a_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.19.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.19.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.19.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 19.
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.20.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.20.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.20.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.20.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 20.
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.21.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.21.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.21.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.21.self_attn.o_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 21.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.22.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.22.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.22.self_attn.kv_b_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.22.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.23.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.23.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.23.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.23.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 23.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.24.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.24.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.24.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.24.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 24.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.25.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.25.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.25.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.25.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 25.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.26.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.26.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.26.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.26.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.27.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.27.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.27.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.27.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 27.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.28.self_attn.fused_qkv_a_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.28.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.28.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.28.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 28.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.29.self_attn.fused_qkv_a_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.29.self_attn.q_b_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.29.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.29.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 29.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.30.self_attn.fused_qkv_a_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.30.self_attn.q_b_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.30.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.30.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.31.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.31.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.31.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.31.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 31.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.32.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.32.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.32.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.32.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 32.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.33.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.33.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.33.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.33.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 33.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.34.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.34.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.34.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.34.self_attn.o_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.35.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.35.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.35.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.35.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 35.
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.36.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.36.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.36.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.36.self_attn.o_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 36.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.37.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.37.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.37.self_attn.kv_b_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.37.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 37.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.38.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.38.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.38.self_attn.kv_b_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.38.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.39.self_attn.fused_qkv_a_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.39.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.39.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.39.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 39.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.40.self_attn.fused_qkv_a_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.40.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.40.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.40.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 40.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.41.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.41.self_attn.q_b_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.41.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.41.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 41.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.42.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.42.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.42.self_attn.kv_b_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.42.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.43.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.43.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.43.self_attn.kv_b_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.43.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 43.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.44.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.44.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.44.self_attn.kv_b_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.44.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 44.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.45.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.45.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.45.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.45.self_attn.o_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 45.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.46.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.46.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.46.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.46.self_attn.o_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.47.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.47.self_attn.q_b_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.47.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.47.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 47.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.48.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.48.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.48.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.48.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 48.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.49.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.49.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.49.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.49.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 49.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.50.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.50.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.50.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.50.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.51.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.51.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.51.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.51.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 51.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.52.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.52.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.52.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.52.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 52.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.53.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.53.self_attn.q_b_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.53.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.53.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 53.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.54.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.54.self_attn.q_b_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.54.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.54.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.55.self_attn.fused_qkv_a_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.55.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.55.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.55.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 55.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.56.self_attn.fused_qkv_a_proj).
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.56.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.56.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.56.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 56.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.57.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.57.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.57.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.57.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 57.
+(Worker_TP1 pid=307) (Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.58.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.58.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.58.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.58.self_attn.o_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.59.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.59.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.59.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.59.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 59.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.60.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.60.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.60.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.60.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 60.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.61.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.61.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.61.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.61.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 61.
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.62.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.62.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.62.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.62.self_attn.o_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.63.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.63.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.63.self_attn.kv_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.63.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 63.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.64.self_attn.fused_qkv_a_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.64.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.64.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.64.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 64.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.65.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.65.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.65.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.65.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 65.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.66.self_attn.fused_qkv_a_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.66.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.66.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.66.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.67.self_attn.fused_qkv_a_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.67.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.67.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.67.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 67.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.68.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.68.self_attn.q_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.68.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.68.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 68.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.69.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.69.self_attn.q_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.69.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.69.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 69.
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.70.self_attn.fused_qkv_a_proj).
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.70.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.70.self_attn.kv_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.70.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:24 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.71.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.71.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.71.self_attn.kv_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.71.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 71.
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP2 pid=308) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.72.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.72.self_attn.q_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.72.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.72.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 72.
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.73.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.73.self_attn.q_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.73.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.73.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 73.
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.74.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.74.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.74.self_attn.kv_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.74.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.75.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.75.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.75.self_attn.kv_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.75.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 75.
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP3 pid=309) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.76.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.76.self_attn.q_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.76.self_attn.kv_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.76.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 76.
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.77.self_attn.fused_qkv_a_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.77.self_attn.q_b_proj).
+(Worker_TP1 pid=307) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.77.self_attn.kv_b_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [modelopt.py:249] ModelOpt dense-linear overlay: quantizing checkpoint-excluded BF16 linears to MXFP8 at load time (module example: model.layers.77.self_attn.o_proj).
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [deepseek_v2.py:1311] Using index_topk_pattern/index_topk_freq to skip sparse MLA indexer computation on layer 77.
+(Worker_TP0 pid=306) INFO 07-28 02:35:25 [b12x_mla_sparse.py:1387] B12X GLM MLA KV format: KV_FP8_ROPE=1 kv_gmem_stride=368 kv_cache_dtype=nvfp4_ds_mla
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   0% Completed | 0/148289 [00:00<?, ?it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   0% Completed | 2/148289 [00:01<33:19:05,  1.24it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   0% Completed | 69/148289 [00:02<1:25:01, 29.05it/s]
+(Worker_TP0 pid=306) WARNING 07-28 02:35:30 [layerwise.py:210] Allocating 36.4 MB of device memory to buffers to load ['ColumnParallelLinear', 'DeepSeekV2FusedQkvAProjLinear'] layers. This extra memory usage can be avoided by ordering weights by their parent layer when reloading.
+(Worker_TP0 pid=306) WARNING 07-28 02:35:30 [layerwise.py:210] Allocating 208.4 MB of device memory to buffers to load ['DeepSeekV2FusedQkvAProjLinear', 'RowParallelLinear'] layers. This extra memory usage can be avoided by ordering weights by their parent layer when reloading.
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   0% Completed | 102/148289 [00:03<1:23:09, 29.70it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   1% Completed | 832/148289 [00:04<09:06, 269.77it/s]
+(Worker_TP0 pid=306)  Loading safetensors using InstantTensor loader:   1% Completed | 1751/148289 [00:05<05:03, 482.04it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   2% Completed | 2545/148289 [00:06<04:10, 581.31it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   2% Completed | 3459/148289 [00:07<03:32, 683.16it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   3% Completed | 4221/148289 [00:08<03:23, 706.39it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   3% Completed | 5178/148289 [00:09<03:02, 782.75it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   4% Completed | 6079/148289 [00:10<02:53, 818.46it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   5% Completed | 7018/148289 [00:11<02:45, 854.88it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   5% Completed | 7887/148289 [00:12<02:43, 859.14it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   6% Completed | 8995/148289 [00:13<02:29, 931.74it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   7% Completed | 9931/148289 [00:15<02:49, 813.95it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   7% Completed | 10775/148289 [00:16<02:47, 821.21it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   8% Completed | 11668/148289 [00:17<02:42, 840.38it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   8% Completed | 12525/148289 [00:18<02:42, 833.56it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:   9% Completed | 13441/148289 [00:19<02:37, 857.19it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  10% Completed | 14308/148289 [00:20<02:37, 851.53it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  10% Completed | 15166/148289 [00:21<02:38, 842.16it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  11% Completed | 16013/148289 [00:22<02:37, 840.36it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  11% Completed | 16937/148289 [00:23<02:31, 864.85it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  12% Completed | 17805/148289 [00:24<02:33, 849.94it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  13% Completed | 18878/148289 [00:25<02:21, 914.44it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  13% Completed | 19796/148289 [00:27<02:41, 794.03it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  14% Completed | 20976/148289 [00:28<02:22, 896.21it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  15% Completed | 21905/148289 [00:29<02:28, 852.72it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  15% Completed | 22839/148289 [00:30<02:23, 873.96it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  16% Completed | 23733/148289 [00:31<02:24, 860.82it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  17% Completed | 25003/148289 [00:32<02:06, 975.60it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  18% Completed | 25997/148289 [00:33<02:13, 913.02it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  18% Completed | 26959/148289 [00:34<02:11, 925.03it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  19% Completed | 27899/148289 [00:35<02:13, 900.73it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  19% Completed | 28847/148289 [00:36<02:10, 912.96it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  20% Completed | 29946/148289 [00:37<02:02, 966.12it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  21% Completed | 30921/148289 [00:39<02:06, 928.80it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  21% Completed | 31858/148289 [00:40<02:20, 830.38it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  22% Completed | 32801/148289 [00:41<02:14, 859.24it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  23% Completed | 33832/148289 [00:42<02:06, 906.45it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  23% Completed | 34757/148289 [00:43<02:08, 886.34it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  24% Completed | 35717/148289 [00:44<02:04, 903.81it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  25% Completed | 36652/148289 [00:45<02:02, 912.69it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  25% Completed | 37572/148289 [00:46<02:10, 849.49it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  26% Completed | 38486/148289 [00:47<02:06, 864.82it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  27% Completed | 39374/148289 [00:48<02:04, 871.36it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  27% Completed | 40495/148289 [00:49<01:54, 943.29it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  28% Completed | 41447/148289 [00:50<01:56, 915.93it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  29% Completed | 42485/148289 [00:51<01:51, 950.19it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  29% Completed | 43442/148289 [00:53<01:56, 902.92it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  30% Completed | 44391/148289 [00:54<01:53, 913.55it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  31% Completed | 45540/148289 [00:55<01:44, 980.81it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  31% Completed | 46529/148289 [00:56<01:49, 932.06it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  32% Completed | 47471/148289 [00:57<02:01, 833.10it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  33% Completed | 48467/148289 [00:58<01:53, 875.96it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  33% Completed | 49481/148289 [00:59<01:48, 912.04it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  34% Completed | 50412/148289 [01:00<01:50, 889.45it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  35% Completed | 51315/148289 [01:01<01:51, 872.76it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  35% Completed | 52255/148289 [01:02<01:47, 891.47it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  36% Completed | 53155/148289 [01:04<01:55, 825.79it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  36% Completed | 54065/148289 [01:05<01:51, 846.61it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  37% Completed | 55103/148289 [01:06<01:43, 900.38it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  38% Completed | 56015/148289 [01:07<01:44, 881.39it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  38% Completed | 57036/148289 [01:08<01:39, 921.20it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  39% Completed | 57965/148289 [01:09<01:39, 905.53it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  40% Completed | 58877/148289 [01:10<01:46, 842.88it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  40% Completed | 59782/148289 [01:11<01:43, 858.27it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  41% Completed | 60879/148289 [01:12<01:34, 923.82it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  42% Completed | 61951/148289 [01:13<01:29, 965.58it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  42% Completed | 62926/148289 [01:15<01:39, 856.45it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  43% Completed | 63830/148289 [01:16<01:37, 868.11it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  44% Completed | 64719/148289 [01:17<01:39, 842.52it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  44% Completed | 65671/148289 [01:18<01:34, 872.64it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  45% Completed | 66719/148289 [01:19<01:28, 922.25it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  46% Completed | 67683/148289 [01:20<01:26, 932.30it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  46% Completed | 68625/148289 [01:21<01:33, 847.74it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  47% Completed | 69527/148289 [01:22<01:31, 862.29it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  47% Completed | 70405/148289 [01:23<01:35, 814.50it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  48% Completed | 71461/148289 [01:24<01:27, 879.68it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  49% Completed | 72399/148289 [01:25<01:24, 896.06it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  49% Completed | 73308/148289 [01:26<01:23, 893.49it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  50% Completed | 74210/148289 [01:28<01:24, 876.54it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  51% Completed | 75117/148289 [01:29<01:22, 882.76it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  51% Completed | 76005/148289 [01:30<01:27, 823.48it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  52% Completed | 76907/148289 [01:31<01:24, 844.82it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  52% Completed | 77761/148289 [01:32<01:24, 837.86it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  53% Completed | 78859/148289 [01:33<01:16, 912.46it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  54% Completed | 79779/148289 [01:34<01:16, 892.71it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  54% Completed | 80817/148289 [01:35<01:12, 932.10it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  55% Completed | 81755/148289 [01:36<01:19, 840.64it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  56% Completed | 82658/148289 [01:37<01:16, 854.19it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  56% Completed | 83567/148289 [01:38<01:14, 867.30it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  57% Completed | 84577/148289 [01:39<01:10, 907.93it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  58% Completed | 85495/148289 [01:40<01:11, 881.52it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  58% Completed | 86561/148289 [01:41<01:06, 931.30it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  59% Completed | 87501/148289 [01:43<01:14, 815.23it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  60% Completed | 88425/148289 [01:44<01:11, 842.65it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  60% Completed | 89389/148289 [01:45<01:07, 875.93it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  61% Completed | 90356/148289 [01:46<01:04, 901.55it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  62% Completed | 91274/148289 [01:47<01:03, 898.78it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  62% Completed | 92278/148289 [01:48<01:00, 927.28it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  63% Completed | 93214/148289 [01:49<01:07, 816.13it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  63% Completed | 94137/148289 [01:50<01:04, 844.09it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  64% Completed | 95025/148289 [01:51<01:02, 854.78it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  65% Completed | 96023/148289 [01:52<00:58, 895.27it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  65% Completed | 96933/148289 [01:54<00:58, 881.27it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  66% Completed | 97994/148289 [01:55<00:54, 929.64it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  67% Completed | 98933/148289 [01:56<00:58, 842.13it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  67% Completed | 99856/148289 [01:57<00:56, 861.88it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  68% Completed | 100745/148289 [01:58<00:54, 865.66it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  69% Completed | 101684/148289 [01:59<00:52, 884.83it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  69% Completed | 102585/148289 [02:00<00:51, 886.73it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  70% Completed | 103753/148289 [02:01<00:46, 966.62it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  71% Completed | 104727/148289 [02:02<00:49, 882.23it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  71% Completed | 105628/148289 [02:04<00:52, 814.30it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  72% Completed | 106617/148289 [02:05<00:48, 860.68it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  73% Completed | 107542/148289 [02:06<00:46, 878.33it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  73% Completed | 108436/148289 [02:07<00:46, 857.62it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  74% Completed | 109439/148289 [02:08<00:43, 898.53it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  74% Completed | 110350/148289 [02:09<00:42, 901.23it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  75% Completed | 111259/148289 [02:10<00:47, 787.48it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  76% Completed | 112148/148289 [02:11<00:44, 811.63it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  76% Completed | 112984/148289 [02:12<00:44, 784.73it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  77% Completed | 113826/148289 [02:13<00:43, 799.13it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  77% Completed | 114901/148289 [02:14<00:38, 874.89it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  78% Completed | 115816/148289 [02:15<00:36, 886.32it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  79% Completed | 116713/148289 [02:17<00:36, 861.30it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  79% Completed | 117688/148289 [02:18<00:34, 891.34it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  80% Completed | 118587/148289 [02:19<00:36, 808.32it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  81% Completed | 119465/148289 [02:20<00:34, 825.06it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  81% Completed | 120305/148289 [02:21<00:35, 791.31it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  82% Completed | 121371/148289 [02:22<00:31, 864.30it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  82% Completed | 122249/148289 [02:23<00:30, 859.20it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  83% Completed | 123362/148289 [02:24<00:26, 928.55it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  84% Completed | 124301/148289 [02:26<00:28, 832.38it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  84% Completed | 125224/148289 [02:27<00:26, 855.05it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  85% Completed | 126102/148289 [02:28<00:25, 858.98it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  86% Completed | 126975/148289 [02:29<00:25, 852.54it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  86% Completed | 127970/148289 [02:30<00:22, 892.77it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  87% Completed | 128952/148289 [02:31<00:21, 918.59it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  88% Completed | 129878/148289 [02:32<00:22, 829.12it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  88% Completed | 130837/148289 [02:33<00:20, 863.76it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  89% Completed | 131759/148289 [02:34<00:18, 878.20it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  89% Completed | 132651/148289 [02:35<00:19, 803.74it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  90% Completed | 133519/148289 [02:36<00:18, 820.48it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  91% Completed | 134563/148289 [02:37<00:15, 882.79it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  91% Completed | 135462/148289 [02:38<00:14, 855.40it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  92% Completed | 136493/148289 [02:39<00:13, 904.87it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  93% Completed | 137410/148289 [02:41<00:12, 904.85it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  93% Completed | 138323/148289 [02:42<00:12, 803.25it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  94% Completed | 139254/148289 [02:43<00:10, 836.13it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  95% Completed | 140217/148289 [02:44<00:09, 871.19it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  95% Completed | 141107/148289 [02:45<00:08, 847.84it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  96% Completed | 142168/148289 [02:46<00:06, 907.22it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  96% Completed | 143089/148289 [02:47<00:05, 901.50it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  97% Completed | 144000/148289 [02:48<00:05, 835.40it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  98% Completed | 144919/148289 [02:49<00:03, 857.43it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader:  99% Completed | 147326/148289 [02:50<00:00, 1291.63it/s]
+(Worker_TP0 pid=306) Loading safetensors using InstantTensor loader: 100% Completed | 148289/148289 [02:51<00:00, 863.55it/s]
+(Worker_TP0 pid=306)  
+(Worker_TP0 pid=306) INFO 07-28 02:38:19 [default_loader.py:451] Loading weights took 173.75 seconds
+(Worker_TP0 pid=306) WARNING 07-28 02:38:19 [kv_cache.py:134] Checkpoint does not provide a q scaling factor. Setting it to k_scale. This only matters for FP8 Attention backends (flash-attn or flashinfer).
+(Worker_TP0 pid=306) WARNING 07-28 02:38:19 [kv_cache.py:151] Using KV cache scaling factor 1.0 for fp8_e4m3. If this is unintended, verify that k/v_scale scaling factors are properly set in the checkpoint.
+(Worker_TP2 pid=308) INFO 07-28 02:39:24 [model_runner.py:394] Model loading took 82.42 GiB and 245.801036 seconds
+(Worker_TP1 pid=307) INFO 07-28 02:39:24 [model_runner.py:394] Model loading took 82.42 GiB and 245.809448 seconds
+(Worker_TP0 pid=306) INFO 07-28 02:39:24 [model_runner.py:394] Model loading took 82.42 GiB and 245.780095 seconds
+(Worker_TP3 pid=309) INFO 07-28 02:39:24 [model_runner.py:394] Model loading took 82.42 GiB and 245.819661 seconds
+(Worker_TP2 pid=308) INFO 07-28 02:39:24 [interface.py:635] Setting kv cache block size to 64 for B12X_NON_COMPRESSED_INDEXER backend.
+(Worker_TP0 pid=306) INFO 07-28 02:39:24 [topk_topp_sampler.py:55] Using FlashInfer for top-p & top-k sampling.
+(Worker_TP0 pid=306) INFO 07-28 02:39:24 [interface.py:635] Setting kv cache block size to 64 for B12X_NON_COMPRESSED_INDEXER backend.
+(Worker_TP1 pid=307) INFO 07-28 02:39:24 [interface.py:635] Setting kv cache block size to 64 for B12X_NON_COMPRESSED_INDEXER backend.
+(Worker_TP3 pid=309) INFO 07-28 02:39:24 [interface.py:635] Setting kv cache block size to 64 for B12X_NON_COMPRESSED_INDEXER backend.
+(Worker_TP0 pid=306) INFO 07-28 02:40:15 [nvfp4_nf3_hybrid.py:994] nvfp4_nf3_hybrid: armed hybrid one-grid decode (m<=4)
+(EngineCore pid=226) INFO 07-28 02:40:25 [shm_broadcast.py:705] No available shared memory broadcast block found in 60 seconds. This typically happens when some processes are hanging or doing some time-consuming work (e.g. compilation, weight/kv cache quantization).
+(Worker_TP0 pid=306) INFO 07-28 02:40:27 [kernel_warmup.py:305] Warmed up 16 B12X MXFP8 linear GEMM signatures.
+(Worker_TP1 pid=307) INFO 07-28 02:40:27 [kernel_warmup.py:305] Warmed up 16 B12X MXFP8 linear GEMM signatures.
+(Worker_TP3 pid=309) INFO 07-28 02:40:27 [kernel_warmup.py:305] Warmed up 16 B12X MXFP8 linear GEMM signatures.
+(Worker_TP2 pid=308) INFO 07-28 02:40:27 [kernel_warmup.py:305] Warmed up 16 B12X MXFP8 linear GEMM signatures.
+(Worker_TP0 pid=306) INFO 07-28 02:40:27 [kernel_warmup.py:329] Warmed up 1 fused MLA BF16/MXFP8 query variants.
+(Worker_TP2 pid=308) INFO 07-28 02:40:27 [kernel_warmup.py:329] Warmed up 1 fused MLA BF16/MXFP8 query variants.
+(Worker_TP1 pid=307) INFO 07-28 02:40:27 [kernel_warmup.py:329] Warmed up 1 fused MLA BF16/MXFP8 query variants.
+(Worker_TP3 pid=309) INFO 07-28 02:40:27 [kernel_warmup.py:329] Warmed up 1 fused MLA BF16/MXFP8 query variants.
+(Worker_TP3 pid=309) INFO 07-28 02:40:31 [kernel_warmup.py:366] Skipping FlashInfer autotune because no FlashInfer compute kernels are active.
+(Worker_TP0 pid=306) INFO 07-28 02:40:31 [kernel_warmup.py:366] Skipping FlashInfer autotune because no FlashInfer compute kernels are active.
+(Worker_TP3 pid=309) INFO 07-28 02:40:31 [kernel_warmup.py:79] Warming up ll_bf16 router GEMM kernels.
+(Worker_TP0 pid=306) INFO 07-28 02:40:31 [kernel_warmup.py:79] Warming up ll_bf16 router GEMM kernels.
+(Worker_TP2 pid=308) INFO 07-28 02:40:31 [kernel_warmup.py:366] Skipping FlashInfer autotune because no FlashInfer compute kernels are active.
+(Worker_TP1 pid=307) INFO 07-28 02:40:31 [kernel_warmup.py:366] Skipping FlashInfer autotune because no FlashInfer compute kernels are active.
+(Worker_TP2 pid=308) INFO 07-28 02:40:31 [kernel_warmup.py:79] Warming up ll_bf16 router GEMM kernels.
+(Worker_TP1 pid=307) INFO 07-28 02:40:31 [kernel_warmup.py:79] Warming up ll_bf16 router GEMM kernels.
+(Worker_TP0 pid=306) (Worker_TP3 pid=309) INFO 07-28 02:40:40 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+INFO 07-28 02:40:40 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+(Worker_TP2 pid=308) INFO 07-28 02:40:40 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+(Worker_TP1 pid=307) INFO 07-28 02:40:40 [cutedsl_warmup.py:101] Skipping CuTeDSL warmup because no compile units were requested.
+(Worker_TP0 pid=306) INFO 07-28 02:40:41 [gpu_worker.py:595] Available KV cache memory: 2.71 GiB
+(EngineCore pid=226) INFO 07-28 02:40:41 [kv_cache_utils.py:2411] GPU KV cache size: 91,584 tokens
+(EngineCore pid=226) INFO 07-28 02:40:41 [kv_cache_utils.py:2412] Maximum concurrency for 4,096 tokens per request: 22.36x
+(Worker_TP0 pid=306) INFO 07-28 02:40:41 [indexer.py:443] DSA indexer decode path: use_flattening=False use_varlen=False (next_n=1, use_fp4_indexer_cache=False)
+(Worker_TP0 pid=306) (Worker_TP2 pid=308) INFO 07-28 02:40:41 [gpu_worker.py:896] Free memory on device (93.96/94.97 GiB) on startup. Desired GPU memory utilization is (0.9, 85.47 GiB). Actual usage is 82.42 GiB for weight, 0.26 GiB for peak activation, 0.09 GiB for non-torch memory, and 0.0 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory-bytes=2751446733` (2.56 GiB) to fit into requested memory, or `--kv-cache-memory-bytes=11868434944` (11.05 GiB) to fully utilize gpu memory. Current kv cache memory in use is 2.71 GiB.
+(Worker_TP1 pid=307) INFO 07-28 02:40:41 [gpu_worker.py:896] Free memory on device (93.96/94.97 GiB) on startup. Desired GPU memory utilization is (0.9, 85.47 GiB). Actual usage is 82.42 GiB for weight, 0.26 GiB for peak activation, 0.09 GiB for non-torch memory, and 0.0 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory-bytes=2751446733` (2.56 GiB) to fit into requested memory, or `--kv-cache-memory-bytes=11868434944` (11.05 GiB) to fully utilize gpu memory. Current kv cache memory in use is 2.71 GiB.
+INFO 07-28 02:40:41 [gpu_worker.py:896] Free memory on device (93.93/94.97 GiB) on startup. Desired GPU memory utilization is (0.9, 85.47 GiB). Actual usage is 82.42 GiB for weight, 0.26 GiB for peak activation, 0.11 GiB for non-torch memory, and 0.0 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory-bytes=2734669517` (2.55 GiB) to fit into requested memory, or `--kv-cache-memory-bytes=11818103296` (11.01 GiB) to fully utilize gpu memory. Current kv cache memory in use is 2.69 GiB.
+(Worker_TP3 pid=309) INFO 07-28 02:40:41 [gpu_worker.py:896] Free memory on device (93.92/94.96 GiB) on startup. Desired GPU memory utilization is (0.9, 85.47 GiB). Actual usage is 82.42 GiB for weight, 0.26 GiB for peak activation, 0.11 GiB for non-torch memory, and 0.0 GiB for CUDAGraph memory. Replace gpu_memory_utilization config with `--kv-cache-memory-bytes=2726706893` (2.54 GiB) to fit into requested memory, or `--kv-cache-memory-bytes=11800867328` (10.99 GiB) to fully utilize gpu memory. Current kv cache memory in use is 2.69 GiB.
+(Worker_TP0 pid=306) INFO 07-28 02:40:50 [nvfp4_nf3_hybrid.py:1268] nvfp4_nf3_hybrid: executing hybrid one-grid decode
+(Worker_TP3 pid=309) (Worker_TP2 pid=308) (Worker_TP0 pid=306) INFO 07-28 02:41:05 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+INFO 07-28 02:41:05 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+INFO 07-28 02:41:05 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(Worker_TP1 pid=307) INFO 07-28 02:41:05 [jit_monitor.py:79] Kernel JIT monitor activated; monitored JIT compilations during inference will use mode=warn.
+(EngineCore pid=226) INFO 07-28 02:41:05 [core.py:352] init engine (profile, create kv cache, warmup model) took 100.78 s
+(EngineCore pid=226) INFO 07-28 02:41:07 [vllm.py:1162] Asynchronous scheduling is enabled.
+(EngineCore pid=226) WARNING 07-28 02:41:07 [vllm.py:1216] Enforce eager set, disabling torch.compile and CUDAGraphs. This is equivalent to setting -cc.mode=none -cc.cudagraph_mode=none
+(EngineCore pid=226) WARNING 07-28 02:41:07 [vllm.py:1245] Inductor compilation was disabled by user settings, optimizations settings that are only active during inductor compilation will be ignored.
+(EngineCore pid=226) INFO 07-28 02:41:07 [kernel.py:299] Final IR op priority after setting platform defaults: IrOpPriorityConfig(rms_norm=['vllm_c', 'native'], fused_add_rms_norm=['vllm_c', 'native'])
+(EngineCore pid=226) INFO 07-28 02:41:07 [vllm.py:1424] Cudagraph is disabled under eager mode
+(EngineCore pid=226) INFO 07-28 02:41:07 [compilation.py:329] Enabled custom fusions: norm_quant, act_quant
+Rendering prompts:   0%|          | 0/1 [00:00<?, ?it/s]Rendering prompts: 100%|██████████| 1/1 [00:00<00:00, 76.45it/s]
+Processed prompts:   0%|          | 0/1 [00:00<?, ?it/s, est. speed input: 0.00 toks/s, output: 0.00 toks/s](Worker_TP0 pid=306) WARNING 07-28 02:41:07 [jit_monitor.py:135] Triton kernel JIT compilation during inference: _build_prefill_chunk_metadata_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP0 pid=306) WARNING 07-28 02:41:08 [jit_monitor.py:135] Triton kernel JIT compilation during inference: _topk_log_softmax_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+(Worker_TP0 pid=306) WARNING 07-28 02:41:08 [jit_monitor.py:135] Triton kernel JIT compilation during inference: _gather_shared_paged_supertile_kernel. This causes a latency spike; consider extending warmup to cover this shape/config.
+Processed prompts: 100%|██████████| 1/1 [01:18<00:00, 78.64s/it, est. speed input: 26.04 toks/s, output: 0.01 toks/s]Processed prompts: 100%|██████████| 1/1 [01:18<00:00, 78.64s/it, est. speed input: 26.04 toks/s, output: 0.01 toks/s]Processed prompts: 100%|██████████| 1/1 [01:18<00:00, 78.64s/it, est. speed input: 26.04 toks/s, output: 0.01 toks/s]
+window_done {"mean_kld": 0.13672544879717802, "model_logits_shape": [2047, 154880], "positions": 2047, "ref_logits_shape": [2047, 154880], "window_idx": 0}
+
+Results:
+  Mean KLD: 0.136725
+  Total positions: 2047
+  Time elapsed: 132.35 seconds
+  Positions/second: 15.47
+fallback_prefill_kld_done {"elapsed_sec": 132.34807777404785, "mean_kld": 0.13672544879717802, "total_positions": 2047}
+INFO 07-28 02:43:28 [core_client.py:655] [shutdown] MPClient: start timeout=30.0s
+INFO 07-28 02:43:28 [core_client.py:657] [shutdown] MPClient: stopping engine manager
+(EngineCore pid=226) INFO 07-28 02:43:28 [core.py:1342] [shutdown] EngineCore: trigger received signal=SIGTERM
+(EngineCore pid=226) INFO 07-28 02:43:28 [core.py:1461] [shutdown] EngineCore: start mode=abort timeout=0s
+(EngineCore pid=226) INFO 07-28 02:43:28 [core.py:1492] [shutdown] EngineCore: request processing complete; starting resource teardown
+(EngineCore pid=226) INFO 07-28 02:43:28 [core.py:1355] [shutdown] EngineCore: exiting busy loop
+(EngineCore pid=226) INFO 07-28 02:43:28 [multiproc_executor.py:429] [shutdown] Executor: waiting for worker exit count=4
+(Worker_TP0 pid=306) INFO 07-28 02:43:28 [multiproc_executor.py:793] Parent process exited, terminating worker queues
+(EngineCore pid=226) WARNING 07-28 02:43:33 [multiproc_executor.py:441] [shutdown] Executor: workers still running after grace period; sending SIGTERM count=4
+(EngineCore pid=226) WARNING 07-28 02:43:37 [multiproc_executor.py:451] [shutdown] Executor: workers still running after SIGTERM; sending SIGKILL count=2
+INFO 07-28 02:43:40 [core_client.py:659] [shutdown] MPClient: engine manager stopped
+INFO 07-28 02:43:40 [core_client.py:660] [shutdown] MPClient: cleaning up background resources
+INFO 07-28 02:43:40 [core_client.py:662] [shutdown] MPClient: complete
+fallback_prefill_kld_cleanup_done

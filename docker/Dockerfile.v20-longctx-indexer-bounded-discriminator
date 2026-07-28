@@ -1,0 +1,18 @@
+ARG BASE_IMAGE=glm52-serve:v20-longctx-indexer-trace-output-lifetime-fix-20260726
+FROM ${BASE_IMAGE}
+
+COPY tiled_topk-selection-policy-20260726.py \
+  /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py
+
+ENV SPARKINFER_NSA_TOPK_SELECTION_POLICY=bounded_compat
+
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py | cut -d' ' -f1)" = \
+      "a136f11140da3b582bb136eb50b9977ba13adf6d111cd2ffa1420a86d81361eb" \
+    && /opt/venv/bin/python -m py_compile \
+      /opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py
+
+LABEL org.opencontainers.image.title="v20 long-context bounded-selector causal discriminator"
+LABEL io.yatesdr.base="glm52-serve:v20-longctx-indexer-trace-output-lifetime-fix-20260726"
+LABEL io.yatesdr.sparkinfer.selector_commit="3b73902bb6d88255bffe67d046abc42e93aa62a9"
+LABEL io.yatesdr.sparkinfer.selector_sha256="a136f11140da3b582bb136eb50b9977ba13adf6d111cd2ffa1420a86d81361eb"
+LABEL io.yatesdr.experiment="bounded_compat selection policy only"

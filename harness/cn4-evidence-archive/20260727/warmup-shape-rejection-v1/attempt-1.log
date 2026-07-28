@@ -1,0 +1,52 @@
+
+==========
+== CUDA ==
+==========
+
+CUDA Version 13.2.1
+
+Container image Copyright (c) 2016-2023, NVIDIA CORPORATION & AFFILIATES. All rights reserved.
+
+This container image and its contents are governed by the NVIDIA Deep Learning Container License.
+By pulling and using the container, you accept the terms and conditions of this license:
+https://developer.nvidia.com/ngc/nvidia-deep-learning-container-license
+
+A copy of this license is made available in this container at /NGC-DL-CONTAINER-LICENSE for your convenience.
+
+/opt/venv/lib/python3.12/site-packages/torch/cuda/__init__.py:63: FutureWarning: The pynvml package is deprecated. Please install nvidia-ml-py instead. If you did not install pynvml directly, please report this to the maintainers of the package that installed pynvml for you.
+  import pynvml  # type: ignore[import]
+Traceback (most recent call last):
+  File "/harness/v20_oldest_boundary_warmup_shape_probe.py", line 123, in <module>
+    main()
+  File "/harness/v20_oldest_boundary_warmup_shape_probe.py", line 74, in main
+    values, indices = run_tiled_topk(
+                      ^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sparkinfer/attention/nsa_indexer/tiled_topk.py", line 1909, in run_tiled_topk
+    sparkinfer_launch(
+  File "/opt/venv/lib/python3.12/site-packages/sparkinfer/_lib/compiler.py", line 2741, in launch
+    return run_compiled(compiled, runtime_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/sparkinfer/_lib/compiler.py", line 2722, in run_compiled
+    return executor.run_compiled_program(execution_args)
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/opt/venv/lib/python3.12/site-packages/nvidia_cutlass_dsl/dsl_packages/cutlass/base_dsl/jit_executor.py", line 1077, in run_compiled_program
+    raise cuda_helpers.create_cuda_runtime_error(error_code)
+cutlass.base_dsl.common.DSLCudaRuntimeError: 
+[91m[1merror:[0m CUDA_ERROR_ILLEGAL_ADDRESS (error code: 700) 
+ 
+
+[0m
+  [94m= note:[0m error code 700
+  [94m= note:[0m 
+- [1mError name: CUDA_ERROR_ILLEGAL_ADDRESS
+- Error code: 700
+- CUDA_TOOLKIT_PATH: not set
+- Target SM ARCH: unknown (unspecified)[0m
+
+[94m📊 GPU Information:[0m
+[1m- CUDA devices available: 1 (current: <CUdevice 0>)
+- Architecture: [94mBlackwell[0m ([92msm_120a[0m)
+- Compatible SM archs: [92msm_120a[0m
+- Total Memory: [94m94.97 GB[0m
+
+

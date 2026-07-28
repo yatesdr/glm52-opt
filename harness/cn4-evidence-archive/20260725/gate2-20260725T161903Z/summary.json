@@ -1,0 +1,26 @@
+{
+  "verdict": "FAIL",
+  "ladder": [
+    50000,
+    150000,
+    250000,
+    350000,
+    475000
+  ],
+  "cells": [
+    {
+      "depth": 50000,
+      "verdict": "FAIL",
+      "context_tokens": 49109,
+      "cached_tokens": 0,
+      "completion_tokens": 90,
+      "elapsed_s": 42.11,
+      "failed_checks": [
+        "needle_in_finalized_content",
+        "coherence_side_check"
+      ],
+      "answer": "73838216"
+    }
+  ],
+  "ts": "2026-07-25T16:20:21Z"
+}

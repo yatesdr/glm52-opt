@@ -1,0 +1,41 @@
+{
+  "ctx": 441951,
+  "depth": 450000,
+  "seed": 20260725,
+  "rows": [
+    {
+      "variant": "chat-low",
+      "verdict": "REASONING_ONLY",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 441963,
+        "total_tokens": 441982,
+        "completion_tokens": 19,
+        "prompt_tokens_details": {
+          "cached_tokens": 137216,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "",
+      "reasoning": "The maintenance ticket number for the Facility 27 compressor overhaul is **738216**.",
+      "secs": 490.8
+    },
+    {
+      "variant": "raw",
+      "verdict": "EXACT",
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 441951,
+        "total_tokens": 441955,
+        "completion_tokens": 4,
+        "prompt_tokens_details": {
+          "cached_tokens": 116992,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "738216",
+      "reasoning": "",
+      "secs": 519.1
+    }
+  ]
+}

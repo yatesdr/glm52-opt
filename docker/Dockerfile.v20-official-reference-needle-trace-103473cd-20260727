@@ -1,0 +1,35 @@
+FROM voipmonitor/vllm@sha256:131481b0f12c455a8fbad72c5909eb3a2c3accd96815743fdcfa134396e548c0
+
+USER root
+
+ARG GLM_REFERENCE_INDEXER_SHA256=3900bf2cd28914f532fd0b7a029bc118a86a494b4c7d8a09cdc0672c50f2b8f8
+ARG DEEPSEEK_V2_SHA256=5b14912dad2b006c7d1fb07eba6c706394e300a2d0e60529dba3557871649014
+ARG EAGER_WRAPPER_SHA256=eecb84231e30482cd26128dfff932fb255bcfb360cdc90f68ddc9bf4998c9ced
+
+COPY glm_official_indexer.py /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/glm_official_indexer.py
+COPY deepseek_v2.py /opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py
+COPY vllm-official-reference-eager /usr/local/libexec/glm52-reference/vllm
+
+RUN set -eu; \
+    echo "${GLM_REFERENCE_INDEXER_SHA256}  /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/glm_official_indexer.py" | sha256sum -c -; \
+    echo "${DEEPSEEK_V2_SHA256}  /opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py" | sha256sum -c -; \
+    echo "${EAGER_WRAPPER_SHA256}  /usr/local/libexec/glm52-reference/vllm" | sha256sum -c -; \
+    chmod 0755 /usr/local/libexec/glm52-reference/vllm; \
+    /opt/venv/bin/python -m py_compile \
+      /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/glm_official_indexer.py \
+      /opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py; \
+    grep -q 'q_chunk_rows: int = 16' /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/glm_official_indexer.py; \
+    grep -q 'GLM_REFERENCE_NEEDLE_TRACE' /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/glm_official_indexer.py; \
+    grep -q 'k_cache_official_bf16_v1' /opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py
+
+ENV PATH="/usr/local/libexec/glm52-reference:${PATH}"
+
+LABEL org.opencontainers.image.title="GLM-5.2 v20 official reference needle-selection trace"
+LABEL local.glm52.base.image.digest="sha256:131481b0f12c455a8fbad72c5909eb3a2c3accd96815743fdcfa134396e548c0"
+LABEL local.glm52.base.vllm.commit="0c79e41db41f250ccdfc4be92d171960a5787f73"
+LABEL local.glm52.base.sparkinfer.commit="c3828fd7f807ce237a9ac36ef033659e6f6b6dd3"
+LABEL local.glm52.reference.vllm.commit="103473cdbb6bb0abcc0cd034822206d0dd4caeba"
+LABEL local.glm52.reference.mode="official_bf16_v1"
+LABEL local.glm52.reference.trace="needle-selection-v1"
+LABEL local.glm52.reference.q_chunk_rows="16"
+LABEL local.glm52.reference.pr84="absent"

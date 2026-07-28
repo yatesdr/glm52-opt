@@ -1,0 +1,129 @@
+{
+  "depth_target": 250000,
+  "context_tokens": 245505,
+  "elapsed_s": 192.84,
+  "usage": {
+    "prompt_tokens": 245517,
+    "completion_tokens": 66,
+    "total_tokens": 245583,
+    "cached_tokens": 0,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    }
+  },
+  "checks": {
+    "needle_in_finalized_content": true,
+    "finalized_content_nonempty": true,
+    "finish_reason_stop": true,
+    "no_degeneration": true,
+    "cold_cached_tokens_zero": true,
+    "arithmetic_side_check": true,
+    "coherence_side_check": true
+  },
+  "needle_found_in": {
+    "reasoning": true,
+    "reasoning_content": false,
+    "serialized_message": true
+  },
+  "trigram_repeat": 0.0,
+  "content": "738216",
+  "reasoning": "The user wants me to find the maintenance ticket number for the Facility 27 compressor overhaul from the document.\n\nLooking through the text, I find this sentence: \"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\"\n\nSo the answer is 738216.",
+  "reasoning_content": "",
+  "serialized_message": "{\"annotations\": null, \"audio\": null, \"content\": \"738216\", \"function_call\": null, \"reasoning\": \"The user wants me to find the maintenance ticket number for the Facility 27 compressor overhaul from the document.\\n\\nLooking through the text, I find this sentence: \\\"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\\\"\\n\\nSo the answer is 738216.\", \"refusal\": null, \"role\": \"assistant\"}",
+  "finish_reason": "stop",
+  "side_checks": {
+    "arithmetic": {
+      "pass": true,
+      "secs": 4.31,
+      "finish_reason": "stop",
+      "tail": "sults\n12,193 + 1,507 = 13,700\n\nStep 4: Subtract 256\n13,700 - 256 = 13,444\n\n13444",
+      "usage": {
+        "prompt_tokens": 45,
+        "completion_tokens": 388,
+        "total_tokens": 433,
+        "cached_tokens": 0,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      }
+    },
+    "coherence": {
+      "pass": true,
+      "inconclusive_truncated": false,
+      "words": 204,
+      "trigram_repeat": 0.005,
+      "secs": 15.11,
+      "finish_reason": "stop",
+      "usage": {
+        "prompt_tokens": 38,
+        "completion_tokens": 1222,
+        "total_tokens": 1260,
+        "cached_tokens": 0,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      }
+    }
+  },
+  "request": {
+    "model": "GLM-5.2",
+    "messages": [
+      {
+        "role": "user",
+        "content_sha256": "3d48637bd114dd09785e2b774966612147d33510cfb4bd19c45f099277971d2f",
+        "content_chars": 1517480
+      }
+    ],
+    "max_tokens": 800,
+    "temperature": 0,
+    "chat_template_kwargs": {
+      "reasoning_effort": "low"
+    }
+  },
+  "response_full": {
+    "id": "chatcmpl-a4abfaa660a4b836",
+    "object": "chat.completion",
+    "created": 1785133854,
+    "model": "GLM-5.2",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "738216",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": "The user wants me to find the maintenance ticket number for the Facility 27 compressor overhaul from the document.\n\nLooking through the text, I find this sentence: \"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\"\n\nSo the answer is 738216."
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": 154827,
+        "token_ids": null,
+        "routed_experts": null
+      }
+    ],
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm5517197.sibe0edca.fi801d57a.cu132.20260725-tp4-36b0e414",
+    "usage": {
+      "prompt_tokens": 245517,
+      "total_tokens": 245583,
+      "completion_tokens": 66,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null
+  },
+  "ts": "2026-07-27T06:34:26Z"
+}

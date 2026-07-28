@@ -1,0 +1,197 @@
+# CN4-only matched qualification profile for GLM-5.2 EXL3-TR3.
+#
+# The image combines the pinned TR3 v31 runtime with SparkInfer #86 and vLLM
+# #189. It keeps exact v20 top-k and the EXL3 Trellis expert path while using
+# self-describing dynamic per-token scaling for the 368-byte NVFP4 MLA record.
+#
+# Host-specific choices are pinned to CN4's measured control posture:
+# PCIe PXB, i8_ring, TP4/DCP4, MNBT 3072, query-split/owner-merge/prefetch off.
+
+name: glm52-exl3-tr3-cn4-qualification
+
+services:
+  glm52:
+    image: ${IMAGE:-glm52-exl3-tr3-dynamic:20260728}
+    pull_policy: never
+    container_name: glm52-tr3-qual
+    restart: "no"
+    ipc: host
+    network_mode: bridge
+    gpus: all
+    shm_size: "64g"
+
+    ports:
+      - "0.0.0.0:${PORT:-5001}:8000"
+
+    ulimits:
+      memlock: -1
+      nofile: 1048576
+
+    healthcheck:
+      test:
+        - CMD
+        - /opt/venv/bin/python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:8000/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 2600s
+
+    environment:
+      CUDA_VISIBLE_DEVICES: "0,1,2,3"
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+      CUDA_DEVICE_MAX_CONNECTIONS: "32"
+      CUTE_DSL_ARCH: sm_120a
+      TORCH_CUDA_ARCH_LIST: 12.0a
+      FLASHINFER_CUDA_ARCH_LIST: 12.0f
+      FLASHINFER_DISABLE_VERSION_CHECK: "1"
+      OMP_NUM_THREADS: "16"
+      SAFETENSORS_FAST_GPU: "1"
+
+      NCCL_IB_DISABLE: "1"
+      NCCL_P2P_LEVEL: PXB
+      NCCL_PROTO: LL,LL128,Simple
+      SPARKINFER_PCIE_DMA_FP8: i8_ring
+      VLLM_PCIE_DMA_FP8: i8_ring
+      B12X_PCIE_DMA_FP8: i8_ring
+
+      VLLM_USE_FLASHINFER_SAMPLER: "1"
+      VLLM_USE_B12X_FP8_GEMM: "1"
+      VLLM_USE_B12X_SPARSE_INDEXER: "1"
+      VLLM_USE_B12X_MOE: "1"
+      VLLM_USE_V2_MODEL_RUNNER: "1"
+      VLLM_ENABLE_PCIE_ALLREDUCE: "1"
+      VLLM_PCIE_ALLREDUCE_BACKEND: b12x
+      VLLM_PCIE_ONESHOT_ALLREDUCE_MAX_SIZE: "64KB"
+      VLLM_PCIE_ONESHOT_FUSED_ADD_RMS_NORM_MAX_SIZE: "84KB"
+      VLLM_CPP_AR_1STAGE_NCCL_CUTOFF: "56KB"
+      VLLM_CPP_AR_IGNORE_CUTOFF_MAX_ROWS: "0"
+      VLLM_RTX6K_FUSED_ALLREDUCE_ADD: "0"
+      VLLM_RTX6K_FUSED_ALLREDUCE_ADD_END_BARRIER: "0"
+
+      VLLM_USE_AOT_COMPILE: "1"
+      VLLM_USE_BREAKABLE_CUDAGRAPH: "0"
+      VLLM_USE_FUSED_MOE_GROUPED_TOPK: "1"
+      VLLM_USE_B12X_MHC: "1"
+      B12X_MHC_MAX_TOKENS: "16384"
+      VLLM_USE_B12X_WO_PROJECTION: "1"
+      B12X_MLA_SM120_UNIFIED: "1"
+      B12X_DENSE_SPLITK_TURBO: "1"
+      B12X_W4A16_TC_DECODE: "1"
+      B12X_MOE_FORCE_A16: "1"
+      VLLM_DISABLE_SHARED_EXPERTS_STREAM: "1"
+      VLLM_DISABLED_KERNELS: MarlinFP8ScaledMMLinearKernel
+
+      VLLM_B12X_MLA_SPEC_EXTEND_AS_DECODE: "0"
+      VLLM_B12X_MLA_SPEC_DECODE_MAX_Q: "8"
+      VLLM_USE_B12X_DCP_A2A: "1"
+      VLLM_DCP_A2A_MAX_TOKENS: "16"
+      VLLM_DCP_A2A_LARGE_BACKEND: ag_rs
+      VLLM_DCP_GLOBAL_TOPK: "1"
+      VLLM_DCP_SHARD_DRAFT: "1"
+
+      # Matched CN4/NF3 prefill posture.
+      VLLM_DCP_QUERY_SPLIT: "0"
+      VLLM_B12X_MLA_CKV_GATHER: "1"
+      VLLM_DCP_TOPK_OWNER_MERGE: "0"
+      VLLM_DCP_INDEXER_SHARDS: "0"
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+      VLLM_B12X_MLA_CKV_PREFETCH_WORKSPACE_MIB: "1024"
+      VLLM_DCP_PROJECT_BEFORE_MERGE: "1"
+      VLLM_DCP_PROJECT_BEFORE_MERGE_MIN_PREFILL_TOKENS: "1024"
+      VLLM_B12X_MLA_DCP_GATHER_IN_WORKSPACE: "1"
+      VLLM_B12X_MLA_CKV_GATHER_MIN_TOKENS: "512"
+      VLLM_B12X_MLA_CKV_GATHER_MAX_TOKENS: "16384"
+
+      # Dynamic mode is mutually exclusive with the static #145 scale file
+      # inherited from the parent TR3 image.
+      VLLM_NVFP4_MLA_SCALES_FILE: ""
+      VLLM_NVFP4_MLA_DYNAMIC_SCALE: "1"
+      KV_FP8_ROPE: "1"
+
+      ENABLE_MTP: "${ENABLE_MTP:-1}"
+      MTP_TOKENS: "${MTP_TOKENS:-3}"
+      MTP_DRAFT_SAMPLE_METHOD: "${MTP_DRAFT_SAMPLE_METHOD:-greedy}"
+      ENABLE_ASYNC_SCHEDULING: "0"
+      MAX_MODEL_LEN: "${MAX_MODEL_LEN:-480000}"
+      MAX_NUM_SEQS: "${MAX_NUM_SEQS:-16}"
+      MAX_NUM_BATCHED_TOKENS: "${MAX_NUM_BATCHED_TOKENS:-3072}"
+      GPU_MEMORY_UTILIZATION: "${GPU_MEMORY_UTILIZATION:-0.96}"
+      GLM52_INDEX_TOPK_PATTERN: FFFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSSFSSS
+
+      VLLM_EXL3_TRELLIS_MIN_M: ""
+      VLLM_EXL3_TRELLIS_MAX_M: "32"
+      VLLM_EXL3_TRELLIS_BLOCK_M: "8"
+      VLLM_EXL3_PREFILL_CHUNK: "128"
+
+      # Prefix caching plus the same 64 GB DRAM / bounded 1 TB Intel-NVMe
+      # tiers as the NF3 control, under a distinct record-ABI namespace.
+      KV_TRANSFER_CONFIG_JSON: >-
+        {"kv_connector":"OffloadingConnector","kv_role":"kv_both","kv_connector_extra_config":{"spec_name":"TieringOffloadingSpec","cpu_bytes_to_use":64000000000,"secondary_tiers":[{"type":"fs","root_dir":"/nvme-kv/glm52-exl3-tr3-dynamic-20260728","n_read_threads":16,"n_write_threads":16,"max_cache_size_bytes":1000000000000,"locality":"LOCAL"}]}}
+
+      VLLM_CACHE_DIR: /cache/jit/vllm
+      TRITON_CACHE_DIR: /cache/jit/triton
+      TORCH_EXTENSIONS_DIR: /cache/jit/torch_extensions
+      TORCHINDUCTOR_CACHE_DIR: /cache/jit/torchinductor
+      FLASHINFER_WORKSPACE_BASE: /cache/jit/flashinfer
+      SPARKINFER_COMPILE_CACHE_DIR: /cache/jit/sparkinfer
+      XDG_CACHE_HOME: /cache/jit
+      TVM_FFI_CACHE_DIR: /cache/jit/tvm-ffi
+      VLLM_MEMORY_PROFILE_INCLUDE_ATTN: "1"
+      VLLM_MEMORY_PROFILER_ESTIMATE_CUDAGRAPHS: "1"
+
+    volumes:
+      - ${MODEL_PATH:-/home/derek/models/GLM-5.2-EXL3-TR3-3.0bpw}:/model:ro
+      - ${CACHE_PATH:-/home/derek/glm52-tr3-qualification-20260728/cache}:/cache:rw
+      - ${NVME_KV_PATH:-/nvme-kv}:/nvme-kv:rw
+
+    entrypoint:
+      - /bin/bash
+      - -lc
+
+    command:
+      - |
+        set -euo pipefail
+        unset NCCL_GRAPH_FILE NCCL_GRAPH_DUMP_FILE VLLM_B12X_MLA_EXTEND_MAX_CHUNKS
+        spec_args=()
+        if [[ "$${ENABLE_MTP:-1}" == "1" ]]; then
+          printf -v spec_config '{"method":"mtp","num_speculative_tokens":%s,"moe_backend":"triton","draft_sample_method":"%s"}' \
+            "$${MTP_TOKENS:-3}" "$${MTP_DRAFT_SAMPLE_METHOD:-greedy}"
+          spec_args=(--speculative-config "$$spec_config")
+        fi
+        index_pattern="$${GLM52_INDEX_TOPK_PATTERN}"
+        if [[ "$${#index_pattern}" -ne 78 ]]; then
+          printf 'GLM-5.2 index_topk_pattern must cover all 78 layers (got %s)\n' "$${#index_pattern}" >&2
+          exit 2
+        fi
+        printf -v hf_overrides '{"use_index_cache":true,"index_topk_pattern":"%s"}' "$${index_pattern}"
+        exec vllm serve /model \
+          --served-model-name GLM-5.2 GLM-5.2-EXL3-TR3-3.0bpw \
+          --host 0.0.0.0 --port 8000 --trust-remote-code \
+          --tensor-parallel-size 4 \
+          --decode-context-parallel-size 4 \
+          --dcp-comm-backend a2a \
+          --dcp-kv-cache-interleave-size 64 \
+          --seed 0 \
+          --quantization exl3 \
+          --kv-cache-dtype nvfp4_ds_mla \
+          --attention-backend B12X_MLA_SPARSE \
+          --moe-backend b12x \
+          --load-format safetensors \
+          --compilation-config '{"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[4,8,12,16,20,24,28,32],"custom_ops":["all"],"pass_config":{"fuse_allreduce_rms":true}}' \
+          --gpu-memory-utilization "$${GPU_MEMORY_UTILIZATION:-0.96}" \
+          --max-model-len "$${MAX_MODEL_LEN:-480000}" \
+          --max-num-seqs "$${MAX_NUM_SEQS:-16}" \
+          --max-num-batched-tokens "$${MAX_NUM_BATCHED_TOKENS:-3072}" \
+          --max-cudagraph-capture-size 32 \
+          --enable-chunked-prefill \
+          --enable-prefix-caching \
+          --enable-auto-tool-choice \
+          --tool-call-parser glm47 \
+          --reasoning-parser glm45 \
+          --default-chat-template-kwargs '{"reasoning_effort":"high"}' \
+          --hf-overrides "$${hf_overrides}" \
+          --kv-transfer-config "$${KV_TRANSFER_CONFIG_JSON}" \
+          --no-async-scheduling \
+          "$${spec_args[@]}"

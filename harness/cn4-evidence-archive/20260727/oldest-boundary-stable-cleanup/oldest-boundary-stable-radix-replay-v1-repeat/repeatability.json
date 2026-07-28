@@ -1,0 +1,72 @@
+{
+  "pass": false,
+  "results": [
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 22017,
+          "score": 5.2987470626831055
+        }
+      ],
+      "intersection": 2047,
+      "rank": 0,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 70257,
+          "score": 5.3730878829956055
+        }
+      ],
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 73543,
+          "score": 5.535529136657715
+        }
+      ],
+      "intersection": 2047,
+      "rank": 1,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 73708,
+          "score": 5.327728271484375
+        }
+      ],
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "first_only": [
+        {
+          "index": 67644,
+          "score": 5.977126598358154
+        }
+      ],
+      "intersection": 2047,
+      "rank": 2,
+      "second_count": 2048,
+      "second_only": [
+        {
+          "index": 67699,
+          "score": 5.466490745544434
+        }
+      ],
+      "set_exact": false
+    },
+    {
+      "first_count": 2048,
+      "first_only": [],
+      "intersection": 2048,
+      "rank": 3,
+      "second_count": 2048,
+      "second_only": [],
+      "set_exact": true
+    }
+  ],
+  "schema": "v20-indexer-replay-repeatability-v1"
+}

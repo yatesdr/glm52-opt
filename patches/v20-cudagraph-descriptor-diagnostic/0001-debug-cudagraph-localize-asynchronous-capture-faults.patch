@@ -1,0 +1,228 @@
+From f0021cc306cf0d78174665654653432d0c424db6 Mon Sep 17 00:00:00 2001
+From: derek <derek.yates@live.com>
+Date: Wed, 22 Jul 2026 20:21:20 -0400
+Subject: [PATCH] debug(cudagraph): localize asynchronous capture faults
+
+---
+ .../v1/cudagraph/test_capture_diagnostics.py  |  46 ++++++++
+ vllm/v1/worker/gpu/cudagraph_utils.py         | 104 +++++++++++++++---
+ 2 files changed, 132 insertions(+), 18 deletions(-)
+ create mode 100644 tests/v1/cudagraph/test_capture_diagnostics.py
+
+diff --git a/tests/v1/cudagraph/test_capture_diagnostics.py b/tests/v1/cudagraph/test_capture_diagnostics.py
+new file mode 100644
+index 00000000..00985e9f
+--- /dev/null
++++ b/tests/v1/cudagraph/test_capture_diagnostics.py
+@@ -0,0 +1,46 @@
++# SPDX-License-Identifier: Apache-2.0
++# SPDX-FileCopyrightText: Copyright contributors to the vLLM project
++from unittest.mock import Mock
++
++import pytest
++
++from vllm.v1.worker.gpu import cudagraph_utils
++
++
++def test_capture_diagnostic_stage_is_opt_in(monkeypatch: pytest.MonkeyPatch):
++    sync = Mock()
++    monkeypatch.delenv("VLLM_CUDAGRAPH_CAPTURE_DIAGNOSTICS", raising=False)
++    monkeypatch.setattr(cudagraph_utils.torch.accelerator, "synchronize", sync)
++
++    with cudagraph_utils._capture_diagnostic_stage("test", "disabled", None):
++        pass
++
++    sync.assert_not_called()
++
++
++def test_capture_diagnostic_stage_synchronizes(monkeypatch: pytest.MonkeyPatch):
++    sync = Mock()
++    monkeypatch.setenv("VLLM_CUDAGRAPH_CAPTURE_DIAGNOSTICS", "1")
++    monkeypatch.setattr(cudagraph_utils, "is_global_first_rank", lambda: False)
++    monkeypatch.setattr(cudagraph_utils.torch.accelerator, "synchronize", sync)
++
++    with cudagraph_utils._capture_diagnostic_stage("test", "enabled", None):
++        pass
++
++    sync.assert_called_once_with()
++
++
++def test_capture_diagnostic_stage_propagates_sync_failure(
++    monkeypatch: pytest.MonkeyPatch,
++):
++    monkeypatch.setenv("VLLM_CUDAGRAPH_CAPTURE_DIAGNOSTICS", "1")
++    monkeypatch.setattr(cudagraph_utils, "is_global_first_rank", lambda: False)
++    monkeypatch.setattr(
++        cudagraph_utils.torch.accelerator,
++        "synchronize",
++        Mock(side_effect=RuntimeError("sentinel async fault")),
++    )
++
++    with pytest.raises(RuntimeError, match="sentinel async fault"):
++        with cudagraph_utils._capture_diagnostic_stage("test", "failure", None):
++            pass
+diff --git a/vllm/v1/worker/gpu/cudagraph_utils.py b/vllm/v1/worker/gpu/cudagraph_utils.py
+index 7b2991bf..fb6faeb7 100644
+--- a/vllm/v1/worker/gpu/cudagraph_utils.py
++++ b/vllm/v1/worker/gpu/cudagraph_utils.py
+@@ -3,6 +3,7 @@
+ import os
+ from collections import defaultdict
+ from collections.abc import Callable
++from contextlib import contextmanager
+ from dataclasses import dataclass
+ from itertools import product
+ from typing import Any, NamedTuple, Protocol
+@@ -46,6 +47,46 @@ from vllm.v1.worker.utils import AttentionGroup
+ logger = init_logger(__name__)
+ 
+ 
++def _capture_diagnostics_enabled() -> bool:
++    return os.getenv("VLLM_CUDAGRAPH_CAPTURE_DIAGNOSTICS", "0") == "1"
++
++
++@contextmanager
++def _capture_diagnostic_stage(
++    capture_label: str,
++    stage: str,
++    desc: "BatchExecutionDescriptor | None",
++):
++    """Synchronize after one completed capture stage when diagnostics are on.
++
++    The synchronization runs outside any nested ``torch.cuda.graph`` context,
++    so an asynchronous fault is attributed to the stage that launched it
++    instead of surfacing in the next descriptor's input preparation.
++    """
++    enabled = _capture_diagnostics_enabled()
++    if enabled and is_global_first_rank():
++        logger.warning(
++            "CG_DIAG BEGIN label=%s stage=%s desc=%s", capture_label, stage, desc
++        )
++    try:
++        yield
++        if enabled:
++            torch.accelerator.synchronize()
++    except BaseException:
++        if enabled:
++            logger.exception(
++                "CG_DIAG FAIL label=%s stage=%s desc=%s",
++                capture_label,
++                stage,
++                desc,
++            )
++        raise
++    if enabled and is_global_first_rank():
++        logger.warning(
++            "CG_DIAG PASS label=%s stage=%s desc=%s", capture_label, stage, desc
++        )
++
++
+ class AttentionState(NamedTuple):
+     attn_metadata: dict[str, Any] | None
+     slot_mappings: dict[str, torch.Tensor]
+@@ -457,6 +498,10 @@ class CudaGraphManager:
+                 because attention backends may mutate or lazily initialize
+                 metadata during warmup.
+         """
++        capture_label = progress_bar_desc.replace(" ", "_").lower()
++        with _capture_diagnostic_stage(capture_label, "manager_entry", None):
++            pass
++
+         # Keep event handles created by descriptor warmups alive together with
+         # the graph artifacts captured below. Some multi-stream custom ops run
+         # on joined auxiliary streams where CUDA's per-current-stream capture
+@@ -474,10 +519,16 @@ class CudaGraphManager:
+                     descs = tqdm(descs, desc=f"{progress_bar_desc} ({mode.name})")
+                 for desc in descs:
+                     # Prepare inputs and get forward function
+-                    forward_fn = create_forward_fn(desc, warmup=True)
++                    with _capture_diagnostic_stage(
++                        capture_label, "warmup_inputs", desc
++                    ):
++                        forward_fn = create_forward_fn(desc, warmup=True)
+ 
+                     # Warmup
+-                    forward_fn(CUDAGraphMode.NONE)
++                    with _capture_diagnostic_stage(
++                        capture_label, "warmup_forward", desc
++                    ):
++                        forward_fn(CUDAGraphMode.NONE)
+ 
+                     # Capture
+                     logger.debug(
+@@ -487,12 +538,21 @@ class CudaGraphManager:
+                         desc.cg_mode == CUDAGraphMode.PIECEWISE
+                         and not self.use_breakable_cg
+                     ):
+-                        forward_fn(CUDAGraphMode.PIECEWISE)
++                        with _capture_diagnostic_stage(
++                            capture_label, "piecewise_capture", desc
++                        ):
++                            forward_fn(CUDAGraphMode.PIECEWISE)
+                     else:
+                         # Capture with fresh attention state.
+-                        forward_fn = create_forward_fn(desc, warmup=False)
++                        with _capture_diagnostic_stage(
++                            capture_label, "fresh_capture_inputs", desc
++                        ):
++                            forward_fn = create_forward_fn(desc, warmup=False)
+                         if desc.cg_mode == CUDAGraphMode.PIECEWISE:
+-                            forward_fn(CUDAGraphMode.PIECEWISE)
++                            with _capture_diagnostic_stage(
++                                capture_label, "piecewise_capture", desc
++                            ):
++                                forward_fn(CUDAGraphMode.PIECEWISE)
+                             continue
+                         assert desc not in self.graphs, (
+                             f"Graph already captured for {desc}"
+@@ -502,26 +562,34 @@ class CudaGraphManager:
+                             # the CuTe launcher contract. Re-warm the exact
+                             # fresh state that FULL capture will use, so CUDA
+                             # graph capture only records resolved launches.
+-                            forward_fn(CUDAGraphMode.NONE)
++                            with _capture_diagnostic_stage(
++                                capture_label, "b12x_prewarm", desc
++                            ):
++                                forward_fn(CUDAGraphMode.NONE)
+                         graph = torch.cuda.CUDAGraph()
+                         # Sync offloader's copy stream before capture.
+                         # Ensure any pre-capture prefetches from offloader are complete.
+                         get_offloader().sync_prev_onload()
+-                        with (
+-                            guard_b12x_kernel_resolution(
+-                                "vLLM full CUDA graph capture after B12X warmup"
+-                            ),
+-                            vllm_cudagraph_capture_scope(),
+-                            torch.cuda.graph(graph, self.pool),
++                        with _capture_diagnostic_stage(
++                            capture_label, "full_capture", desc
+                         ):
+-                            forward_fn(CUDAGraphMode.NONE)
+-                            # Join offloader's copy stream after forward to avoid
+-                            # unjoined stream error. The last layer's start_prefetch
+-                            # forks copy_stream, but wait_prefetch only happens in
+-                            # the next forward pass.
+-                            get_offloader().join_after_forward()
++                            with (
++                                guard_b12x_kernel_resolution(
++                                    "vLLM full CUDA graph capture after B12X warmup"
++                                ),
++                                vllm_cudagraph_capture_scope(),
++                                torch.cuda.graph(graph, self.pool),
++                            ):
++                                forward_fn(CUDAGraphMode.NONE)
++                                # Join offloader's copy stream after forward to avoid
++                                # unjoined stream error. The last layer's start_prefetch
++                                # forks copy_stream, but wait_prefetch only happens in
++                                # the next forward pass.
++                                get_offloader().join_after_forward()
+                         self.graphs[desc] = graph
+                         compilation_counter.num_cudagraph_captured += 1
++        with _capture_diagnostic_stage(capture_label, "manager_exit", None):
++            pass
+         self._graphs_captured = True
+ 
+     def dispatch(
+-- 
+2.50.1 (Apple Git-155)
+

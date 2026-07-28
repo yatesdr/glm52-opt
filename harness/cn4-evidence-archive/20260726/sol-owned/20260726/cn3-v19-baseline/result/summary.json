@@ -1,0 +1,38 @@
+{
+  "image": "sha256:ca8481687f7169adf177f02df83c06259af0941e9a1de8695b5a4e60d745463a",
+  "note": "known-good CN3 v19 exact frozen baseline",
+  "freeze_dir": "/home/claude/sol-baseline-20260726/causal-gate-freeze-20260726",
+  "stock_image": "glm52-serve:v20-5517197-pxb-20260725",
+  "recovered": 1,
+  "fail_count": 1,
+  "control_ok": null,
+  "verdict": "CONFIRMED \u2014 every frozen stock-FAIL prompt recovered",
+  "rows": [
+    {
+      "label": "fail-350k-r1",
+      "role": "FAIL",
+      "depth": 350000,
+      "seed": 1110001,
+      "prompt_sha256": "f0d1c16d816b777f27a3882d9e6b5ef056852684ea155fb11dd845f9e1654ab5",
+      "stock_verdict": "ABSENT",
+      "verdict": "EXACT",
+      "gate_pass": true,
+      "exact": true,
+      "cold": true,
+      "finish_reason": "stop",
+      "cached_tokens": 0,
+      "usage": {
+        "prompt_tokens": 343727,
+        "total_tokens": 343731,
+        "completion_tokens": 4,
+        "prompt_tokens_details": {
+          "cached_tokens": 0,
+          "multimodal_tokens": null
+        }
+      },
+      "content": "738216",
+      "reasoning_chars": 0,
+      "secs": 260.5
+    }
+  ]
+}

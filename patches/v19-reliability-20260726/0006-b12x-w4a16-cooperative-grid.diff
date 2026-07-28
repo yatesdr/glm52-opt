@@ -1,0 +1,34 @@
+--- kernel.py.orig	2026-07-26 12:25:35
++++ kernel.py	2026-07-26 12:25:35
+@@ -3981,6 +3981,15 @@
+             grid=grid,
+             block=[self.cta_threads, 1, 1],
+             min_blocks_per_mp=self.blocks_per_sm,
++            # The FC1/activation/FC2 phase boundaries below use a software
++            # all-CTA grid barrier (_grid_barrier). A regular launch can admit
++            # only part of the grid while auxiliary stream work (GLM shared
++            # experts) occupies the remaining SMs, leaving resident CTAs
++            # spinning on the sense flag and the unscheduled CTAs unable to
++            # arrive. grid_x is already sized <= sms*blocks_per_sm (see
++            # _fused_grid_x), so cooperative launch only makes that existing
++            # residency contract explicit to CUDA. Matches dynamic.py.
++            cooperative=True,
+             stream=stream,
+         )
+ 
+@@ -4735,6 +4744,15 @@
+             grid=(grid_x, 1, 1),
+             block=[self.cta_threads, 1, 1],
+             min_blocks_per_mp=self.blocks_per_sm,
++            # The FC1/activation/FC2 phase boundaries below use a software
++            # all-CTA grid barrier (_grid_barrier). A regular launch can admit
++            # only part of the grid while auxiliary stream work (GLM shared
++            # experts) occupies the remaining SMs, leaving resident CTAs
++            # spinning on the sense flag and the unscheduled CTAs unable to
++            # arrive. grid_x is already sized <= sms*blocks_per_sm (see
++            # _fused_grid_x), so cooperative launch only makes that existing
++            # residency contract explicit to CUDA. Matches dynamic.py.
++            cooperative=True,
+             stream=stream,
+         )
+ 

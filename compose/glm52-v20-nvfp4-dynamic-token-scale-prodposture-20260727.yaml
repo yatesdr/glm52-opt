@@ -1,0 +1,77 @@
+name: glm52-v20-nvfp4-dynamic-token-scale-prodposture-20260727
+
+# Primary calibration-free NVFP4 MLA scale candidate. This holds the validated
+# production posture fixed and changes only the record-scale contract:
+# static per-layer calibration is absent; each 368-byte record stores its own
+# FP32 second-level scale at bytes [292,296).
+
+services:
+  glm52-v20-dynamic-scale:
+    container_name: glm52-v20-nvfp4-dynamic-token-scale-prodposture-20260727
+    image: glm52-serve:v20-nvfp4-dynamic-token-scale-20260727
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]
+    restart: "no"
+    labels:
+      autoheal: "false"
+      local.glm52.production: "false"
+      local.glm52.test: "nvfp4-dynamic-token-scale-prodposture"
+    healthcheck:
+      test:
+        - CMD
+        - python3
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://localhost:5001/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 60
+      start_period: 300s
+    ports:
+      - "0.0.0.0:5001:5001"
+    ipc: host
+    shm_size: "32g"
+    ulimits:
+      memlock: -1
+      stack: 67108864
+    deploy:
+      resources:
+        reservations:
+          devices:
+            - driver: nvidia
+              count: all
+              capabilities: [gpu]
+    environment:
+      PATH: /usr/local/libexec/glm52-causal:/opt/venv/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin
+      MODEL_FAMILY: glm52-hybrid
+      MODEL: /model
+      PORT: "5001"
+      SERVED_MODEL_NAME: GLM-5.2
+      TP: "4"
+      DCP: "4"
+      MTP: "3"
+      DCP_PREFILL_WORKSPACE: auto
+      PCIE_CALIBRATION: force
+      MAX_MODEL_LEN: "480000"
+      MAX_NUM_SEQS: "16"
+      MAX_BATCHED_TOKENS: "3072"
+      GRAPH: "64"
+      KV_FP8_ROPE: "1"
+      VLLM_NVFP4_MLA_DYNAMIC_SCALE: "1"
+      GPU_MEMORY_UTILIZATION: "0.9848"
+      NCCL_P2P_LEVEL: PXB
+      F8_DMA: i8_ring
+      VLLM_B12X_MLA_CKV_PREFETCH_DEPTH: "0"
+      VLLM_DCP_QUERY_SPLIT: "0"
+      VLLM_DCP_TOPK_OWNER_MERGE: "0"
+      SPARKINFER_NSA_TOPK_SELECTION_POLICY: exact
+    volumes:
+      - /home/claude/LLM/GLM-5.2-hybrid:/model:ro
+      - /home/derek/glm52-v20-nvfp4-dynamic-token-scale-prodposture-v1-cache:/cache:rw
+      - /home/derek/glm52-v20-nvfp4-dynamic-token-scale-prodposture-v1-cache:/root/.cache:rw
+      - /home/derek/glm52-opt-dynamic-build/docker/vllm-no-prefix-caching:/usr/local/libexec/glm52-causal/vllm:ro
+      - /nvme-kv:/nvme-kv:rw
+
+networks:
+  default:
+    ipam:
+      config:
+        - subnet: 10.253.98.0/24

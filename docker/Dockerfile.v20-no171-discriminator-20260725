@@ -1,0 +1,26 @@
+# syntax=docker/dockerfile:1
+#
+# Python-only discriminator built from the exact fa71a0c1 production candidate.
+# It removes only PR #171's format-qualified NVFP4 MTP route. The input hash
+# makes a moved base tag fail closed.
+
+ARG BASE_IMAGE=ghcr.io/yatesdr/glm52-serve:gilded-gnosis-v20-prod-ready-20260724
+FROM ${BASE_IMAGE}
+
+LABEL org.opencontainers.image.base.name="ghcr.io/yatesdr/glm52-serve:gilded-gnosis-v20-prod-ready-20260724"
+LABEL io.yatesdr.base.image-id="sha256:fa71a0c1e06e29db88364dcaa047c09c37662fda105551a988a2d09e54fdec86"
+LABEL io.yatesdr.vllm.source-revision="b8534c4a5fad9500c0aebd0ef5e293672033fc4e"
+LABEL io.yatesdr.discriminator="remove-pr171-only"
+
+RUN test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py | cut -d ' ' -f 1)" = "885401fc5dc10dcfa02fe6fc524763bb9a44150e4cf743c1e6f9a3460002da74"
+
+COPY workspace/vllm-v20-staged-query-no171/vllm/v1/attention/backends/mla/b12x_mla_sparse.py \
+    /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py
+
+RUN /opt/venv/bin/python -m py_compile \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py \
+    && test "$(sha256sum /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py | cut -d ' ' -f 1)" = "585bf3e008d4149db94684050649cb2bb0daf72ca8e90144346157b1cd354ff0" \
+    && ! grep -q "_resolve_spec_decode_mode" \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py \
+    && grep -q "self.spec_extend_as_decode = spec_decode_mode not in disabled_modes" \
+      /opt/venv/lib/python3.12/site-packages/vllm/v1/attention/backends/mla/b12x_mla_sparse.py

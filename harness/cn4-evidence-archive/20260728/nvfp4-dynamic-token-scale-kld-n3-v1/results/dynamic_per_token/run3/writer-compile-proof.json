@@ -1,0 +1,27 @@
+{
+  "all_writer_specs_match_expected": true,
+  "expected_per_token_scale": true,
+  "matching_writer_specs": 4,
+  "writer_specs": [
+    {
+      "path": "/scan/sparkinfer/90/905c8b026d0f43f328d45013970cad0dbeac3914dee9029e2ca0b64b2de0b2c6.json",
+      "per_token_scale": true,
+      "sha256": "7c1d21772b286e326e360dc3cde9d7d27fffc6688166f0f3304348545785d636"
+    },
+    {
+      "path": "/scan/sparkinfer/0e/0ec3359dc227b287a21a2afef1307d308406d9a12a976a466920f615bf753207.json",
+      "per_token_scale": true,
+      "sha256": "ac63162291dbe6fe0469d5ee291f1d2c0169174cf025049aaa27b6bf9aeaff2d"
+    },
+    {
+      "path": "/scan/sparkinfer/a4/a42b769ee484e755f2ac02fcc2a8c349d0bab99b745cacb244709cabad8fe05f.json",
+      "per_token_scale": true,
+      "sha256": "88760a4d58b3cc10ec4593e4fc12f2bfbc56d87022d196acf8dbf472baa027ad"
+    },
+    {
+      "path": "/scan/sparkinfer/36/36a64828d1bddf0bb5184cf14256835cb2f976464c1d1b8c9932cba8cbdeb1ba.json",
+      "per_token_scale": true,
+      "sha256": "2aaaf3f9f0d108e415f076cf105a8416a7fd14bfc1212cdd5381aa99ff2cc015"
+    }
+  ]
+}

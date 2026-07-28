@@ -1,0 +1,18 @@
+[gate] image=sha256:131481b0f12c455a8fbad72c5909eb3a2c3accd96815743fdcfa134396e548c0
+[gate] freeze=/home/derek/causal-gate-freeze-20260726  stock_image=glm52-serve:v20-5517197-pxb-20260725
+[gate] note=stock exact top-k RC with SparkInfer #85; fresh cache; prefix caching disabled
+
+pass-250k-ctl   EXACT           gate=PASS finish=stop out=4 prompt_tok=245497 cached=0 stock=EXACT 226s
+                content='738216'
+fail-350k-r1    ABSENT          gate=FAIL finish=stop out=16 prompt_tok=343727 cached=0 stock=ABSENT 320s
+                content='The maintenance ticket number for the Facility 27 compressor is **27**.'
+fail-350k-r2    ABSENT          gate=FAIL finish=stop out=25 prompt_tok=343727 cached=0 stock=ABSENT 320s
+                content='The maintenance ticket number for the Facility 27 compressor overhaul is **MAINT-2024-0917'
+fail-350k-r3    ABSENT          gate=FAIL finish=stop out=17 prompt_tok=343727 cached=0 stock=ABSENT 320s
+                content='The maintenance ticket number for the Facility 27 compressor overhaul is **27**.'
+
+===== CAUSAL GATE SUMMARY =====
+  FAIL-role prompts recovered: 0/3
+  PASS control still passing:   True
+  VERDICT: REFUTED — at least one frozen stock-FAIL prompt did not recover
+CAUSAL_GATE_DONE

@@ -1,0 +1,20 @@
+{
+  "tally": {
+    "50000": [
+      "EXACT",
+      "EXACT",
+      "EXACT"
+    ],
+    "100000": [
+      "DUP",
+      "REASON_OK",
+      "MISS"
+    ],
+    "150000": [
+      "REASON_OK",
+      "MISS",
+      "MISS"
+    ]
+  },
+  "reps": 3
+}

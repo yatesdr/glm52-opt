@@ -1,0 +1,92 @@
+{
+  "depth_target": 8000,
+  "context_tokens": 7850,
+  "elapsed_s": 57.39,
+  "usage": {
+    "prompt_tokens": 7862,
+    "completion_tokens": 79,
+    "total_tokens": 7941,
+    "cached_tokens": 0,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    }
+  },
+  "checks": {
+    "needle_in_finalized_content": true,
+    "finalized_content_nonempty": true,
+    "finish_reason_stop": true,
+    "no_degeneration": true,
+    "cold_cached_tokens_zero": true
+  },
+  "needle_found_in": {
+    "reasoning": true,
+    "reasoning_content": false,
+    "serialized_message": true
+  },
+  "trigram_repeat": 0.0,
+  "content": "738216",
+  "reasoning": "The user wants to extract a specific piece of information from the provided text: the maintenance ticket number for the Facility 27 compressor overhaul.\n\nLooking at the text:\n\"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\"\n\nThe user requested: \"Reply with the number only.\"\n\nSo the answer should be just \"738216\".",
+  "reasoning_content": "",
+  "serialized_message": "{\"annotations\": null, \"audio\": null, \"content\": \"738216\", \"function_call\": null, \"reasoning\": \"The user wants to extract a specific piece of information from the provided text: the maintenance ticket number for the Facility 27 compressor overhaul.\\n\\nLooking at the text:\\n\\\"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\\\"\\n\\nThe user requested: \\\"Reply with the number only.\\\"\\n\\nSo the answer should be just \\\"738216\\\".\", \"refusal\": null, \"role\": \"assistant\"}",
+  "finish_reason": "stop",
+  "side_checks": {},
+  "request": {
+    "model": "GLM-5.2",
+    "messages": [
+      {
+        "role": "user",
+        "content_sha256": "d4e0773e24113707f57159132b75095923750d49a1236746559e47ced85790d5",
+        "content_chars": 48340
+      }
+    ],
+    "max_tokens": 800,
+    "temperature": 0,
+    "chat_template_kwargs": {
+      "reasoning_effort": "low"
+    }
+  },
+  "response_full": {
+    "id": "chatcmpl-a91ce89ee7a01852",
+    "object": "chat.completion",
+    "created": 1785178843,
+    "model": "GLM-5.2",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "738216",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": "The user wants to extract a specific piece of information from the provided text: the maintenance ticket number for the Facility 27 compressor overhaul.\n\nLooking at the text:\n\"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\"\n\nThe user requested: \"Reply with the number only.\"\n\nSo the answer should be just \"738216\"."
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": 154827,
+        "token_ids": null,
+        "routed_experts": null
+      }
+    ],
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm0c79e41.sic3828fd.fi801d57a.cu132.20260727-tp4-67960576",
+    "usage": {
+      "prompt_tokens": 7862,
+      "total_tokens": 7941,
+      "completion_tokens": 79,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null
+  },
+  "ts": "2026-07-27T19:01:41Z"
+}

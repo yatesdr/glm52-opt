@@ -1,0 +1,19 @@
+{
+  "verdict": "PASS",
+  "ladder": [
+    8000
+  ],
+  "cells": [
+    {
+      "depth": 8000,
+      "verdict": "PASS",
+      "context_tokens": 7850,
+      "cached_tokens": 0,
+      "completion_tokens": 79,
+      "elapsed_s": 57.39,
+      "failed_checks": [],
+      "answer": "738216"
+    }
+  ],
+  "ts": "2026-07-27T19:01:41Z"
+}

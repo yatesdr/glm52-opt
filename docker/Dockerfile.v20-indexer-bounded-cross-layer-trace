@@ -1,0 +1,26 @@
+ARG BASE_IMAGE=glm52-serve:v20-longctx-production-candidate-20260726
+FROM ${BASE_IMAGE}
+
+ARG BASE_DEEPSEEK_V2_SHA256=180622452fad2500db4b57cdac3a961c13518aa5a1962c7ff4dd2cc634fa44c3
+ARG TRACE_DEEPSEEK_V2_SHA256=23e910a5aa88644f3817ba62d15bdd69a6b89f4191c41c3555deb84c2d1f6254
+
+COPY workspace/vllm-v20-segmented-trace/vllm/model_executor/models/deepseek_v2.py \
+    /tmp/v20-bounded-cross-layer-trace/deepseek_v2.py
+
+RUN set -eu; \
+    target=/opt/venv/lib/python3.12/site-packages/vllm/model_executor/models/deepseek_v2.py; \
+    staged=/tmp/v20-bounded-cross-layer-trace/deepseek_v2.py; \
+    test "$(sha256sum "${target}" | cut -d' ' -f1)" = "${BASE_DEEPSEEK_V2_SHA256}"; \
+    test "$(sha256sum "${staged}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_V2_SHA256}"; \
+    install -m 0644 "${staged}" "${target}"; \
+    /opt/venv/bin/python -m py_compile "${target}"; \
+    test "$(sha256sum "${target}" | cut -d' ' -f1)" = "${TRACE_DEEPSEEK_V2_SHA256}"; \
+    rm -rf /tmp/v20-bounded-cross-layer-trace
+
+LABEL org.opencontainers.image.title="v20 bounded selector cross-layer diagnostic" \
+      local-inference.base.image="glm52-serve:v20-longctx-production-candidate-20260726" \
+      local-inference.base.image_id="sha256:259098b0f5a83c775ff09f8979f3fec8982b88d8d58434dc4c9284f2b4e68905" \
+      local-inference.selector.policy="bounded_compat" \
+      local-inference.trace.vllm_commit="ffe1ed314430d7900cd597d6a0428eac285dad9a" \
+      local-inference.trace.deepseek_v2_sha256="23e910a5aa88644f3817ba62d15bdd69a6b89f4191c41c3555deb84c2d1f6254" \
+      local-inference.diagnostic="cross-layer final logical top-k; no arithmetic mutation"
