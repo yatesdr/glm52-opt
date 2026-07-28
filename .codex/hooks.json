@@ -1,0 +1,38 @@
+{
+  "hooks": {
+    "SessionStart": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "comms/hooks/inject_inbox.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "UserPromptSubmit": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "comms/hooks/inject_inbox.py",
+            "timeout": 15
+          }
+        ]
+      }
+    ],
+    "Stop": [
+      {
+        "hooks": [
+          {
+            "type": "command",
+            "command": "comms/hooks/stop_await_instruction.py",
+            "timeout": 75
+          }
+        ]
+      }
+    ]
+  },
+  "description": "comms inbox auto-injection for Sol (managed by `comms install-hook`); project-scoped so it only fires in this repo. Verify with `comms doctor`."
+}

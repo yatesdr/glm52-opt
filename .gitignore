@@ -2,6 +2,16 @@ workspace/
 /fable-sol-comms.md
 .DS_Store
 
+# Regenerable tool caches and vendored binaries (~2.4 GB combined).
+.cache/
+.ruff_cache/
+.tools/
+**/__pycache__/
+*.py[cod]
+
+# Local editor/agent settings (.codex/hooks.json IS tracked — it wires up comms).
+.claude/settings.local.json
+
 # comms runtime data (local coordination state; bin/hooks/README stay tracked)
 comms/registry.json
 comms/STATUS.md
