@@ -1,0 +1,141 @@
+# GLM-5.2 v20-r9 / EXL3-TR3 3.25-bpw — validated C1-C16 profile
+#
+# Image:
+#   ghcr.io/yatesdr/glm52-serve:
+#   gilded-gnosis-v20-r9-exl3-tr3-325-mixk-v6-fused-m8-foldscratch-candidate4-r2-20260730
+# Immutable digest:
+#   sha256:a2b233f60329f22c7e541406b8972b3d8dc46c5c7d104d0aa3b4fee26374870e
+#
+# Model:
+#   https://huggingface.co/willfalco/GLM-5.2-EXL3-TR3-3.25bpw
+# Revision:
+#   e2b03576cd103e6ad322a1e091e5d0e2d0529073
+#
+# Validated on CN4: single-host TP4/DCP4, four RTX PRO 6000 Blackwell GPUs,
+# PCIe PXB topology, i8_ring transport, 480k declared maximum context.
+#
+# Why the non-default graph/fold settings:
+# - MTP3 verifies four rows per request, so C16 reaches M=64. Capturing
+#   4/8/16/32/64 removes the C16 serial-route graph cliff without reserving
+#   unused intermediate graph shapes.
+# - The fused heterogeneous K3/K4 routed-MoE kernel is faster and bit-exact
+#   through M=8. Larger M deliberately stays on the exact serial route.
+# - Parallel two-level indexer folding has a large profiled reservation.
+#   Exact streaming carry recovers that memory and passed all cold needles
+#   through 475k; it is selected here with SPARKINFER_INDEXER_TWO_LEVEL_FOLD=0.
+# - NUM_GPU_BLOCKS_OVERRIDE=1954 exposes 500,224 KV tokens while retaining
+#   request-time headroom. Higher tested pools failed ordered C32 -> deep
+#   prefill stress and are not production-safe on this host.
+#
+# This is a GPU-only cache profile. Do not combine expandable_segments with
+# vLLM's OffloadingConnector. Prefix caching remains enabled by the v20
+# launcher default.
+
+name: glm52-v20-r9-tr3-325-c16-balanced
+
+services:
+  glm52:
+    image: ghcr.io/yatesdr/glm52-serve@sha256:a2b233f60329f22c7e541406b8972b3d8dc46c5c7d104d0aa3b4fee26374870e
+    pull_policy: always
+    container_name: glm52-v20-r9-tr3-325
+    restart: unless-stopped
+    init: true
+    network_mode: host
+    ipc: host
+    gpus: all
+    shm_size: "64g"
+
+    ulimits:
+      memlock: -1
+      stack: 67108864
+      nofile:
+        soft: 1048576
+        hard: 1048576
+
+    healthcheck:
+      test:
+        - CMD
+        - /opt/venv/bin/python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 2600s
+
+    environment:
+      MODEL_FAMILY: glm52-exl3
+      MODEL: /model
+      MODEL_REVISION: e2b03576cd103e6ad322a1e091e5d0e2d0529073
+      SERVED_MODEL_NAME: GLM-5.2-EXL3-TR3-3.25bpw
+      GPUS: ${GPUS:-0,1,2,3}
+      PORT: ${PORT:-8000}
+
+      TP: ${TP:-4}
+      DCP: ${DCP:-4}
+      MTP: ${MTP:-3}
+      GRAPH: "64"
+      COMPILATION_CONFIG_JSON: >-
+        {"cudagraph_mode":"FULL_AND_PIECEWISE","cudagraph_capture_sizes":[4,8,16,32,64],"custom_ops":["all"],"pass_config":{"fuse_allreduce_rms":true}}
+      MAX_NUM_SEQS: ${MAX_NUM_SEQS:-32}
+      MAX_BATCHED_TOKENS: ${MAX_BATCHED_TOKENS:-3072}
+      MAX_MODEL_LEN: ${MAX_MODEL_LEN:-480000}
+      GPU_MEMORY_UTILIZATION: "0.9671"
+      NUM_GPU_BLOCKS_OVERRIDE: "1954"
+
+      MOE_MODE: a16
+      MOE_BACKEND: b12x
+      MTP_MOE_BACKEND: triton
+      MTP_DRAFT_SAMPLE_METHOD: greedy
+      QUANTIZATION: exl3
+      ONLINE_QUANT: none
+
+      KV_CACHE_DTYPE: nvfp4_ds_mla
+      KV_FP8_ROPE: "1"
+      VLLM_NVFP4_MLA_DYNAMIC_SCALE: "1"
+      VLLM_NVFP4_MLA_SCALES_FILE: ""
+
+      VLLM_EXL3_TRELLIS_MIN_M: "1"
+      VLLM_EXL3_TRELLIS_MAX_M: "64"
+      VLLM_EXL3_TRELLIS_BLOCK_M: "8"
+      VLLM_EXL3_MIXK_FUSED_MAX_M: "8"
+      VLLM_EXL3_PREFILL_TRELLIS: "1"
+      VLLM_EXL3_PREFILL_BLOCK_M: "64"
+      VLLM_EXL3_PREFILL_CHUNK: "128"
+
+      NCCL_IB_DISABLE: "1"
+      NCCL_P2P_LEVEL: ${NCCL_P2P_LEVEL:-PXB}
+      NCCL_PROTO: LL,LL128,Simple
+      F8_DMA: ${F8_DMA:-i8_ring}
+      PCIE_CALIBRATION: "off"
+
+      DCP_QUERY_SPLIT: "0"
+      DCP_CKV_GATHER: "1"
+      DCP_CKV_GATHER_MAX_TOKENS: "140000"
+      DCP_TOPK_OWNER_MERGE: "0"
+      DCP_INDEXER_SHARDS: "0"
+      DCP_CKV_PREFETCH_DEPTH: "0"
+      DCP_CKV_PREFETCH_WORKSPACE_MIB: "1024"
+      PCIE_DMA_MIN_BYTES: 6MB
+      VLLM_PCIE_ONESHOT_ALLREDUCE_MAX_SIZE: 120KB
+      VLLM_PCIE_ONESHOT_FUSED_ADD_RMS_NORM_MAX_SIZE: 84KB
+
+      SPARKINFER_INDEXER_TWO_LEVEL_FOLD: "0"
+      SPARKINFER_INDEXER_TWO_LEVEL_FOLD_MAX_MIB: "0"
+      VLLM_SHARED_EXPERTS_STREAM_TOKEN_THRESHOLD: "8"
+
+      # Required by the validated ordered decode/deep-prefill history.
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+
+      ASYNC_SCHEDULING: "0"
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+      CUDA_DEVICE_MAX_CONNECTIONS: "32"
+      OMP_NUM_THREADS: "16"
+      SAFETENSORS_FAST_GPU: "1"
+      XDG_CACHE_HOME: /cache
+
+    volumes:
+      - ${MODEL_PATH:?set MODEL_PATH to the downloaded 3.25-bpw checkpoint}:/model:ro
+      - ${CACHE_PATH:-./cache}:/cache:rw
+
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]

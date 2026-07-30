@@ -1,0 +1,1 @@
+RESULT label=candidate13-cold-128000 prompt_tokens=126204 cached_tokens=0 prefill_time_s=101.75 server_prefill_tok_s=1240 wall_s=102.14 wall_tok_s=1235

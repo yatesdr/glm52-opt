@@ -1,0 +1,41 @@
+{
+  "verdict": "PASS",
+  "ladder": [
+    50000,
+    350000,
+    475000
+  ],
+  "cells": [
+    {
+      "depth": 50000,
+      "verdict": "PASS",
+      "context_tokens": 49099,
+      "cached_tokens": 0,
+      "completion_tokens": 64,
+      "elapsed_s": 38.0,
+      "failed_checks": [],
+      "answer": "738216"
+    },
+    {
+      "depth": 350000,
+      "verdict": "PASS",
+      "context_tokens": 343735,
+      "cached_tokens": 0,
+      "completion_tokens": 71,
+      "elapsed_s": 462.94,
+      "failed_checks": [],
+      "answer": "738216"
+    },
+    {
+      "depth": 475000,
+      "verdict": "PASS",
+      "context_tokens": 466494,
+      "cached_tokens": 0,
+      "completion_tokens": 72,
+      "elapsed_s": 674.11,
+      "failed_checks": [],
+      "answer": "738216"
+    }
+  ],
+  "ts": "2026-07-30T12:31:40Z"
+}

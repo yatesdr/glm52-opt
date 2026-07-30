@@ -1,0 +1,420 @@
+diff --git a/sparkinfer/attention/nsa_indexer/paged.py b/sparkinfer/attention/nsa_indexer/paged.py
+index f0ecc17..eb37639 100644
+--- a/sparkinfer/attention/nsa_indexer/paged.py
++++ b/sparkinfer/attention/nsa_indexer/paged.py
+@@ -30,14 +30,11 @@ from sparkinfer.attention.nsa_indexer.tiled_topk import (
+     run_tiled_topk,
+ )
+ 
+-# Two-level fold: target slice width for level-1 pseudo-row parallelism and the
+-# cap that keeps the candidate buffers capacity-independent (~topk*8B*cap per
+-# row) at very long contexts.
+-_TWO_LEVEL_SLICE_TOKENS = 16384
+-_TWO_LEVEL_MAX_SLICES = 32
+-_TWO_LEVEL_FOLD_MODE_ENV = "SPARKINFER_INDEXER_TWO_LEVEL_FOLD"
+-_TWO_LEVEL_FOLD_MAX_MIB_ENV = "SPARKINFER_INDEXER_TWO_LEVEL_FOLD_MAX_MIB"
+-_TWO_LEVEL_FOLD_MAX_MIB_DEFAULT = 256
++from sparkinfer.attention.nsa_indexer.fold_policy import (
++    TWO_LEVEL_MAX_SLICES as _TWO_LEVEL_MAX_SLICES,
++    TWO_LEVEL_SLICE_TOKENS as _TWO_LEVEL_SLICE_TOKENS,
++    read_two_level_fold_policy as _read_two_level_fold_policy,
++)
+ from sparkinfer.attention.nsa_indexer.reference import (
+     pack_index_k_cache_reference,
+     paged_decode_logits_reference,
+@@ -93,41 +90,6 @@ def _paged_indexer_chunk_geometry(
+     )
+ 
+ 
+-def _read_two_level_fold_policy() -> tuple[str, int]:
+-    raw_mode = os.getenv(_TWO_LEVEL_FOLD_MODE_ENV, "auto").strip().lower()
+-    disabled_modes = {"0", "false", "off", "no"}
+-    forced_modes = {"1", "true", "on", "yes"}
+-    if raw_mode == "auto":
+-        mode = "auto"
+-    elif raw_mode in disabled_modes:
+-        mode = "off"
+-    elif raw_mode in forced_modes:
+-        mode = "on"
+-    else:
+-        raise ValueError(
+-            f"{_TWO_LEVEL_FOLD_MODE_ENV} must be auto, 0/false/off/no, or "
+-            f"1/true/on/yes, got {raw_mode!r}"
+-        )
+-
+-    raw_limit_mib = os.getenv(
+-        _TWO_LEVEL_FOLD_MAX_MIB_ENV,
+-        str(_TWO_LEVEL_FOLD_MAX_MIB_DEFAULT),
+-    )
+-    try:
+-        limit_mib = int(raw_limit_mib)
+-    except ValueError as exc:
+-        raise ValueError(
+-            f"{_TWO_LEVEL_FOLD_MAX_MIB_ENV} must be a non-negative integer, "
+-            f"got {raw_limit_mib!r}"
+-        ) from exc
+-    if limit_mib < 0:
+-        raise ValueError(
+-            f"{_TWO_LEVEL_FOLD_MAX_MIB_ENV} must be a non-negative integer, "
+-            f"got {raw_limit_mib!r}"
+-        )
+-    return mode, limit_mib * 1024 * 1024
+-
+-
+ def _plan_two_level_fold(
+     *,
+     q_rows: int,
+@@ -196,7 +158,12 @@ def _plan_two_level_fold(
+     # fold_values and fold_indices each use four bytes per candidate. The
+     # lengths vector contributes one int32 per query row.
+     candidate_nbytes = q_rows * (total_slices * topk * 8 + 4)
+-    if mode == "auto" and candidate_nbytes > budget_nbytes:
++    if candidate_nbytes > budget_nbytes:
++        if mode == "on":
++            raise RuntimeError(
++                "forced two-level fold candidate slab exceeds its reserved "
++                f"workspace: required={candidate_nbytes}, reserved={budget_nbytes}"
++            )
+         return _TwoLevelFoldPlan(
+             candidate_nbytes=candidate_nbytes,
+             budget_nbytes=budget_nbytes,
+@@ -953,15 +920,13 @@ def index_topk_fp8(
+     fold_indices = None
+     fold_lengths = None
+     if two_level_slices:
+-        fold_values = torch.empty(
+-            (q_rows * total_slices, topk), dtype=torch.float32, device=q_fp8.device
+-        )
+-        fold_indices = torch.empty(
+-            (q_rows * total_slices, topk), dtype=torch.int32, device=q_fp8.device
+-        )
+-        fold_lengths = torch.full(
+-            (q_rows,), total_slices * topk, dtype=torch.int32, device=q_fp8.device
++        fold_values, fold_indices, fold_lengths = (
++            scratch.get_two_level_fold_buffers(
++                row_count=q_rows,
++                total_slices=total_slices,
++            )
+         )
++        fold_lengths.fill_(total_slices * topk)
+     # output. Only needed when there is more than one supertile chunk.
+     carry_buf_values = None
+     carry_buf_indices = None
+diff --git a/sparkinfer/attention/nsa_indexer/scratch.py b/sparkinfer/attention/nsa_indexer/scratch.py
+index e9400a7..82ea6c1 100644
+--- a/sparkinfer/attention/nsa_indexer/scratch.py
++++ b/sparkinfer/attention/nsa_indexer/scratch.py
+@@ -15,6 +15,10 @@ from sparkinfer.attention.nsa_indexer._impl import (
+ from sparkinfer.attention.nsa_indexer.msa_reference import (
+     MSA_BLOCK_TOKENS,
+ )
++from sparkinfer.attention.nsa_indexer.fold_policy import (
++    TWO_LEVEL_SLICE_TOKENS,
++    read_two_level_fold_policy,
++)
+ from sparkinfer._lib.scratch_layout import (
+     SCRATCH_ALIGN_BYTES,
+     align_up,
+@@ -338,6 +342,10 @@ class _SPARKINFERIndexerPagedScratchLayout:
+     msa_sort_indices_offset_bytes: int
+     msa_expanded_page_table_offset_bytes: int
+     msa_expanded_seqlens_offset_bytes: int
++    two_level_fold_rows: int
++    two_level_fold_values_offset_bytes: int
++    two_level_fold_indices_offset_bytes: int
++    two_level_fold_lengths_offset_bytes: int
+ 
+ 
+ @dataclass(frozen=True, kw_only=True)
+@@ -417,6 +425,10 @@ class SPARKINFERIndexerPagedScratch:
+     msa_sort_indices: torch.Tensor | None = None
+     msa_expanded_page_table: torch.Tensor | None = None
+     msa_expanded_seqlens: torch.Tensor | None = None
++    two_level_fold_values: torch.Tensor | None = None
++    two_level_fold_indices: torch.Tensor | None = None
++    two_level_fold_lengths: torch.Tensor | None = None
++    two_level_fold_rows: int = 0
+ 
+     def bind(
+         self,
+@@ -502,6 +514,46 @@ class SPARKINFERIndexerPagedScratch:
+             self.indexer_contiguous_candidate_indices,
+         )
+ 
++    def get_two_level_fold_buffers(
++        self,
++        *,
++        row_count: int,
++        total_slices: int,
++    ) -> tuple[torch.Tensor, torch.Tensor, torch.Tensor]:
++        """Return profile-accounted candidate buffers for the parallel fold."""
++
++        if (
++            self.two_level_fold_values is None
++            or self.two_level_fold_indices is None
++            or self.two_level_fold_lengths is None
++        ):
++            raise RuntimeError(
++                "paged indexer scratch is missing reserved two-level fold buffers"
++            )
++        row_count = int(row_count)
++        total_slices = int(total_slices)
++        if row_count < 0 or total_slices < 0:
++            raise ValueError(
++                "row_count/total_slices must be non-negative, got "
++                f"{row_count}/{total_slices}"
++            )
++        needed_rows = row_count * total_slices
++        if needed_rows > int(self.two_level_fold_rows):
++            raise ValueError(
++                f"two-level fold rows {needed_rows} exceed reserved capacity "
++                f"{int(self.two_level_fold_rows)}"
++            )
++        if row_count > int(self.two_level_fold_lengths.shape[0]):
++            raise ValueError(
++                f"two-level fold length rows {row_count} exceed reserved capacity "
++                f"{int(self.two_level_fold_lengths.shape[0])}"
++            )
++        return (
++            self.two_level_fold_values[:needed_rows],
++            self.two_level_fold_indices[:needed_rows],
++            self.two_level_fold_lengths[:row_count],
++        )
++
+     def get_indexer_contiguous_topk_position_buffer(
+         self, *, row_count: int
+     ) -> torch.Tensor:
+@@ -1043,6 +1095,41 @@ def _indexer_paged_scratch_layout(
+     cursor += msa_expanded_rows * dtype_nbytes(torch.int32)
+     cursor = align_up(cursor, SCRATCH_ALIGN_BYTES)
+ 
++    # The parallel exact fold is eligible only at >= 2 * slice width. Its
++    # configured candidate budget is reserved here so vLLM profiles it before
++    # sizing the KV pool. Runtime planning uses the same policy and can never
++    # request more rows than this reservation.
++    fold_mode, fold_budget_nbytes = read_two_level_fold_policy()
++    fold_width_tokens = int(caps.max_page_table_width) * page_size
++    two_level_fold_rows = 0
++    if (
++        fold_mode != "off"
++        and fold_budget_nbytes > 0
++        and fold_width_tokens >= 2 * TWO_LEVEL_SLICE_TOKENS
++    ):
++        two_level_fold_rows = fold_budget_nbytes // (
++            int(caps.topk) * (
++                dtype_nbytes(torch.float32) + dtype_nbytes(torch.int32)
++            )
++        )
++
++    two_level_fold_values_offset_bytes = cursor
++    cursor += (
++        two_level_fold_rows * int(caps.topk) * dtype_nbytes(torch.float32)
++    )
++    cursor = align_up(cursor, SCRATCH_ALIGN_BYTES)
++
++    two_level_fold_indices_offset_bytes = cursor
++    cursor += (
++        two_level_fold_rows * int(caps.topk) * dtype_nbytes(torch.int32)
++    )
++    cursor = align_up(cursor, SCRATCH_ALIGN_BYTES)
++
++    two_level_fold_lengths_offset_bytes = cursor
++    if two_level_fold_rows > 0:
++        cursor += max_q_rows * dtype_nbytes(torch.int32)
++        cursor = align_up(cursor, SCRATCH_ALIGN_BYTES)
++
+     return _SPARKINFERIndexerPagedScratchLayout(
+         nbytes=max(int(cursor), SCRATCH_ALIGN_BYTES),
+         supertile_tokens=supertile_tokens,
+@@ -1077,6 +1164,10 @@ def _indexer_paged_scratch_layout(
+         msa_sort_indices_offset_bytes=msa_sort_indices_offset_bytes,
+         msa_expanded_page_table_offset_bytes=msa_expanded_page_table_offset_bytes,
+         msa_expanded_seqlens_offset_bytes=msa_expanded_seqlens_offset_bytes,
++        two_level_fold_rows=two_level_fold_rows,
++        two_level_fold_values_offset_bytes=two_level_fold_values_offset_bytes,
++        two_level_fold_indices_offset_bytes=two_level_fold_indices_offset_bytes,
++        two_level_fold_lengths_offset_bytes=two_level_fold_lengths_offset_bytes,
+     )
+ 
+ 
+@@ -1426,6 +1517,31 @@ def _materialize_indexer_paged_scratch(
+         msa_expanded_page_table = None
+         msa_expanded_seqlens = None
+ 
++    if int(layout.two_level_fold_rows) > 0:
++        fold_rows = int(layout.two_level_fold_rows)
++        two_level_fold_values, _ = materialize_scratch_view(
++            scratch_storage,
++            offset_bytes=layout.two_level_fold_values_offset_bytes,
++            shape=(fold_rows, topk),
++            dtype=torch.float32,
++        )
++        two_level_fold_indices, _ = materialize_scratch_view(
++            scratch_storage,
++            offset_bytes=layout.two_level_fold_indices_offset_bytes,
++            shape=(fold_rows, topk),
++            dtype=torch.int32,
++        )
++        two_level_fold_lengths, _ = materialize_scratch_view(
++            scratch_storage,
++            offset_bytes=layout.two_level_fold_lengths_offset_bytes,
++            shape=(max_q_rows,),
++            dtype=torch.int32,
++        )
++    else:
++        two_level_fold_values = None
++        two_level_fold_indices = None
++        two_level_fold_lengths = None
++
+     scratch = SPARKINFERIndexerPagedScratch(
+         shared_scratch=scratch_storage,
+         device=caps.device,
+@@ -1468,6 +1584,10 @@ def _materialize_indexer_paged_scratch(
+         msa_sort_indices=msa_sort_indices,
+         msa_expanded_page_table=msa_expanded_page_table,
+         msa_expanded_seqlens=msa_expanded_seqlens,
++        two_level_fold_values=two_level_fold_values,
++        two_level_fold_indices=two_level_fold_indices,
++        two_level_fold_lengths=two_level_fold_lengths,
++        two_level_fold_rows=int(layout.two_level_fold_rows),
+     )
+     return scratch
+ 
+diff --git a/tests/attention/test_paged_indexer_integration.py b/tests/attention/test_paged_indexer_integration.py
+index a8ab412..c475057 100644
+--- a/tests/attention/test_paged_indexer_integration.py
++++ b/tests/attention/test_paged_indexer_integration.py
+@@ -812,24 +812,58 @@ def test_two_level_fold_auto_respects_candidate_memory_boundary(
+     assert above.reason == "candidate slab exceeds the memory budget"
+ 
+ 
+-def test_two_level_fold_forced_mode_ignores_memory_boundary(
++def test_two_level_fold_budget_is_materialized_in_paged_scratch(
+     monkeypatch: pytest.MonkeyPatch,
+ ) -> None:
+-    monkeypatch.setenv("SPARKINFER_INDEXER_TWO_LEVEL_FOLD", "on")
+-    monkeypatch.setenv("SPARKINFER_INDEXER_TWO_LEVEL_FOLD_MAX_MIB", "0")
+-
+-    plan = _plan_two_level_fold(
+-        q_rows=64,
++    monkeypatch.setenv("SPARKINFER_INDEXER_TWO_LEVEL_FOLD", "auto")
++    monkeypatch.setenv("SPARKINFER_INDEXER_TWO_LEVEL_FOLD_MAX_MIB", "1")
++    caps = SPARKINFERIndexerPagedScratchCaps(
++        device=torch.device("cpu"),
++        num_q_heads=16,
++        max_q_rows=64,
++        max_page_table_width=1024,
+         topk=512,
+         page_size=64,
+-        page_table_width=1024,
+-        supertile_pages=256,
+-        output_physical_slots=False,
++        paged_tile_logits_k_rows=16384,
++        route="paged_tiled",
++    )
++    plan = plan_indexer_paged_scratch(caps)
++
++    # One MiB divided by the float32-value + int32-index row width.
++    assert plan.layout.two_level_fold_rows == 256
++    (shape, dtype), = plan.shapes_and_dtypes()
++    binding = plan.bind(
++        scratch=torch.empty(shape, dtype=dtype),
++        real_page_table=torch.zeros((64, 1024), dtype=torch.int32),
++        cache_seqlens_int32=torch.zeros((64,), dtype=torch.int32),
++    )
++    values, indices, lengths = binding.scratch.get_two_level_fold_buffers(
++        row_count=63,
++        total_slices=4,
+     )
++    assert values.shape == (252, 512)
++    assert indices.shape == (252, 512)
++    assert lengths.shape == (63,)
++    assert values.dtype == torch.float32
++    assert indices.dtype == torch.int32
++    assert lengths.dtype == torch.int32
++
+ 
+-    assert plan.slices == ((1, 0), (1, 1), (1, 2), (1, 3))
+-    assert plan.total_slices == 4
+-    assert plan.reason == "forced"
++def test_two_level_fold_forced_mode_fails_closed_at_reserved_boundary(
++    monkeypatch: pytest.MonkeyPatch,
++) -> None:
++    monkeypatch.setenv("SPARKINFER_INDEXER_TWO_LEVEL_FOLD", "on")
++    monkeypatch.setenv("SPARKINFER_INDEXER_TWO_LEVEL_FOLD_MAX_MIB", "0")
++
++    with pytest.raises(RuntimeError, match="exceeds its reserved workspace"):
++        _plan_two_level_fold(
++            q_rows=64,
++            topk=512,
++            page_size=64,
++            page_table_width=1024,
++            supertile_pages=256,
++            output_physical_slots=False,
++        )
+ 
+ 
+ def test_paged_indexer_chunk_geometry_handles_partial_final_chunk() -> None:
+diff --git a/sparkinfer/attention/nsa_indexer/fold_policy.py b/sparkinfer/attention/nsa_indexer/fold_policy.py
+new file mode 100644
+index 0000000..20b0036
+--- /dev/null
++++ b/sparkinfer/attention/nsa_indexer/fold_policy.py
+@@ -0,0 +1,57 @@
++"""Rank-invariant policy for the paged indexer's exact two-level fold.
++
++The parallel fold needs a candidate workspace proportional to
++``q_rows * total_slices * topk``.  The configured byte budget is both the
++runtime eligibility limit and the amount reserved by the scratch planner.
++Keeping policy parsing here prevents the runtime and the reservation from
++disagreeing.
++"""
++
++from __future__ import annotations
++
++import os
++
++
++TWO_LEVEL_SLICE_TOKENS = 16384
++TWO_LEVEL_MAX_SLICES = 32
++TWO_LEVEL_FOLD_MODE_ENV = "SPARKINFER_INDEXER_TWO_LEVEL_FOLD"
++TWO_LEVEL_FOLD_MAX_MIB_ENV = "SPARKINFER_INDEXER_TWO_LEVEL_FOLD_MAX_MIB"
++TWO_LEVEL_FOLD_MAX_MIB_DEFAULT = 256
++
++
++def read_two_level_fold_policy() -> tuple[str, int]:
++    """Return ``(mode, reserved_candidate_bytes)`` from the environment."""
++
++    raw_mode = os.getenv(TWO_LEVEL_FOLD_MODE_ENV, "auto").strip().lower()
++    disabled_modes = {"0", "false", "off", "no"}
++    forced_modes = {"1", "true", "on", "yes"}
++    if raw_mode == "auto":
++        mode = "auto"
++    elif raw_mode in disabled_modes:
++        mode = "off"
++    elif raw_mode in forced_modes:
++        mode = "on"
++    else:
++        raise ValueError(
++            f"{TWO_LEVEL_FOLD_MODE_ENV} must be auto, 0/false/off/no, or "
++            f"1/true/on/yes, got {raw_mode!r}"
++        )
++
++    raw_limit_mib = os.getenv(
++        TWO_LEVEL_FOLD_MAX_MIB_ENV,
++        str(TWO_LEVEL_FOLD_MAX_MIB_DEFAULT),
++    )
++    try:
++        limit_mib = int(raw_limit_mib)
++    except ValueError as exc:
++        raise ValueError(
++            f"{TWO_LEVEL_FOLD_MAX_MIB_ENV} must be a non-negative integer, "
++            f"got {raw_limit_mib!r}"
++        ) from exc
++    if limit_mib < 0:
++        raise ValueError(
++            f"{TWO_LEVEL_FOLD_MAX_MIB_ENV} must be a non-negative integer, "
++            f"got {raw_limit_mib!r}"
++        )
++    return mode, limit_mib * 1024 * 1024
++

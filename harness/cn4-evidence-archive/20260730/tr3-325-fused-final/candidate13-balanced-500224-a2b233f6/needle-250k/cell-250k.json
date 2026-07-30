@@ -1,0 +1,92 @@
+{
+  "depth_target": 250000,
+  "context_tokens": 245505,
+  "elapsed_s": 295.71,
+  "usage": {
+    "prompt_tokens": 245517,
+    "completion_tokens": 65,
+    "total_tokens": 245582,
+    "cached_tokens": 0,
+    "prompt_tokens_details": {
+      "cached_tokens": 0,
+      "multimodal_tokens": null
+    }
+  },
+  "checks": {
+    "needle_in_finalized_content": true,
+    "finalized_content_nonempty": true,
+    "finish_reason_stop": true,
+    "no_degeneration": true,
+    "cold_cached_tokens_zero": true
+  },
+  "needle_found_in": {
+    "reasoning": true,
+    "reasoning_content": false,
+    "serialized_message": true
+  },
+  "trigram_repeat": 0.0,
+  "content": "738216",
+  "reasoning": "The user is asking for the maintenance ticket number for the Facility 27 compressor overhaul from the document.\n\nLooking through the text, I can find this sentence: \"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\"\n\nThe answer is 738216.",
+  "reasoning_content": "",
+  "serialized_message": "{\"annotations\": null, \"audio\": null, \"content\": \"738216\", \"function_call\": null, \"reasoning\": \"The user is asking for the maintenance ticket number for the Facility 27 compressor overhaul from the document.\\n\\nLooking through the text, I can find this sentence: \\\"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\\\"\\n\\nThe answer is 738216.\", \"refusal\": null, \"role\": \"assistant\"}",
+  "finish_reason": "stop",
+  "side_checks": {},
+  "request": {
+    "model": "GLM-5.2-EXL3-TR3-3.25bpw",
+    "messages": [
+      {
+        "role": "user",
+        "content_sha256": "9523d702a2fd1e321447a971803aec0fe63778531b5b13e68ec2ec3f21514c67",
+        "content_chars": 1517479
+      }
+    ],
+    "max_tokens": 800,
+    "temperature": 0,
+    "chat_template_kwargs": {
+      "reasoning_effort": "low"
+    }
+  },
+  "response_full": {
+    "id": "chatcmpl-a97d97e16c927ccf",
+    "object": "chat.completion",
+    "created": 1785412322,
+    "model": "GLM-5.2-EXL3-TR3-3.25bpw",
+    "choices": [
+      {
+        "index": 0,
+        "message": {
+          "role": "assistant",
+          "content": "738216",
+          "refusal": null,
+          "annotations": null,
+          "audio": null,
+          "function_call": null,
+          "reasoning": "The user is asking for the maintenance ticket number for the Facility 27 compressor overhaul from the document.\n\nLooking through the text, I can find this sentence: \"For reference, the maintenance ticket number for the Facility 27 compressor overhaul is 738216.\"\n\nThe answer is 738216."
+        },
+        "logprobs": null,
+        "finish_reason": "stop",
+        "stop_reason": 154827,
+        "token_ids": null,
+        "routed_experts": null
+      }
+    ],
+    "service_tier": null,
+    "system_fingerprint": "vllm-0.11.2.dev280+gilded.gnosis.v20.vllm34f26c2.side7739a.fi801d57a.cu132.20260728.r9-tp4-f2efd58c",
+    "usage": {
+      "prompt_tokens": 245517,
+      "total_tokens": 245582,
+      "completion_tokens": 65,
+      "prompt_tokens_details": {
+        "cached_tokens": 0,
+        "multimodal_tokens": null
+      }
+    },
+    "prompt_logprobs": null,
+    "prompt_token_ids": null,
+    "prompt_text": null,
+    "kv_transfer_params": null,
+    "ec_transfer_params": null,
+    "metrics": null
+  },
+  "ts": "2026-07-30T11:56:57Z"
+}

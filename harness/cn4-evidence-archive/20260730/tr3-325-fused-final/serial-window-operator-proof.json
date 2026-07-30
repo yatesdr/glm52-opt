@@ -1,0 +1,209 @@
+{
+  "device": "NVIDIA RTX PRO 6000 Blackwell Workstation Edition",
+  "geometry": {
+    "concurrency_to_rows": {
+      "16": 64,
+      "24": 96,
+      "32": 128,
+      "8": 32
+    },
+    "experts": 256,
+    "hidden": 6144,
+    "intermediate_tp_local": 512,
+    "mtp": 3,
+    "tier_signature": [
+      [
+        3,
+        192
+      ],
+      [
+        4,
+        64
+      ]
+    ],
+    "topk": 8
+  },
+  "rows": [
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 64,
+      "capacity": 3072,
+      "graph": {
+        "mean_ms": 1.7616611194610596,
+        "median_ms": 1.7347679734230042,
+        "min_ms": 1.4619200229644775,
+        "p95_ms": 2.0936639308929443,
+        "stdev_ms": 0.26047371880192116
+      },
+      "live_rows": 32,
+      "plan": "prefill_cap3072_bm64",
+      "scratch_mib": 2108.326171875
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 64,
+      "capacity": 3072,
+      "graph": {
+        "mean_ms": 1.7931510365009309,
+        "median_ms": 1.8356319665908813,
+        "min_ms": 1.4651199579238892,
+        "p95_ms": 2.1284799575805664,
+        "stdev_ms": 0.26838314732066965
+      },
+      "live_rows": 64,
+      "plan": "prefill_cap3072_bm64",
+      "scratch_mib": 2108.326171875
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 64,
+      "capacity": 3072,
+      "graph": {
+        "mean_ms": 1.8311232101917267,
+        "median_ms": 1.857632040977478,
+        "min_ms": 1.4792959690093994,
+        "p95_ms": 2.2001919746398926,
+        "stdev_ms": 0.2867790644402783
+      },
+      "live_rows": 96,
+      "plan": "prefill_cap3072_bm64",
+      "scratch_mib": 2108.326171875
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 64,
+      "capacity": 3072,
+      "graph": {
+        "mean_ms": 2.2764659261703493,
+        "median_ms": 2.2902719974517822,
+        "min_ms": 2.1038401126861572,
+        "p95_ms": 2.3968000411987305,
+        "stdev_ms": 0.07107495068806126
+      },
+      "live_rows": 128,
+      "plan": "prefill_cap3072_bm64",
+      "scratch_mib": 2108.326171875
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 8,
+      "capacity": 128,
+      "graph": {
+        "mean_ms": 0.8672473603487014,
+        "median_ms": 0.8526080250740051,
+        "min_ms": 0.845408022403717,
+        "p95_ms": 0.9376000165939331,
+        "stdev_ms": 0.029408587985630254
+      },
+      "live_rows": 32,
+      "plan": "decode_cap128_bm8",
+      "scratch_mib": 127.03515625
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 8,
+      "capacity": 128,
+      "graph": {
+        "mean_ms": 0.8824223983287811,
+        "median_ms": 0.8638399839401245,
+        "min_ms": 0.8579199910163879,
+        "p95_ms": 0.9744319915771484,
+        "stdev_ms": 0.03716062975896747
+      },
+      "live_rows": 64,
+      "plan": "decode_cap128_bm8",
+      "scratch_mib": 127.03515625
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 8,
+      "capacity": 128,
+      "graph": {
+        "mean_ms": 0.8922630399465561,
+        "median_ms": 0.873088002204895,
+        "min_ms": 0.8659200072288513,
+        "p95_ms": 1.00108802318573,
+        "stdev_ms": 0.03971143521875129
+      },
+      "live_rows": 96,
+      "plan": "decode_cap128_bm8",
+      "scratch_mib": 127.03515625
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 8,
+      "capacity": 128,
+      "graph": {
+        "mean_ms": 1.1789657545089722,
+        "median_ms": 1.154047966003418,
+        "min_ms": 1.1108160018920898,
+        "p95_ms": 1.2744640111923218,
+        "stdev_ms": 0.05751525864484985
+      },
+      "live_rows": 128,
+      "plan": "decode_cap128_bm8",
+      "scratch_mib": 127.03515625
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 64,
+      "capacity": 128,
+      "graph": {
+        "mean_ms": 1.8553462433815002,
+        "median_ms": 1.964143991470337,
+        "min_ms": 1.4854079484939575,
+        "p95_ms": 2.2063040733337402,
+        "stdev_ms": 0.284453687595003
+      },
+      "live_rows": 32,
+      "plan": "decode_cap128_bm64",
+      "scratch_mib": 268.14404296875
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 64,
+      "capacity": 128,
+      "graph": {
+        "mean_ms": 2.2419587111473085,
+        "median_ms": 2.2431681156158447,
+        "min_ms": 2.1051840782165527,
+        "p95_ms": 2.357856035232544,
+        "stdev_ms": 0.06393168029082674
+      },
+      "live_rows": 64,
+      "plan": "decode_cap128_bm64",
+      "scratch_mib": 268.14404296875
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 64,
+      "capacity": 128,
+      "graph": {
+        "mean_ms": 2.268513603210449,
+        "median_ms": 2.2626559734344482,
+        "min_ms": 2.175424098968506,
+        "p95_ms": 2.3660480976104736,
+        "stdev_ms": 0.0632970591635046
+      },
+      "live_rows": 96,
+      "plan": "decode_cap128_bm64",
+      "scratch_mib": 268.14404296875
+    },
+    {
+      "bit_exact_vs_prefill": true,
+      "block_m": 64,
+      "capacity": 128,
+      "graph": {
+        "mean_ms": 2.3014419317245483,
+        "median_ms": 2.2923200130462646,
+        "min_ms": 2.2124478816986084,
+        "p95_ms": 2.3968000411987305,
+        "stdev_ms": 0.061286412650364566
+      },
+      "live_rows": 128,
+      "plan": "decode_cap128_bm64",
+      "scratch_mib": 268.14404296875
+    }
+  ],
+  "schema": "tr3-mixk-serial-window-v1"
+}

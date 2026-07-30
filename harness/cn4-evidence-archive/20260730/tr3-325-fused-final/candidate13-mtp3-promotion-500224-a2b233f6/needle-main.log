@@ -1,0 +1,11 @@
+[gate2] filler block = 56 tokens; results -> /home/derek/glm52-tr3-325-fused-m8-20260730/evidence/candidate13-mtp3-promotion-500224-a2b233f6/needle-main
+[gate2] === 50k ===
+  built prompt: 49099 context tokens (target 50000), needle at ~40%
+  PASS ctx=49099 cached=0 out=64 38.0s answer='738216'
+[gate2] === 350k ===
+  built prompt: 343735 context tokens (target 350000), needle at ~40%
+  PASS ctx=343735 cached=0 out=71 462.94s answer='738216'
+[gate2] === 475k ===
+  built prompt: 466494 context tokens (target 475000), needle at ~40%
+  PASS ctx=466494 cached=0 out=72 674.11s answer='738216'
+[gate2] VERDICT: PASS
