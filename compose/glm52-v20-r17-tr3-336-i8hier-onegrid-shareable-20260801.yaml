@@ -1,0 +1,145 @@
+# GLM-5.2 EXL3/TR3 3.36-bpw, Gilded Gnosis v20-r17, TP4/DCP4.
+#
+# Image pedigree:
+#   - immutable Gilded Gnosis r17 base:
+#     sha256:d1008eb2bce2947110010fcf52b715b49d54ed3bf62a6b1e0a0b698774157727
+#   - preserves vLLM #222 and SparkInfer #105/#110
+#   - adds CN4's group-voted i8_hier PCIe transport
+#   - retains block-64 route packing and a bounded 3,072-row prefill arena,
+#     while each grouped FC2 task shares decoded weights across two exact,
+#     independently accumulated M8 tiles
+#
+# Tested weights:
+#   https://huggingface.co/willfalco/GLM-5.2-EXL3-TR3-3.36bpw
+#   revision 81edc440035d17062d5a51eb8190426e8bfcf95b
+#   MANIFEST.sha256 file SHA-256:
+#   389f6f12fa8036d90a12f25a059254dcd3ab9b2a80b8d1bc610b000a3610517e
+#
+# Default profile: long-context MTP0, dynamic NVFP4 MLA KV + FP8 RoPE,
+# exact sparse selection, and prefix caching. The external LMCache tiers are
+# deliberately off by default.
+#
+# MTP3/C16 profile:
+#   MTP=3 MAX_NUM_SEQS=16 GRAPH=64 TRELLIS_MAX_M=64 MAX_MODEL_LEN=100000 \
+#     docker compose -f <this-file> up -d
+#
+# i8_hier is specialized for four GPUs arranged as two fast PCIe pairs. Set
+# F8_DMA=i8_ring on a topology that does not have that 2+2 hierarchy.
+
+name: glm52-v20-r17-tr3-336-i8hier-onegrid
+
+services:
+  glm52:
+    # Published tag:
+    # ghcr.io/yatesdr/glm52-serve:gilded-gnosis-v20-r17-tr3-336-i8hier-pairedfc2-20260801
+    # The default is the immutable manifest digest, not the mutable tag.
+    image: ${IMAGE:-ghcr.io/yatesdr/glm52-serve@sha256:f4543b83de1d342463ebea1863ea0f4c23167e69b4e0e93938c3f6c07634bcbf}
+    pull_policy: ${PULL_POLICY:-always}
+    container_name: glm52-v20-r17-tr3-336-i8hier-onegrid
+    restart: unless-stopped
+    init: true
+    network_mode: host
+    ipc: host
+    privileged: true
+    gpus: all
+    shm_size: "64g"
+
+    ulimits:
+      memlock: -1
+      stack: 67108864
+      nofile:
+        soft: 1048576
+        hard: 1048576
+
+    healthcheck:
+      test:
+        - CMD
+        - /opt/venv/bin/python
+        - -c
+        - "import urllib.request; urllib.request.urlopen('http://127.0.0.1:8000/health', timeout=8)"
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 2600s
+
+    environment:
+      MODEL_FAMILY: glm52-exl3
+      MODEL: ${MODEL:-willfalco/GLM-5.2-EXL3-TR3-3.36bpw}
+      MODEL_REVISION: ${MODEL_REVISION:-81edc440035d17062d5a51eb8190426e8bfcf95b}
+      SERVED_MODEL_NAME: ${SERVED_MODEL_NAME:-GLM-5.2-EXL3-TR3-3.36bpw}
+      GPUS: ${GPUS:-0,1,2,3}
+      PORT: ${PORT:-8000}
+
+      TP: "4"
+      DCP: "4"
+      MTP: ${MTP:-0}
+      MAX_NUM_SEQS: ${MAX_NUM_SEQS:-1}
+      GRAPH: ${GRAPH:-1}
+      MAX_BATCHED_TOKENS: ${MAX_BATCHED_TOKENS:-3072}
+      MAX_MODEL_LEN: ${MAX_MODEL_LEN:-480000}
+      GPU_MEMORY_UTILIZATION: ${GPU_MEMORY_UTILIZATION:-0.9600}
+
+      MOE_MODE: a16
+      MOE_BACKEND: b12x
+      MTP_MOE_BACKEND: triton
+      MTP_DRAFT_SAMPLE_METHOD: greedy
+      QUANTIZATION: exl3
+      ONLINE_QUANT: none
+
+      KV_CACHE_DTYPE: nvfp4_ds_mla
+      KV_FP8_ROPE: "1"
+      VLLM_NVFP4_MLA_DYNAMIC_SCALE: "1"
+      VLLM_NVFP4_MLA_SCALES_FILE: ""
+
+      # Decode keeps block-8 arithmetic. Prefill packs routes in block-64,
+      # while FC2 computes deterministic block-8 subtiles in the same grid.
+      VLLM_EXL3_TRELLIS_MIN_M: "1"
+      VLLM_EXL3_TRELLIS_MAX_M: ${TRELLIS_MAX_M:-1}
+      VLLM_EXL3_TRELLIS_BLOCK_M: "8"
+      VLLM_EXL3_PREFILL_TRELLIS: "1"
+      VLLM_EXL3_PREFILL_BLOCK_M: "64"
+      VLLM_EXL3_PREFILL_CHUNK: "128"
+      VLLM_EXL3_PREFILL_CAPACITY: "3072"
+
+      NCCL_IB_DISABLE: "1"
+      NCCL_P2P_LEVEL: ${NCCL_P2P_LEVEL:-PXB}
+      NCCL_PROTO: LL,LL128,Simple
+      F8_DMA: ${F8_DMA:-i8_hier}
+      PCIE_CALIBRATION: "off"
+
+      # Profile-selected exact sparse-indexer route for CN4's 2+2 topology.
+      DCP_QUERY_SPLIT: "1"
+      DCP_CKV_GATHER: "1"
+      DCP_CKV_GATHER_MAX_TOKENS: "140000"
+      DCP_TOPK_OWNER_MERGE: "1"
+      DCP_INDEXER_SHARDS: "2"
+      DCP_CKV_PREFETCH_DEPTH: "0"
+      DCP_CKV_PREFETCH_WORKSPACE_MIB: "1024"
+      PCIE_DMA_MIN_BYTES: 6MB
+      VLLM_PCIE_ONESHOT_ALLREDUCE_MAX_SIZE: 120KB
+      VLLM_PCIE_ONESHOT_FUSED_ADD_RMS_NORM_MAX_SIZE: 84KB
+      SPARKINFER_NSA_TOPK_SELECTION_POLICY: exact
+
+      SPARKINFER_INDEXER_TWO_LEVEL_FOLD: auto
+      SPARKINFER_INDEXER_TWO_LEVEL_FOLD_MAX_MIB: "256"
+      VLLM_SHARED_EXPERTS_STREAM_TOKEN_THRESHOLD: "8"
+
+      PYTORCH_CUDA_ALLOC_CONF: expandable_segments:True
+      ASYNC_SCHEDULING: "0"
+      CUDA_DEVICE_ORDER: PCI_BUS_ID
+      CUDA_DEVICE_MAX_CONNECTIONS: "32"
+      OMP_NUM_THREADS: "16"
+      SAFETENSORS_FAST_GPU: "1"
+      XDG_CACHE_HOME: /cache
+
+      # Optional external prefix-cache tiers; off by default.
+      LMCACHE_MODE: ${LMCACHE_MODE:-off}
+      LMCACHE_L1_GB: ${LMCACHE_L1_GB:-8}
+      LMCACHE_L2_GB: ${LMCACHE_L2_GB:-64}
+      LMCACHE_L2_PATH: /cache/lmcache
+
+    volumes:
+      - ${HF_CACHE_ROOT:-./hf-cache}:/root/.cache/huggingface:rw
+      - ${CACHE_ROOT:-./cache}:/cache:rw
+
+    entrypoint: ["/usr/local/bin/serve-gilded-gnosis.sh"]

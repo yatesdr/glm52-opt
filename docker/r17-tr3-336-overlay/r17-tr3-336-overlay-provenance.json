@@ -1,0 +1,114 @@
+{
+  "base": {
+    "digest": "sha256:d1008eb2bce2947110010fcf52b715b49d54ed3bf62a6b1e0a0b698774157727",
+    "image": "voipmonitor/vllm",
+    "release": "Gilded Gnosis v20 r17",
+    "sparkinfer_integration_tree": "b2bff719ba1be0a5d30cb39cba795f0812db0f3d",
+    "vllm_integration_tree": "db293280d021d32db0552f3f6e4b95abbd9c69a1"
+  },
+  "cache_namespace": "r17-tr3-336-onegrid-f0d1f989-i8hier-9c792af-v4",
+  "overlay": {
+    "removed_or_absent": [
+      "SparkInfer #100 overlay",
+      "vLLM #210 overlay",
+      "vLLM #219 overlay"
+    ],
+    "runtime_files": [
+      "/opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/quantization/exl3.py",
+      "/opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py",
+      "/opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.cu",
+      "/opt/venv/lib/python3.12/site-packages/sparkinfer/moe/_shared/kernels/w4a16/kernel.py",
+      "/opt/venv/lib/python3.12/site-packages/sparkinfer/moe/_shared/kernels/w4a16/mixed_trellis.py"
+    ],
+    "sparkinfer": {
+      "baseline_reproduction_commit": "b1bcbac48ea1128ca7174fea38d291e9a31833f9",
+      "branch": "feature/r17-i8hier-prefill-parity-20260801",
+      "commit": "9c792afbd1fe29fd46efda8b36374d947de4e109",
+      "i8_hier_commit": "b18334802bc5506de64b441f4f5b7ec8278f365b",
+      "grouped_exact_fc2_commit": "3dbd651b6808e305326231a2fbd8cc861ef93f59",
+      "paired_exact_fc2_commit": "9c792afbd1fe29fd46efda8b36374d947de4e109"
+    },
+    "vllm": {
+      "baseline_reproduction_commit": "6023d26d73ddd56558340cc7b925a38033bf7396",
+      "branch": "feature/r17-exl3-prefill-parity-20260801",
+      "commit": "f0d1f989396aa7acebf3c1ad3704131d60c8a80e"
+    }
+  },
+  "preserved_r17_content": {
+    "launchers": true,
+    "lmcache_abi": true,
+    "sparkinfer_prs": [105, 106, 110],
+    "vllm_prs": [145, 212, 213, 214, 216, 217, 218, 222]
+  },
+  "qualification": {
+    "prior_exact_arithmetic_image_id": "sha256:c7552e5ff2d7ea7a8f3bcb51b8209b2f95b59311199840ab9aa6eee27310b37a",
+    "candidate_status": "all precommitted production gates passed",
+    "qualified_image_id": "sha256:da95d2983cfa7871ec4e1c95c461574a58f394f59862f65b4ff6984b740083c6",
+    "grouped_fc2_operator_proof": {
+      "bit_exact": true,
+      "changed_elements": 0,
+      "geometry_m": 3072,
+      "grouped_block64_us": 5162.58,
+      "max_abs": 0.0,
+      "output_sha256": "e70bcd87dd5963186064e3028d7dccbbd2f5caef0ba27dc829e0e96e72cd58a7",
+      "reference_block8_us": 8873.07,
+      "speedup": 1.7187
+    },
+    "resource_proof": {
+      "capacity": 3072,
+      "fc2_compute_subtile_size": 8,
+      "geometry": [128, 128, 32, 512],
+      "local_memory_bytes": 0,
+      "packed_route_block_size": 64,
+      "registers_per_thread": 248,
+      "shared_memory_bytes": 101376,
+      "workspace_bytes": 853711296
+    },
+    "kld_n1": {
+      "log_sha256": "310048c10180b44af4631cdc3a721a6514d0be9b5be33d9ca40a7b3f9042ee2f",
+      "mean": 0.07776700789368204,
+      "positions": 2047,
+      "stock_r16_reference": 0.07776700789368204,
+      "threshold_1pct": 0.07854467
+    },
+    "production_gates": {
+      "cold_350k": {
+        "answer": "738216",
+        "cached_tokens": 0,
+        "context_tokens": 343735,
+        "verdict": "PASS"
+      },
+      "cold_prefill_64k": {
+        "cached_tokens": 0,
+        "prompt_tokens": 63062,
+        "server_tokens_per_second": 1737.113381555206,
+        "wall_tokens_per_second": 1726.5482486747464
+      },
+      "mtp0_c1": {
+        "aggregate_tokens_per_second": 38.9585070076484,
+        "errors": 0,
+        "underfilled": false
+      },
+      "mtp0_kv_tokens": 609024,
+      "mtp3_c16": {
+        "aggregate_tokens_per_second": 234.05285289889258,
+        "errors": 0,
+        "max_running_requests": 16,
+        "result_sha256": "56658b1fde929c3324b0d34377f5c511b06d98d43eab4a755f44b322d23143e6",
+        "underfilled": false
+      },
+      "mtp3_graph_capture_buckets": 16,
+      "mtp3_kv_tokens_at_100k": 175703,
+      "prefix_cache_replay": {
+        "cached_tokens": 62976,
+        "server_tokens_per_second": 86140.60353394633
+      }
+    }
+  },
+  "weights": {
+    "local_manifest_sha256": "389f6f12fa8036d90a12f25a059254dcd3ab9b2a80b8d1bc610b000a3610517e",
+    "model": "willfalco/GLM-5.2-EXL3-TR3-3.36bpw",
+    "revision": "81edc440035d17062d5a51eb8190426e8bfcf95b",
+    "runner_label_correction": "The KLD runner was passed 81ed88706b854a2f9c84fda8fbad6f56a65407ff as metadata; that revision does not exist. The mounted local bytes have config SHA-256 912cb50f96a42a21501367bfe38aa29d531146d76aadc5fd62ac20a3008d7c34 and MANIFEST.sha256 file SHA-256 389f6f12fa8036d90a12f25a059254dcd3ab9b2a80b8d1bc610b000a3610517e, matching tested revision 81edc440035d17062d5a51eb8190426e8bfcf95b."
+  }
+}

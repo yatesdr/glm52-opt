@@ -1,0 +1,5 @@
+415e5e55e196118994b55ab1e40fe681b7e85074f6386861985f750440e64179  /opt/venv/lib/python3.12/site-packages/vllm/model_executor/layers/quantization/exl3.py
+cafb63d5479a60f3d4080e06de19f9369a40d73eac3d507220b93f168588d79b  /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.py
+783329f15d49a44241dc8448391b975faf6a040a9072c88f59e34e9d800c28ba  /opt/venv/lib/python3.12/site-packages/sparkinfer/comm/pcie/pcie_dma.cu
+893d21b37fcf2bec0181a4b45f652f0e177fe10f55a424f543e2a28bbf5bcd5e  /opt/venv/lib/python3.12/site-packages/sparkinfer/moe/_shared/kernels/w4a16/kernel.py
+e6884de61965626dcc558a076a3d27d5e532a4e6b534718f63b89c4072435624  /opt/venv/lib/python3.12/site-packages/sparkinfer/moe/_shared/kernels/w4a16/mixed_trellis.py
